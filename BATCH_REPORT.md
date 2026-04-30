@@ -91,6 +91,10 @@ git add .
 git commit -m "Batch 2.5: Material UI cleanup and process scaffolding"
 git rev-parse --short HEAD
 git status --short
+git add BATCH_REPORT.md
+git commit -m "Batch 2.5: Update batch report with commit hash"
+git rev-parse --short HEAD
+git status --short
 ```
 
 另外使用本機 Chrome headless 產生 Batch 2.5 截圖：
@@ -117,7 +121,7 @@ screenshots/batch2-5-ui-cleanup.png
 ## 6. Git commits created
 
 - Batch 2 commit hash: `edc897d`
-- Batch 2.5 commit hash: `<BATCH_2_5_COMMIT_HASH>`
+- Batch 2.5 commit hash: `130b8e4`
 
 ## 7. Warnings or limitations
 
