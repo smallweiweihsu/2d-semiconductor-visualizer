@@ -1,7 +1,12 @@
 import { useMemo, useState } from 'react'
-import { initialDeviceStructure } from '../../data/deviceStructures'
+import {
+  createDeviceStructureFromTemplate,
+  deviceTemplates,
+  initialDeviceStructure,
+} from '../../data/deviceStructures'
 import type { DeviceLayer, DeviceStructure } from '../../types/device'
 import { DeviceSummary } from './DeviceSummary'
+import { DeviceTemplateSelector } from './DeviceTemplateSelector'
 import { DeviceValidationPanel } from './DeviceValidationPanel'
 import { LayerEditor } from './LayerEditor'
 import { LayerStackList } from './LayerStackList'
@@ -12,16 +17,55 @@ export function DeviceStructureEditor() {
   const [structure, setStructure] = useState<DeviceStructure>(() =>
     structuredClone(initialDeviceStructure),
   )
+  const [selectedTemplateId, setSelectedTemplateId] = useState(
+    initialDeviceStructure.templateId ?? deviceTemplates[0].id,
+  )
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(
-    'layer-channel-wse2',
+    getInitialSelectedLayerId(initialDeviceStructure),
   )
 
   const warnings = useMemo(
     () => validateDeviceStructure(structure),
     [structure],
   )
+  const selectedTemplate =
+    deviceTemplates.find((template) => template.id === selectedTemplateId) ??
+    deviceTemplates[0]
+  const templateBaseline = useMemo(
+    () => createDeviceStructureFromTemplate(selectedTemplate),
+    [selectedTemplate],
+  )
+  const hasUnsavedEdits = useMemo(
+    () => getStructureSignature(structure) !== getStructureSignature(templateBaseline),
+    [structure, templateBaseline],
+  )
   const selectedLayer =
     structure.layers.find((layer) => layer.id === selectedLayerId) ?? null
+
+  function handleSelectTemplate(templateId: string) {
+    if (templateId === selectedTemplateId) {
+      return
+    }
+
+    if (
+      hasUnsavedEdits &&
+      !window.confirm('切換模板會取代目前元件結構。確定要套用新模板嗎？')
+    ) {
+      return
+    }
+
+    const nextTemplate =
+      deviceTemplates.find((template) => template.id === templateId) ??
+      deviceTemplates[0]
+    const nextStructure = createDeviceStructureFromTemplate(nextTemplate)
+
+    setSelectedTemplateId(nextTemplate.id)
+    setStructure({
+      ...nextStructure,
+      updatedAt: new Date().toISOString(),
+    })
+    setSelectedLayerId(getInitialSelectedLayerId(nextStructure))
+  }
 
   function updateStructure(updates: Partial<DeviceStructure>) {
     setStructure((current) => ({
@@ -158,8 +202,14 @@ export function DeviceStructureEditor() {
       </header>
 
       <aside className="rounded-lg border border-amber-900/40 bg-amber-950/20 p-4 text-sm leading-6 text-amber-100/90">
-        目前元件結構編輯器用於建立幾何與材料堆疊模型，尚未進行真實 3D、電性、擴散或製程模擬。
+        此模板目前用於建立幾何與材料堆疊模型，尚未計算真實能帶、接觸電阻、擴散、氧化或量測響應。
       </aside>
+
+      <DeviceTemplateSelector
+        selectedTemplateId={selectedTemplateId}
+        templates={deviceTemplates}
+        onSelectTemplate={handleSelectTemplate}
+      />
 
       <div className="grid min-h-0 gap-4 2xl:grid-cols-[320px_minmax(0,1fr)_420px]">
         <div className="flex min-h-[40rem] flex-col gap-4">
@@ -205,4 +255,20 @@ function getTopZ(layers: DeviceLayer[]) {
       Math.max(maxZ, (layer.geometry.z_nm ?? 0) + layer.geometry.thickness_nm),
     0,
   )
+}
+
+function getInitialSelectedLayerId(structure: DeviceStructure) {
+  return (
+    structure.layers.find((layer) => layer.role === 'semiconductor')?.id ??
+    structure.layers[0]?.id ??
+    null
+  )
+}
+
+function getStructureSignature(structure: DeviceStructure) {
+  return JSON.stringify({
+    name: structure.name,
+    description_zh: structure.description_zh,
+    layers: structure.layers,
+  })
 }

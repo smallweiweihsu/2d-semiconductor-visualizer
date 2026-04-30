@@ -1,4 +1,5 @@
 import { useMemo, useState } from 'react'
+import { materialCategoryLabels } from '../../data/materialCategories'
 import { materials } from '../../data/materials'
 import type { MaterialCategory } from '../../types/material'
 import { MaterialCategoryFilter } from './MaterialCategoryFilter'
@@ -10,16 +11,32 @@ export function MaterialDatabase() {
   const [selectedCategory, setSelectedCategory] =
     useState<MaterialCategoryFilterId>('all')
   const [selectedMaterialId, setSelectedMaterialId] = useState('wse2')
+  const [searchQuery, setSearchQuery] = useState('')
 
   const filteredMaterials = useMemo(() => {
-    if (selectedCategory === 'all') {
-      return materials
+    const normalizedQuery = searchQuery.trim().toLocaleLowerCase('zh-TW')
+    const categoryFilteredMaterials =
+      selectedCategory === 'all'
+        ? materials
+        : materials.filter((material) => material.category === selectedCategory)
+
+    if (!normalizedQuery) {
+      return categoryFilteredMaterials
     }
 
-    return materials.filter(
-      (material) => material.category === selectedCategory,
-    )
-  }, [selectedCategory])
+    return categoryFilteredMaterials.filter((material) => {
+      const searchableText = [
+        material.name,
+        material.displayName,
+        materialCategoryLabels[material.category],
+        material.description_zh,
+      ]
+        .join(' ')
+        .toLocaleLowerCase('zh-TW')
+
+      return searchableText.includes(normalizedQuery)
+    })
+  }, [searchQuery, selectedCategory])
 
   const selectedMaterial =
     filteredMaterials.find((material) => material.id === selectedMaterialId) ??
@@ -56,8 +73,8 @@ export function MaterialDatabase() {
   )
 
   return (
-    <section className="flex min-h-[36rem] min-w-0 max-h-[calc(100vh-19rem)] flex-col gap-4 overflow-hidden rounded-lg border border-slate-800 bg-slate-900/70 p-4 shadow-2xl shadow-slate-950/30">
-      <header className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+    <section className="flex min-h-[36rem] min-w-0 max-h-[calc(100vh-19rem)] flex-col gap-3 overflow-hidden rounded-lg border border-slate-800 bg-slate-900/70 p-4 shadow-2xl shadow-slate-950/30">
+      <header className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
         <div>
           <h2 className="text-2xl font-semibold text-slate-50">材料資料庫</h2>
           <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-400">
@@ -65,28 +82,34 @@ export function MaterialDatabase() {
           </p>
         </div>
 
-        <div className="grid grid-cols-2 gap-2 text-xs text-slate-400 sm:grid-cols-4">
-          <SummaryTile label="材料總數" value={materials.length} />
-          <SummaryTile label="金屬" value={categoryCounts.metal} />
-          <SummaryTile
-            label="二維半導體"
-            value={categoryCounts.two_d_semiconductor}
-          />
-          <SummaryTile
-            label="氧化/介電"
-            value={categoryCounts.oxide + categoryCounts.dielectric}
-          />
+        <div className="flex flex-wrap gap-2 text-xs text-slate-400">
+          <SummaryPill label="材料總數" value={materials.length} />
+          <SummaryPill label="金屬" value={categoryCounts.metal} />
+          <SummaryPill label="二維半導體" value={categoryCounts.two_d_semiconductor} />
+          <SummaryPill label="氧化/介電" value={categoryCounts.oxide + categoryCounts.dielectric} />
         </div>
       </header>
 
-      <aside className="rounded-lg border border-amber-900/40 bg-amber-950/20 p-4 text-sm leading-6 text-amber-100/90">
+      <aside className="rounded-md border-l-2 border-amber-500/60 bg-amber-950/15 px-3 py-2 text-xs leading-5 text-amber-100/90">
         目前材料參數包含已知值、估計值與未知值。若參數標示為「需要文獻參數」，代表後續物理計算不能直接視為定量結果。
       </aside>
 
-      <MaterialCategoryFilter
-        selectedCategory={selectedCategory}
-        onSelectCategory={handleSelectCategory}
-      />
+      <div className="grid gap-3 xl:grid-cols-[minmax(18rem,22rem)_minmax(0,1fr)] xl:items-center">
+        <label className="block text-xs text-slate-400">
+          搜尋材料
+          <input
+            className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-600"
+            onChange={(event) => setSearchQuery(event.target.value)}
+            placeholder="搜尋材料，例如 WSe₂、Pd、Sb₂O₃、In"
+            value={searchQuery}
+          />
+        </label>
+
+        <MaterialCategoryFilter
+          selectedCategory={selectedCategory}
+          onSelectCategory={handleSelectCategory}
+        />
+      </div>
 
       <div className="grid min-h-0 flex-1 gap-4 overflow-hidden xl:grid-cols-[340px_minmax(0,1fr)]">
         <MaterialList
@@ -100,16 +123,16 @@ export function MaterialDatabase() {
   )
 }
 
-interface SummaryTileProps {
+interface SummaryPillProps {
   label: string
   value: number
 }
 
-function SummaryTile({ label, value }: SummaryTileProps) {
+function SummaryPill({ label, value }: SummaryPillProps) {
   return (
-    <div className="rounded-lg border border-slate-800 bg-slate-950/45 px-3 py-2">
-      <div className="text-lg font-semibold text-slate-100">{value}</div>
-      <div className="mt-1 whitespace-nowrap text-slate-500">{label}</div>
-    </div>
+    <span className="inline-flex items-center gap-2 rounded-full border border-slate-800 bg-slate-950/45 px-3 py-1.5">
+      <span className="font-semibold text-slate-100">{value}</span>
+      <span className="whitespace-nowrap text-slate-500">{label}</span>
+    </span>
   )
 }

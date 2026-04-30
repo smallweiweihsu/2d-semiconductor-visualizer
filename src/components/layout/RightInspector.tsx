@@ -2,19 +2,19 @@ export function RightInspector() {
   const resultCards = [
     {
       title: '物理假設',
-      description: '未來會列出目前模型使用的近似、邊界條件與文獻依據。',
+      description: '整理目前元件結構、材料分類與幾何近似所隱含的模型假設。',
     },
     {
       title: '缺少參數',
-      description: '提醒尚未輸入或仍需要查文獻確認的材料與製程參數。',
+      description: '提醒尚未輸入或仍需要查文獻確認的材料、介電層與製程參數。',
     },
     {
       title: '風險提示',
-      description: '標記可能造成解讀偏差的模型限制與資料不確定性。',
+      description: '標記接觸、氧化、退火與幾何簡化可能造成的解讀限制。',
     },
     {
       title: '計算摘要',
-      description: '預留 I-V、能帶、擴散與氧化模擬的摘要輸出區。',
+      description: '預留後續 I-V、能帶、擴散、氧化與製程分析的摘要輸出區。',
     },
   ]
 

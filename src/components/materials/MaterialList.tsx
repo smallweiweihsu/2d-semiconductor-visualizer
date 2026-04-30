@@ -15,13 +15,19 @@ export function MaterialList({
   onSelectMaterial,
 }: MaterialListProps) {
   return (
-    <section className="flex min-h-0 flex-col rounded-lg border border-slate-800 bg-slate-950/35 p-3">
+    <section className="flex min-h-0 flex-col rounded-lg border border-slate-800/80 bg-slate-950/25 p-3">
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-sm font-medium text-slate-200">材料清單</h3>
         <span className="text-xs text-slate-500">{materials.length} 筆</span>
       </div>
 
-      <div className="mt-3 grid min-h-0 flex-1 gap-3 overflow-y-auto pr-1">
+      <div className="mt-3 grid min-h-0 flex-1 content-start gap-2 overflow-y-auto pr-1">
+        {materials.length === 0 ? (
+          <div className="rounded-md border border-dashed border-slate-700 px-3 py-6 text-center text-sm text-slate-500">
+            找不到符合條件的材料。
+          </div>
+        ) : null}
+
         {materials.map((material) => {
           const stats = getMaterialParameterStats(material)
           const status = getMaterialStatus(material)
@@ -29,10 +35,10 @@ export function MaterialList({
 
           return (
             <button
-              className={`rounded-lg border p-3 text-left transition ${
+              className={`rounded-md border px-3 py-2.5 text-left transition ${
                 isSelected
-                  ? 'border-cyan-600 bg-cyan-950/35 shadow-lg shadow-cyan-950/20'
-                  : 'border-slate-800 bg-slate-900/55 hover:border-slate-700 hover:bg-slate-900'
+                  ? 'border-cyan-600 bg-cyan-950/30'
+                  : 'border-slate-800/80 bg-slate-900/35 hover:border-slate-700 hover:bg-slate-900/70'
               }`}
               key={material.id}
               onClick={() => onSelectMaterial(material.id)}
@@ -57,11 +63,11 @@ export function MaterialList({
                 <ParameterBadge confidence={status.confidence} />
               </div>
 
-              <p className="mt-3 line-clamp-2 text-xs leading-5 text-slate-400">
+              <p className="mt-2 line-clamp-1 text-xs leading-5 text-slate-400">
                 {material.description_zh}
               </p>
 
-              <div className="mt-3 flex flex-wrap gap-2 text-xs text-slate-500">
+              <div className="mt-2 flex flex-wrap gap-2 text-xs text-slate-500">
                 <span>已知 {stats.known}</span>
                 <span>估計 {stats.estimated}</span>
                 <span>缺少 {stats.unknown}</span>

@@ -19,9 +19,10 @@ export function LayerStackPreview({
   onSelectLayer,
 }: LayerStackPreviewProps) {
   const visibleLayers = layers.filter((layer) => layer.visible)
-  const maxLength = Math.max(
+  const horizontalBounds = getHorizontalBounds(visibleLayers)
+  const horizontalSpan = Math.max(
     1,
-    ...visibleLayers.map((layer) => layer.geometry.length_um),
+    horizontalBounds.maxX_um - horizontalBounds.minX_um,
   )
 
   return (
@@ -31,6 +32,9 @@ export function LayerStackPreview({
           <h3 className="text-sm font-medium text-slate-200">2D 側視堆疊預覽</h3>
           <p className="mt-1 text-xs text-slate-500">
             厚度顯示經過視覺縮放，並非真實比例。
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            水平位置根據 x 與長度近似顯示，僅作結構示意。
           </p>
         </div>
         <div className="rounded-full border border-slate-700 bg-slate-900 px-3 py-1 text-xs text-slate-400">
@@ -49,15 +53,25 @@ export function LayerStackPreview({
               const material = getMaterialById(layer.materialId)
               const voltage = formatVoltage(layer)
               const scaledHeight = getScaledHeight(layer.geometry.thickness_nm)
+              const startX = layer.geometry.x_um - layer.geometry.length_um / 2
+              const rawWidthPercent =
+                (layer.geometry.length_um / horizontalSpan) * 100
               const widthPercent = Math.max(
-                45,
-                Math.min(100, (layer.geometry.length_um / maxLength) * 100),
+                16,
+                Math.min(100, rawWidthPercent),
+              )
+              const leftPercent = Math.max(
+                0,
+                Math.min(
+                  84,
+                  ((startX - horizontalBounds.minX_um) / horizontalSpan) * 100,
+                ),
               )
               const isSelected = layer.id === selectedLayerId
 
               return (
                 <button
-                  className={`relative mx-auto min-w-[11rem] overflow-hidden rounded-md border px-3 text-left text-xs transition ${
+                  className={`relative min-w-[9.5rem] overflow-hidden rounded-md border px-3 text-left text-xs transition ${
                     isSelected
                       ? 'border-cyan-300 shadow-[0_0_24px_rgba(34,211,238,0.25)]'
                       : 'border-white/10 hover:border-cyan-700'
@@ -67,6 +81,7 @@ export function LayerStackPreview({
                   style={{
                     minHeight: scaledHeight,
                     width: `${widthPercent}%`,
+                    marginLeft: `${leftPercent}%`,
                     backgroundColor: material?.color ?? '#64748b',
                     opacity: layer.opacity,
                   }}
@@ -117,4 +132,24 @@ function getScaledHeight(thickness_nm: number) {
   }
 
   return Math.max(12, Math.min(72, 10 + Math.log10(thickness_nm + 1) * 11))
+}
+
+function getHorizontalBounds(layers: DeviceLayer[]) {
+  if (layers.length === 0) {
+    return { minX_um: -1, maxX_um: 1 }
+  }
+
+  return layers.reduce(
+    (bounds, layer) => {
+      const halfLength = layer.geometry.length_um / 2
+      const minX_um = layer.geometry.x_um - halfLength
+      const maxX_um = layer.geometry.x_um + halfLength
+
+      return {
+        minX_um: Math.min(bounds.minX_um, minX_um),
+        maxX_um: Math.max(bounds.maxX_um, maxX_um),
+      }
+    },
+    { minX_um: Number.POSITIVE_INFINITY, maxX_um: Number.NEGATIVE_INFINITY },
+  )
 }

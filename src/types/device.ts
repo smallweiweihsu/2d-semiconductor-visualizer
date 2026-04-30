@@ -43,11 +43,35 @@ export interface DeviceLayer {
 
 export interface DeviceStructure {
   id: string
+  templateId?: string
   name: string
   description_zh: string
   layers: DeviceLayer[]
   createdAt?: string
   updatedAt?: string
+}
+
+export type DeviceTemplateCategory =
+  | 'generic'
+  | 'user_research'
+  | 'fet'
+  | 'two_terminal'
+  | 'top_gate'
+  | 'bottom_source'
+  | 'custom'
+
+export interface DeviceTemplate {
+  id: string
+  name_zh: string
+  shortName_zh: string
+  description_zh: string
+  purpose_zh: string
+  layers: DeviceLayer[]
+  categories: DeviceTemplateCategory[]
+  tags_zh: string[]
+  warnings_zh: string[]
+  assumptions_zh: string[]
+  recommendedUse_zh?: string[]
 }
 
 export type DeviceValidationSeverity = 'info' | 'warning' | 'error'

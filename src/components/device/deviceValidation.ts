@@ -91,6 +91,82 @@ export function validateDeviceStructure(
     )
   }
 
+  structure.layers.forEach((layer, layerIndex) => {
+    if (layer.role !== 'gate') {
+      return
+    }
+
+    const hasInsulatorBelowGate = structure.layers
+      .slice(0, layerIndex)
+      .some((belowLayer) =>
+        ['dielectric', 'oxide', 'passivation'].includes(belowLayer.role),
+      )
+
+    if (!hasInsulatorBelowGate) {
+      warnings.push(
+        createWarning(
+          `${layer.id}-gate-missing-lower-dielectric`,
+          'warning',
+          '閘極下方可能缺少介電層，請確認閘極與通道之間是否有絕緣層。',
+          layer.id,
+        ),
+      )
+    }
+  })
+
+  const materialIds = new Set(structure.layers.map((layer) => layer.materialId))
+
+  if (materialIds.has('sb-bulk') && !materialIds.has('sb2o3')) {
+    warnings.push(
+      createWarning(
+        'sb-bulk-without-sb2o3',
+        'info',
+        'Sb 表面氧化或局部 Sb₂O₃ 可能影響接觸與通道行為。',
+      ),
+    )
+  }
+
+  if (materialIds.has('pd') && materialIds.has('wse2')) {
+    warnings.push(
+      createWarning(
+        'pd-wse2-interface',
+        'info',
+        'Pd/WSe₂ 接觸可能受界面態、費米能階釘扎與退火影響，後續需搭配電性與製程資料判讀。',
+      ),
+    )
+  }
+
+  const topDielectricLayer = [...structure.layers]
+    .reverse()
+    .find(
+      (layer) =>
+        ['dielectric', 'oxide'].includes(layer.role) &&
+        ['sb2o3', 'hfo2', 'al2o3', 'sio2'].includes(layer.materialId),
+    )
+
+  if (topDielectricLayer && topDielectricLayer.geometry.thickness_nm < 5) {
+    warnings.push(
+      createWarning(
+        `${topDielectricLayer.id}-top-dielectric-too-thin`,
+        'warning',
+        '上閘極介電層非常薄，後續應檢查漏電與崩潰風險。',
+        topDielectricLayer.id,
+      ),
+    )
+  } else if (
+    topDielectricLayer &&
+    topDielectricLayer.geometry.thickness_nm > 100
+  ) {
+    warnings.push(
+      createWarning(
+        `${topDielectricLayer.id}-top-dielectric-thick`,
+        'info',
+        '上閘極介電層較厚，後續閘極控制可能較弱。',
+        topDielectricLayer.id,
+      ),
+    )
+  }
+
   return warnings
 }
 
