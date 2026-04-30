@@ -1,4 +1,5 @@
 import type { WorkspaceTab } from '../../data/workspaceTabs'
+import { MaterialDatabase } from '../materials/MaterialDatabase'
 import { ViewerPlaceholder } from '../viewer3d/ViewerPlaceholder'
 
 interface WorkspaceProps {
@@ -6,6 +7,10 @@ interface WorkspaceProps {
 }
 
 export function Workspace({ tab }: WorkspaceProps) {
+  if (tab.id === 'materials') {
+    return <MaterialDatabase />
+  }
+
   return (
     <section className="flex min-h-[36rem] flex-col gap-4 rounded-lg border border-slate-800 bg-slate-900/70 p-4 shadow-2xl shadow-slate-950/30">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">

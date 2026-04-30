@@ -2,29 +2,28 @@
 
 ## 1. Summary of what was built
 
-完成 Batch 1：將使用者可見介面與 README 更新為繁體中文，並把應用程式整理成研究工具風格的版面。新增上方列、左側元件控制、中央工作區、右側分析結果、底部圖表分析面板，以及可點選的分頁導覽。
+完成 Batch 2：建立第一版材料資料庫與材料 UI。新增 TypeScript 材料型別系統、材料分類對照、29 筆初始材料資料、分類篩選、材料清單、材料詳情、參數表格、信心標示 badge、缺少參數摘要與科學完整性提醒。
 
-本批只建立版面、導覽與占位內容；未加入真實 3D、材料資料庫、物理方程式、圖表或匯出功能。
+「材料資料庫」分頁現在會顯示實際材料資料庫 UI，而其他分頁仍維持 Batch 1 的占位介面。
 
 ## 2. Files changed
 
 ```text
 BATCH_REPORT.md
 README.md
-index.html
-screenshots/batch1-ui.png
-src/components/controls/DeviceControlsPlaceholder.tsx
-src/components/dashboard/ResultPlaceholder.tsx
+screenshots/batch2-material-database.png
 src/components/layout/AppShell.tsx
-src/components/layout/BottomPanel.tsx
-src/components/layout/RightInspector.tsx
-src/components/layout/Sidebar.tsx
-src/components/layout/TabNavigation.tsx
-src/components/layout/TopBar.tsx
 src/components/layout/Workspace.tsx
-src/components/plots/PlotPlaceholder.tsx
-src/components/viewer3d/ViewerPlaceholder.tsx
+src/components/materials/MaterialCategoryFilter.tsx
+src/components/materials/MaterialDatabase.tsx
+src/components/materials/MaterialDetail.tsx
+src/components/materials/MaterialList.tsx
+src/components/materials/ParameterBadge.tsx
+src/components/materials/materialStats.ts
+src/data/materialCategories.ts
+src/data/materials.ts
 src/data/workspaceTabs.ts
+src/types/material.ts
 ```
 
 ## 3. src/ file tree
@@ -47,12 +46,21 @@ src/
       TabNavigation.tsx
       TopBar.tsx
       Workspace.tsx
+    materials/
+      MaterialCategoryFilter.tsx
+      MaterialDatabase.tsx
+      MaterialDetail.tsx
+      MaterialList.tsx
+      materialStats.ts
+      ParameterBadge.tsx
     plots/
       PlotPlaceholder.tsx
     viewer3d/
       ViewerPlaceholder.tsx
   data/
     .gitkeep
+    materialCategories.ts
+    materials.ts
     workspaceTabs.ts
   physics/
     bandAlignment.ts
@@ -70,6 +78,11 @@ src/
 ## 4. Commands run
 
 ```bash
+git status --short
+git add .
+git commit -m "Batch 1: Traditional Chinese app shell"
+git rev-parse --short HEAD
+git status --short
 npm install
 npm run build
 npm run lint
@@ -77,10 +90,10 @@ npm run typecheck
 tree src /F
 ```
 
-另外使用本機 Chrome headless 產生畫面截圖：
+另外使用本機 Chrome headless 產生材料資料庫截圖：
 
 ```text
-screenshots/batch1-ui.png
+screenshots/batch2-material-database.png
 ```
 
 ## 5. Build result
@@ -90,8 +103,8 @@ screenshots/batch1-ui.png
 建置輸出摘要：
 
 ```text
-✓ 26 modules transformed.
-✓ built in 236ms
+✓ 34 modules transformed.
+✓ built in 164ms
 ```
 
 `npm run lint` 成功通過。
@@ -100,23 +113,22 @@ screenshots/batch1-ui.png
 
 ## 6. Warnings or limitations
 
-- 目前所有功能仍是占位介面。
-- 尚未實作 React Three Fiber、真實 3D 視覺化、材料資料庫、物理計算、擴散、氧化、能帶圖、真實圖表、匯出功能或 CAD 編輯。
-- 分頁切換目前只使用 React `useState` 管理，尚未導入全域狀態管理。
-- 科學準確性提醒已顯示在中央工作區，但目前尚無任何計算結果。
+- 本批只實作材料資料結構、材料資料庫與 UI。
+- 材料參數包含已知值、估計值與未知值；估計值不可視為文獻級精密資料。
+- 標示為「需要文獻參數」的欄位目前使用 `value: null` 與 `confidence: "unknown"`。
+- 尚未實作真實 3D、元件幾何編輯、電性計算、擴散計算、氧化計算、能帶圖、真實圖表、匯出或 CAD。
+- Batch 1 已建立本機 Git commit；Batch 2 變更目前保留為未提交狀態。
 
 ## 7. Visible UI description
 
-畫面上方顯示「二維半導體元件視覺化與物理沙盒」、副標題與「MVP 開發中」狀態標籤。下方有七個分頁：元件結構、材料資料庫、電性分析、擴散與退火、氧化模擬、晶格視覺化、結果與匯出。
-
-左側欄顯示「元件控制」與四張占位卡片：元件模板、幾何尺寸、材料選擇、電極設定。中央工作區會依目前分頁顯示標題、描述、預留功能清單，以及「3D 元件視覺化區域將顯示在這裡」的大型占位面板。右側欄顯示「分析結果」與物理假設、缺少參數、風險提示、計算摘要。底部面板顯示「圖表與分析」以及未來 I-V 曲線、能帶圖、擴散濃度圖與氧化進度圖的占位說明。
+「材料資料庫」分頁顯示繁體中文標題、資料庫說明、科學警示框、材料總數摘要、分類篩選按鈕、材料清單與材料詳情面板。材料清單會顯示材料色點、材料名稱、分類、描述、警示數與參數狀態。材料詳情面板會顯示材料名稱、分類、描述、色彩預覽、材料註記、風險限制、已知/估計/缺少參數數量，以及包含功函數、能隙、電子親和能、介電常數、遷移率、電阻率、晶格常數、預設厚度、崩潰電場與熔點的參數表格。
 
 截圖位置：
 
 ```text
-C:\Users\User\OneDrive\文件\New project 2\screenshots\batch1-ui.png
+C:\Users\User\OneDrive\文件\New project 2\screenshots\batch2-material-database.png
 ```
 
 ## 8. Next recommended batch
 
-建議 Batch 2：建立第一版「元件結構」資料模型與純 UI 的 layer stack 編輯介面，例如新增/刪除層、調整名稱與厚度欄位、顯示簡單 2D 堆疊預覽；仍先不加入真實 3D 或物理計算。
+建議 Batch 3：建立第一版「元件結構」資料模型與純 UI layer stack 編輯器，讓使用者可以新增、刪除、排序材料層並選擇 Batch 2 材料資料庫中的材料；仍先不加入真實 3D 或物理計算。

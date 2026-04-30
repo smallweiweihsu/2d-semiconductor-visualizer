@@ -9,9 +9,14 @@ import { Workspace } from './Workspace'
 
 export function AppShell() {
   const [selectedTabId, setSelectedTabId] =
-    useState<WorkspaceTabId>('structure')
+    useState<WorkspaceTabId>(getInitialTabId)
   const selectedTab =
     workspaceTabs.find((tab) => tab.id === selectedTabId) ?? workspaceTabs[0]
+
+  function handleSelectTab(tabId: WorkspaceTabId) {
+    setSelectedTabId(tabId)
+    window.history.replaceState(null, '', `#${tabId}`)
+  }
 
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
@@ -21,7 +26,7 @@ export function AppShell() {
         <TabNavigation
           selectedTabId={selectedTabId}
           tabs={workspaceTabs}
-          onSelectTab={setSelectedTabId}
+          onSelectTab={handleSelectTab}
         />
 
         <main className="grid flex-1 grid-cols-1 gap-4 px-4 py-4 xl:grid-cols-[280px_minmax(0,1fr)_320px]">
@@ -34,4 +39,11 @@ export function AppShell() {
       </div>
     </div>
   )
+}
+
+function getInitialTabId(): WorkspaceTabId {
+  const hashTabId = window.location.hash.replace('#', '')
+  const matchingTab = workspaceTabs.find((tab) => tab.id === hashTabId)
+
+  return matchingTab?.id ?? 'structure'
 }

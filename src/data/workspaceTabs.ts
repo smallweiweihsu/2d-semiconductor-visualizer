@@ -12,8 +12,8 @@ export const workspaceTabs = [
     label: '材料資料庫',
     title: '材料資料庫',
     description:
-      '未來用於整理 WSe₂、Sb₂O₃、Sb 塊材、Pd、WOx 等材料參數與文獻來源。',
-    features: ['材料參數欄位', '文獻參數紀錄', '接觸材料標籤', '版本與來源註記'],
+      '管理二維半導體元件中常用的金屬、二維半導體、介電層、氧化物與塊材導體參數。',
+    features: ['分類篩選', '材料詳情', '參數信心標示', '缺少參數提醒'],
   },
   {
     id: 'electrical',
