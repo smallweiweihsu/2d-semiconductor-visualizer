@@ -2,28 +2,25 @@
 
 ## 1. Summary of what was built
 
-完成 Batch 2：建立第一版材料資料庫與材料 UI。新增 TypeScript 材料型別系統、材料分類對照、29 筆初始材料資料、分類篩選、材料清單、材料詳情、參數表格、信心標示 badge、缺少參數摘要與科學完整性提醒。
+完成 Batch 2.5：這批是 Batch 3 前的清理與架構準備。已先提交 Batch 2 狀態，接著改善材料資料庫捲動、整合頂部導覽版面、新增金屬材料 In，並新增未來製程流程 modeling 的 TypeScript 型別與資料樣板。
 
-「材料資料庫」分頁現在會顯示實際材料資料庫 UI，而其他分頁仍維持 Batch 1 的占位介面。
+本批沒有實作任何真實製程模擬、3D 渲染、元件幾何編輯、電性計算、擴散計算、氧化計算、圖表或匯出功能。
 
 ## 2. Files changed
 
 ```text
 BATCH_REPORT.md
 README.md
-screenshots/batch2-material-database.png
+screenshots/batch2-5-ui-cleanup.png
 src/components/layout/AppShell.tsx
-src/components/layout/Workspace.tsx
-src/components/materials/MaterialCategoryFilter.tsx
+src/components/layout/TabNavigation.tsx
+src/components/layout/TopBar.tsx
 src/components/materials/MaterialDatabase.tsx
 src/components/materials/MaterialDetail.tsx
 src/components/materials/MaterialList.tsx
-src/components/materials/ParameterBadge.tsx
-src/components/materials/materialStats.ts
-src/data/materialCategories.ts
 src/data/materials.ts
-src/data/workspaceTabs.ts
-src/types/material.ts
+src/data/processSteps.ts
+src/types/process.ts
 ```
 
 ## 3. src/ file tree
@@ -61,6 +58,7 @@ src/
     .gitkeep
     materialCategories.ts
     materials.ts
+    processSteps.ts
     workspaceTabs.ts
   physics/
     bandAlignment.ts
@@ -71,6 +69,7 @@ src/
   types/
     device.ts
     material.ts
+    process.ts
   utils/
     .gitkeep
 ```
@@ -80,7 +79,7 @@ src/
 ```bash
 git status --short
 git add .
-git commit -m "Batch 1: Traditional Chinese app shell"
+git commit -m "Batch 2: Material database and Traditional Chinese material UI"
 git rev-parse --short HEAD
 git status --short
 npm install
@@ -88,12 +87,16 @@ npm run build
 npm run lint
 npm run typecheck
 tree src /F
+git add .
+git commit -m "Batch 2.5: Material UI cleanup and process scaffolding"
+git rev-parse --short HEAD
+git status --short
 ```
 
-另外使用本機 Chrome headless 產生材料資料庫截圖：
+另外使用本機 Chrome headless 產生 Batch 2.5 截圖：
 
 ```text
-screenshots/batch2-material-database.png
+screenshots/batch2-5-ui-cleanup.png
 ```
 
 ## 5. Build result
@@ -104,31 +107,36 @@ screenshots/batch2-material-database.png
 
 ```text
 ✓ 34 modules transformed.
-✓ built in 164ms
+✓ built in 183ms
 ```
 
 `npm run lint` 成功通過。
 
 `npm run typecheck` 成功通過。
 
-## 6. Warnings or limitations
+## 6. Git commits created
 
-- 本批只實作材料資料結構、材料資料庫與 UI。
-- 材料參數包含已知值、估計值與未知值；估計值不可視為文獻級精密資料。
-- 標示為「需要文獻參數」的欄位目前使用 `value: null` 與 `confidence: "unknown"`。
-- 尚未實作真實 3D、元件幾何編輯、電性計算、擴散計算、氧化計算、能帶圖、真實圖表、匯出或 CAD。
-- Batch 1 已建立本機 Git commit；Batch 2 變更目前保留為未提交狀態。
+- Batch 2 commit hash: `edc897d`
+- Batch 2.5 commit hash: `<BATCH_2_5_COMMIT_HASH>`
 
-## 7. Visible UI description
+## 7. Warnings or limitations
 
-「材料資料庫」分頁顯示繁體中文標題、資料庫說明、科學警示框、材料總數摘要、分類篩選按鈕、材料清單與材料詳情面板。材料清單會顯示材料色點、材料名稱、分類、描述、警示數與參數狀態。材料詳情面板會顯示材料名稱、分類、描述、色彩預覽、材料註記、風險限制、已知/估計/缺少參數數量，以及包含功函數、能隙、電子親和能、介電常數、遷移率、電阻率、晶格常數、預設厚度、崩潰電場與熔點的參數表格。
+- 製程流程目前只有型別與資料樣板，沒有任何模擬或計算。
+- In 的部分參數使用安全的粗略近似，仍需文獻與實驗校準。
+- 材料資料庫仍不是 publication-grade 文獻資料庫。
+- 尚未實作真實 3D、layer stack editor、幾何編輯、電性計算、擴散計算、氧化計算、能帶圖、真實圖表、匯出或 polygon CAD。
+- 未推送到 GitHub。
+
+## 8. Visible UI description
+
+頂部導覽已整合到 TopBar：第一列顯示「二維半導體元件視覺化與物理沙盒」標題、副標題與右側「MVP 開發中」狀態；第二列顯示可水平捲動的分頁導覽。材料資料庫頁面顯示 30 筆材料，包含新增的 In。材料資料庫 header、警示框與分類篩選維持在上方，材料清單與材料詳情各自提供垂直捲動區，方便在 1920x1080 桌面畫面中檢視參數表。
 
 截圖位置：
 
 ```text
-C:\Users\User\OneDrive\文件\New project 2\screenshots\batch2-material-database.png
+C:\Users\User\OneDrive\文件\New project 2\screenshots\batch2-5-ui-cleanup.png
 ```
 
-## 8. Next recommended batch
+## 9. Next recommended batch
 
-建議 Batch 3：建立第一版「元件結構」資料模型與純 UI layer stack 編輯器，讓使用者可以新增、刪除、排序材料層並選擇 Batch 2 材料資料庫中的材料；仍先不加入真實 3D 或物理計算。
+建議 Batch 3：建立第一版「元件結構」layer stack editor，讓使用者可以從材料資料庫選擇材料、新增/刪除/排序層、設定厚度，並顯示簡單 2D 堆疊預覽。仍先不加入真實 3D 或物理計算。

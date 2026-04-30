@@ -385,6 +385,40 @@ export const materials: Material[] = [
     warnings_zh: contactWarnings,
   },
   {
+    id: 'in',
+    name: 'In',
+    displayName: 'In',
+    category: 'metal',
+    description_zh:
+      '銦是一種低熔點金屬，可作為接觸金屬或緩衝層候選材料；在特定二維材料或氧化層介面中可能降低沉積損傷或改變界面反應，但實際效果需要依製程與文獻驗證。',
+    color: '#93c5fd',
+    parameters: createParameters({
+      workFunction_eV: estimated(
+        '約 4.1',
+        'eV',
+        '常見近似值；表面氧化、晶向與沉積條件會改變有效功函數',
+      ),
+      resistivity_ohm_m: estimated('約 8.4e-8', 'Ω·m', '室溫塊材近似值；薄膜狀態需另行校準'),
+      meltingPoint_C: estimated(157, '°C', '低熔點特性明確，但薄膜熱穩定性仍需製程驗證'),
+      defaultThickness_nm: estimated(20, 'nm', '只是 UI 預設厚度；實際厚度需依實驗設計設定'),
+    }),
+    diffusion: createDiffusion(
+      'unknown',
+      '需要文獻參數；In 在 Sb₂O₃、二維材料與金屬界面的擴散、反應與退火行為不可用預設值推論。',
+    ),
+    notes_zh: [
+      '可作為未來金屬沉積 / interface buffer / Sb₂O₃ 衝擊降低的候選材料。',
+      '實際接觸與擴散行為需要文獻與實驗校準。',
+      '後續可用於金屬沉積與擴散模組。',
+    ],
+    warnings_zh: [
+      '低熔點與熱穩定性需要注意。',
+      '擴散參數、Sb₂O₃ 介面反應與退火行為需要文獻參數。',
+      '不應直接假設一定能改善所有金屬/Sb₂O₃ 介面。',
+      ...contactWarnings,
+    ],
+  },
+  {
     id: 'au',
     name: 'Au',
     displayName: 'Au',

@@ -15,13 +15,13 @@ export function MaterialList({
   onSelectMaterial,
 }: MaterialListProps) {
   return (
-    <section className="rounded-lg border border-slate-800 bg-slate-950/35 p-3">
+    <section className="flex min-h-0 flex-col rounded-lg border border-slate-800 bg-slate-950/35 p-3">
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-sm font-medium text-slate-200">材料清單</h3>
         <span className="text-xs text-slate-500">{materials.length} 筆</span>
       </div>
 
-      <div className="mt-3 grid max-h-[34rem] gap-3 overflow-y-auto pr-1">
+      <div className="mt-3 grid min-h-0 flex-1 gap-3 overflow-y-auto pr-1">
         {materials.map((material) => {
           const stats = getMaterialParameterStats(material)
           const status = getMaterialStatus(material)

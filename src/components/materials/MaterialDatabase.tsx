@@ -56,7 +56,7 @@ export function MaterialDatabase() {
   )
 
   return (
-    <section className="flex min-h-[36rem] flex-col gap-4 rounded-lg border border-slate-800 bg-slate-900/70 p-4 shadow-2xl shadow-slate-950/30">
+    <section className="flex min-h-[36rem] min-w-0 max-h-[calc(100vh-19rem)] flex-col gap-4 overflow-hidden rounded-lg border border-slate-800 bg-slate-900/70 p-4 shadow-2xl shadow-slate-950/30">
       <header className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
         <div>
           <h2 className="text-2xl font-semibold text-slate-50">材料資料庫</h2>
@@ -72,7 +72,10 @@ export function MaterialDatabase() {
             label="二維半導體"
             value={categoryCounts.two_d_semiconductor}
           />
-          <SummaryTile label="氧化/介電" value={categoryCounts.oxide + categoryCounts.dielectric} />
+          <SummaryTile
+            label="氧化/介電"
+            value={categoryCounts.oxide + categoryCounts.dielectric}
+          />
         </div>
       </header>
 
@@ -85,7 +88,7 @@ export function MaterialDatabase() {
         onSelectCategory={handleSelectCategory}
       />
 
-      <div className="grid gap-4 2xl:grid-cols-[360px_minmax(0,1fr)]">
+      <div className="grid min-h-0 flex-1 gap-4 overflow-hidden xl:grid-cols-[340px_minmax(0,1fr)]">
         <MaterialList
           materials={filteredMaterials}
           selectedMaterialId={selectedMaterial.id}

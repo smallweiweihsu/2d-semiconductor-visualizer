@@ -12,8 +12,8 @@ export function TabNavigation({
   onSelectTab,
 }: TabNavigationProps) {
   return (
-    <nav className="border-b border-slate-800/80 bg-slate-950/70 px-4 backdrop-blur">
-      <div className="mx-auto flex max-w-7xl gap-2 overflow-x-auto py-3">
+    <nav className="mt-5 border-t border-slate-800/80 pt-3">
+      <div className="-mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
         {tabs.map((tab) => {
           const isSelected = tab.id === selectedTabId
 

@@ -17,7 +17,7 @@ export function MaterialDetail({ material }: MaterialDetailProps) {
   const stats = getMaterialParameterStats(material)
 
   return (
-    <section className="rounded-lg border border-slate-800 bg-slate-950/35 p-4">
+    <section className="min-h-0 overflow-y-auto rounded-lg border border-slate-800 bg-slate-950/35 p-4">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <div className="flex items-center gap-3">
@@ -79,8 +79,8 @@ export function MaterialDetail({ material }: MaterialDetailProps) {
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[760px] border-collapse text-left text-sm">
-            <thead className="bg-slate-950/70 text-xs text-slate-500">
+          <table className="w-full min-w-[860px] border-collapse text-left text-sm">
+            <thead className="sticky top-0 z-10 bg-slate-950 text-xs text-slate-500">
               <tr>
                 <th className="px-4 py-3 font-medium">參數</th>
                 <th className="px-4 py-3 font-medium">數值</th>
@@ -95,7 +95,7 @@ export function MaterialDetail({ material }: MaterialDetailProps) {
 
                 return (
                   <tr
-                    className="border-t border-slate-800/80 text-slate-300"
+                    className="border-t border-slate-800/80 align-top text-slate-300"
                     key={parameterKey}
                   >
                     <td className="px-4 py-3 font-medium text-slate-100">
