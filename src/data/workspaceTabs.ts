@@ -4,8 +4,8 @@ export const workspaceTabs = [
     label: '元件結構',
     title: '元件結構',
     description:
-      '建立與檢視 Sb 塊材 / Sb₂O₃ / WSe₂ / Pd / 上閘極等二維半導體元件堆疊結構。',
-    features: ['3D 結構檢視', '長寬厚度設定', '電極與材料標籤', '剖面與爆炸圖模式'],
+      '建立與編輯二維半導體元件的材料層堆疊、幾何尺寸、材料角色與偏壓標籤。',
+    features: ['材料層堆疊', '長寬厚度設定', '材料與角色選擇', '2D 側視預覽'],
   },
   {
     id: 'materials',

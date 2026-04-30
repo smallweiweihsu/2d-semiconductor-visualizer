@@ -2,25 +2,29 @@
 
 ## 1. Summary of what was built
 
-完成 Batch 2.5：這批是 Batch 3 前的清理與架構準備。已先提交 Batch 2 狀態，接著改善材料資料庫捲動、整合頂部導覽版面、新增金屬材料 In，並新增未來製程流程 modeling 的 TypeScript 型別與資料樣板。
+完成 Batch 3：新增第一版「元件結構」Layer Stack 編輯器。使用者現在可以查看預設二維半導體堆疊、選取材料層、新增材料層、刪除、複製、上下移動，並可編輯材料、角色、尺寸、位置、偏壓標籤、可見性、透明度與備註。
 
-本批沒有實作任何真實製程模擬、3D 渲染、元件幾何編輯、電性計算、擴散計算、氧化計算、圖表或匯出功能。
+本批也加入簡單 2D 側視堆疊預覽、元件摘要與驗證提醒。這些功能用於建立幾何與材料堆疊模型，尚未進行真實 3D、電性、擴散、氧化或製程模擬。
 
 ## 2. Files changed
 
 ```text
 BATCH_REPORT.md
 README.md
-screenshots/batch2-5-ui-cleanup.png
-src/components/layout/AppShell.tsx
-src/components/layout/TabNavigation.tsx
-src/components/layout/TopBar.tsx
-src/components/materials/MaterialDatabase.tsx
-src/components/materials/MaterialDetail.tsx
-src/components/materials/MaterialList.tsx
-src/data/materials.ts
-src/data/processSteps.ts
-src/types/process.ts
+screenshots/batch3-device-layer-stack-editor.png
+src/components/device/deviceFormatting.ts
+src/components/device/DeviceStructureEditor.tsx
+src/components/device/DeviceSummary.tsx
+src/components/device/deviceValidation.ts
+src/components/device/DeviceValidationPanel.tsx
+src/components/device/LayerEditor.tsx
+src/components/device/LayerStackList.tsx
+src/components/device/LayerStackPreview.tsx
+src/components/layout/Workspace.tsx
+src/data/deviceRoles.ts
+src/data/deviceStructures.ts
+src/data/workspaceTabs.ts
+src/types/device.ts
 ```
 
 ## 3. src/ file tree
@@ -35,6 +39,15 @@ src/
       DeviceControlsPlaceholder.tsx
     dashboard/
       ResultPlaceholder.tsx
+    device/
+      deviceFormatting.ts
+      DeviceStructureEditor.tsx
+      DeviceSummary.tsx
+      deviceValidation.ts
+      DeviceValidationPanel.tsx
+      LayerEditor.tsx
+      LayerStackList.tsx
+      LayerStackPreview.tsx
     layout/
       AppShell.tsx
       BottomPanel.tsx
@@ -56,6 +69,8 @@ src/
       ViewerPlaceholder.tsx
   data/
     .gitkeep
+    deviceRoles.ts
+    deviceStructures.ts
     materialCategories.ts
     materials.ts
     processSteps.ts
@@ -78,29 +93,25 @@ src/
 
 ```bash
 git status --short
-git add .
-git commit -m "Batch 2: Material database and Traditional Chinese material UI"
-git rev-parse --short HEAD
-git status --short
 npm install
+npm run build
+npm run build
+npm run lint
+npm run typecheck
 npm run build
 npm run lint
 npm run typecheck
 tree src /F
 git add .
-git commit -m "Batch 2.5: Material UI cleanup and process scaffolding"
-git rev-parse --short HEAD
-git status --short
-git add BATCH_REPORT.md
-git commit -m "Batch 2.5: Update batch report with commit hash"
+git commit -m "Batch 3: Device layer stack editor"
 git rev-parse --short HEAD
 git status --short
 ```
 
-另外使用本機 Chrome headless 產生 Batch 2.5 截圖：
+另外使用本機預覽與 Chrome headless 產生 Batch 3 截圖：
 
 ```text
-screenshots/batch2-5-ui-cleanup.png
+screenshots/batch3-device-layer-stack-editor.png
 ```
 
 ## 5. Build result
@@ -110,8 +121,8 @@ screenshots/batch2-5-ui-cleanup.png
 建置輸出摘要：
 
 ```text
-✓ 34 modules transformed.
-✓ built in 183ms
+✓ 44 modules transformed.
+✓ built in 169ms
 ```
 
 `npm run lint` 成功通過。
@@ -120,27 +131,26 @@ screenshots/batch2-5-ui-cleanup.png
 
 ## 6. Git commits created
 
-- Batch 2 commit hash: `edc897d`
-- Batch 2.5 commit hash: `130b8e4`
+- Batch 3 commit hash: `待提交後更新`
 
 ## 7. Warnings or limitations
 
-- 製程流程目前只有型別與資料樣板，沒有任何模擬或計算。
-- In 的部分參數使用安全的粗略近似，仍需文獻與實驗校準。
-- 材料資料庫仍不是 publication-grade 文獻資料庫。
-- 尚未實作真實 3D、layer stack editor、幾何編輯、電性計算、擴散計算、氧化計算、能帶圖、真實圖表、匯出或 polygon CAD。
+- 元件結構編輯器目前只建立幾何與材料堆疊模型，尚未進行真實 3D、電性、擴散、氧化或製程模擬。
+- 2D 側視預覽的厚度經過視覺縮放，不代表真實比例。
+- 驗證提醒目前是基本規則檢查，不是完整物理可行性判定。
+- 預設結構是通用二維半導體堆疊；使用者指定的 Sb 塊材 / Sb₂O₃ / WSe₂ / Pd / 上閘極模板尚未加入。
 - 未推送到 GitHub。
 
 ## 8. Visible UI description
 
-頂部導覽已整合到 TopBar：第一列顯示「二維半導體元件視覺化與物理沙盒」標題、副標題與右側「MVP 開發中」狀態；第二列顯示可水平捲動的分頁導覽。材料資料庫頁面顯示 30 筆材料，包含新增的 In。材料資料庫 header、警示框與分類篩選維持在上方，材料清單與材料詳情各自提供垂直捲動區，方便在 1920x1080 桌面畫面中檢視參數表。
+「元件結構」分頁現在顯示 Layer Stack 編輯器。左側為材料層堆疊清單，可新增、選取、上下移動、複製與刪除材料層；中央顯示 2D 側視堆疊預覽與元件摘要；右側顯示目前選取材料層的設定表單，可編輯材料、角色、可見性、透明度、幾何尺寸、位置、偏壓與備註。上方有科學完整性提醒，說明目前尚未進行真實 3D 或物理模擬。右側全域分析面板仍維持 Batch 1 的占位內容。
 
 截圖位置：
 
 ```text
-C:\Users\User\OneDrive\文件\New project 2\screenshots\batch2-5-ui-cleanup.png
+C:\Users\User\OneDrive\文件\New project 2\screenshots\batch3-device-layer-stack-editor.png
 ```
 
 ## 9. Next recommended batch
 
-建議 Batch 3：建立第一版「元件結構」layer stack editor，讓使用者可以從材料資料庫選擇材料、新增/刪除/排序層、設定厚度，並顯示簡單 2D 堆疊預覽。仍先不加入真實 3D 或物理計算。
+建議 Batch 4：加入使用者指定的 Sb 塊材 / Sb₂O₃ / WSe₂ / Pd / 上閘極元件模板，並讓使用者可以在通用預設堆疊與特定實驗結構模板之間切換。仍先不加入真實 3D 或物理計算。

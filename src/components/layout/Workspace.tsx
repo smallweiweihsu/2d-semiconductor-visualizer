@@ -1,4 +1,5 @@
 import type { WorkspaceTab } from '../../data/workspaceTabs'
+import { DeviceStructureEditor } from '../device/DeviceStructureEditor'
 import { MaterialDatabase } from '../materials/MaterialDatabase'
 import { ViewerPlaceholder } from '../viewer3d/ViewerPlaceholder'
 
@@ -7,6 +8,10 @@ interface WorkspaceProps {
 }
 
 export function Workspace({ tab }: WorkspaceProps) {
+  if (tab.id === 'structure') {
+    return <DeviceStructureEditor />
+  }
+
   if (tab.id === 'materials') {
     return <MaterialDatabase />
   }
