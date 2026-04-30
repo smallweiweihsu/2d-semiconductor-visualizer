@@ -106,6 +106,10 @@ git add .
 git commit -m "Batch 4: Add Sb WSe2 device template and material UI cleanup"
 git rev-parse --short HEAD
 git status --short
+git add BATCH_REPORT.md
+git commit -m "Batch 4: Update batch report with commit hash"
+git rev-parse --short HEAD
+git status --short
 ```
 
 另外使用 Browser/IAB 檢查本機頁面，並使用本機 Chrome headless 產生 Batch 4 截圖：
@@ -132,7 +136,7 @@ screenshots/batch4-material-ui-cleanup.png
 
 ## 6. Git commits created
 
-- Batch 4 commit hash: `待提交後更新`
+- Batch 4 commit hash: `1cbb035`
 
 ## 7. Warnings or limitations
 
