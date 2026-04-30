@@ -106,6 +106,10 @@ git add .
 git commit -m "Batch 3: Device layer stack editor"
 git rev-parse --short HEAD
 git status --short
+git add BATCH_REPORT.md
+git commit -m "Batch 3: Update batch report with commit hash"
+git rev-parse --short HEAD
+git status --short
 ```
 
 另外使用本機預覽與 Chrome headless 產生 Batch 3 截圖：
@@ -131,7 +135,7 @@ screenshots/batch3-device-layer-stack-editor.png
 
 ## 6. Git commits created
 
-- Batch 3 commit hash: `待提交後更新`
+- Batch 3 commit hash: `cf2f385`
 
 ## 7. Warnings or limitations
 
