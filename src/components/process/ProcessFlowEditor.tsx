@@ -12,23 +12,30 @@ import { validateProcessFlow } from './processValidation'
 
 interface ProcessFlowEditorProps {
   deviceLayers: DeviceLayer[]
+  flow?: ProcessFlow
+  onChangeFlow?: (updater: (flow: ProcessFlow) => ProcessFlow) => void
 }
 
-export function ProcessFlowEditor({ deviceLayers }: ProcessFlowEditorProps) {
-  const [flow, setFlow] = useState<ProcessFlow>(() =>
+export function ProcessFlowEditor({
+  deviceLayers,
+  flow: controlledFlow,
+  onChangeFlow,
+}: ProcessFlowEditorProps) {
+  const [internalFlow, setInternalFlow] = useState<ProcessFlow>(() =>
     structuredClone(defaultProcessFlow),
   )
   const [selectedStepId, setSelectedStepId] = useState<string | null>(
-    flow.steps[0]?.id ?? null,
+    (controlledFlow ?? internalFlow).steps[0]?.id ?? null,
   )
   const [showTemplatePicker, setShowTemplatePicker] = useState(false)
 
+  const flow = controlledFlow ?? internalFlow
   const warnings = useMemo(() => validateProcessFlow(flow), [flow])
   const selectedStep =
     flow.steps.find((step) => step.id === selectedStepId) ?? null
 
   function updateFlow(updates: Partial<ProcessFlow>) {
-    setFlow((current) => ({
+    updateCurrentFlow((current) => ({
       ...current,
       ...updates,
       updatedAt: new Date().toISOString(),
@@ -36,11 +43,20 @@ export function ProcessFlowEditor({ deviceLayers }: ProcessFlowEditorProps) {
   }
 
   function updateSteps(updater: (steps: ProcessStep[]) => ProcessStep[]) {
-    setFlow((current) => ({
+    updateCurrentFlow((current) => ({
       ...current,
       steps: updater(current.steps),
       updatedAt: new Date().toISOString(),
     }))
+  }
+
+  function updateCurrentFlow(updater: (flow: ProcessFlow) => ProcessFlow) {
+    if (onChangeFlow) {
+      onChangeFlow(updater)
+      return
+    }
+
+    setInternalFlow(updater)
   }
 
   function updateStep(updatedStep: ProcessStep) {

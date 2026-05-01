@@ -3,7 +3,7 @@ import type { WorkspaceTab } from '../../data/workspaceTabs'
 import type { DeviceStructure } from '../../types/device'
 import { DeviceStructureEditor } from '../device/DeviceStructureEditor'
 import { MaterialDatabase } from '../materials/MaterialDatabase'
-import { ProcessFlowEditor } from '../process/ProcessFlowEditor'
+import { ProcessDiffusionWorkspace } from '../process/ProcessDiffusionWorkspace'
 import { ViewerPlaceholder } from '../viewer3d/ViewerPlaceholder'
 
 interface WorkspaceProps {
@@ -31,7 +31,7 @@ export function Workspace({
   }
 
   if (tab.id === 'diffusion') {
-    return <ProcessFlowEditor deviceLayers={deviceStructure.layers} />
+    return <ProcessDiffusionWorkspace deviceLayers={deviceStructure.layers} />
   }
 
   return (
