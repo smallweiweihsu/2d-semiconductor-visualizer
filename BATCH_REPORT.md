@@ -185,3 +185,12 @@ C:\Users\User\OneDrive\文件\New project 2\screenshots\batch5-material-vertical
 ## 10. Next recommended batch
 
 建議 Batch 6：建立製程流程 UI 的第一版，讓使用者可以把金屬沉積、Sb₂O₃ 沉積、氧化、退火、RIE、SEM、Raman、PL、AFM、XPS 與電性量測步驟排成 timeline，並和目前 device layer stack 做資料上的關聯。仍先不加入真實製程模擬或物理計算。
+
+## Batch 5.5：GitHub backup setup
+
+- Current branch: `dev`
+- Corrected remote URL: `https://github.com/smallweiweihsu/2d-semiconductor-visualizer.git`
+- Latest commit hash at successful push: `e6f5f12`
+- Build/lint/typecheck result: all passed.
+- Push result: succeeded; `dev` is tracking `origin/dev`.
+- Warning: `npm run build` still shows the known Vite chunk-size warning for the lazy-loaded 3D viewer. This is not a build failure. 本次未 force push、未刪除分支、未合併到 main。
