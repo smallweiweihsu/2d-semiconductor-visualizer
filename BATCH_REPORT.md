@@ -129,6 +129,9 @@ tree src /F
 git add .
 git commit -m "Batch 6: Add process flow UI"
 git rev-parse --short HEAD
+git add BATCH_REPORT.md
+git commit -m "Batch 6: Update batch report with commit hash"
+git push origin dev
 ```
 
 另外使用 Browser/IAB 開啟 `http://127.0.0.1:5174/#diffusion` 檢查製程流程 UI。DOM snapshot 已確認頁面包含「製程流程與退火擴散」。截圖 API 在本環境回傳 `Page.captureScreenshot` timeout，因此本批以文字描述記錄可見 UI。
@@ -150,8 +153,8 @@ npm run typecheck: passed
 - Current branch: `dev`
 - Remote URL: `https://github.com/smallweiweihsu/2d-semiconductor-visualizer.git`
 - Batch 6 implementation commit hash: `665257e`
-- Batch report update commit hash: pending
-- Push result: pending
+- Batch report update commit hash: `0d8e595`
+- Push result: succeeded to `origin/dev`
 
 ## 7. Warnings or limitations
 
