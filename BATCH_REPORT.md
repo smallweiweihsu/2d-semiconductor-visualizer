@@ -1,24 +1,23 @@
 # Batch Report
 
-## 1. Summary of what was fixed
+## 1. Summary of what was built
 
-完成 Batch 6.5 layout hotfix：修正「元件結構」頁面在加入 3D viewer 後的擁擠與重疊問題。
+完成 Batch 6.6：新增可收合/展開的左右側欄，讓中央 workspace 在需要檢查 3D viewer、材料層設定、材料資料庫或製程流程時取得更多水平空間。
 
-- 材料層設定面板不再覆蓋 3D viewer。
-- 3D viewer 現在有穩定的寬度與高度邊界。
-- 3D 視角控制按鈕改成獨立緊湊 toolbar，會自然換行。
-- 元件結構頁改成 responsive layout：較窄桌面與中等寬度先採用堆疊式版面，只有足夠寬的桌面才啟用三欄。
-- Layer stack list 與 Layer editor 都加入 `min-w-0`、內部 scroll 與合理高度限制，避免撐爆中心 workspace。
+- 左側「元件控制」側欄現在可收合成窄 rail，並可再次展開。
+- 右側「分析結果」檢查欄現在可收合成窄 rail，並可再次展開。
+- 中央 workspace 會依左右側欄狀態調整 grid 欄寬。
+- 收合狀態使用 `localStorage` 保存，重新整理後仍會保留。
+- 按鈕包含 `aria-label` 與 `title`，使用繁體中文描述。
 
 ## 2. Files changed
 
 ```text
 BATCH_REPORT.md
-src/components/device/DeviceStructureEditor.tsx
-src/components/device/LayerEditor.tsx
-src/components/device/LayerStackList.tsx
-src/components/viewer3d/Device3DViewer.tsx
-src/components/viewer3d/ViewerControls.tsx
+screenshots/batch6-6-collapsible-side-panels.png
+src/components/layout/AppShell.tsx
+src/components/layout/RightInspector.tsx
+src/components/layout/Sidebar.tsx
 ```
 
 ## 3. Commands run
@@ -29,21 +28,20 @@ git branch --show-current
 git remote -v
 npm run typecheck
 npm run lint
-npm install
 npm run build
+npm install
 ```
 
 Browser/IAB verification:
 
 ```text
 Opened http://127.0.0.1:5174/#structure
-Confirmed DOM contains 元件結構, 材料層設定, 3D 元件視覺化, 3D controls, layer stack list, and device summary.
-```
-
-Screenshot attempt:
-
-```text
-screenshots/batch6-5-structure-layout-fix.png was attempted, but Browser/IAB screenshot capture failed in this environment.
+Verified 收合元件控制側欄 button exists.
+Verified 收合分析結果側欄 button exists.
+Clicked both collapse buttons.
+Verified 展開元件控制側欄 and 展開分析結果側欄 buttons exist.
+Verified 元件結構 and 3D 元件視覺化 remain visible.
+Saved screenshot to screenshots/batch6-6-collapsible-side-panels.png.
 ```
 
 ## 4. Build/lint/typecheck result
@@ -59,26 +57,33 @@ Build still reports the known Vite chunk-size warning for the lazy-loaded 3D vie
 
 ## 5. Git commit and push result
 
+Pending final commit and push.
+
 - Current branch: `dev`
 - Remote URL: `https://github.com/smallweiweihsu/2d-semiconductor-visualizer.git`
-- Layout hotfix commit hash: `97e7bb1`
-- Report update commit hash: `7b0e429`
-- Push result: succeeded to `origin/dev`
+- Commit hash: pending
+- Push result: pending
 
 ## 6. Visible UI description
 
-The 「元件結構」 page now presents the scientific integrity notice and template selector at the top. The main editor no longer forces the layer stack, viewer, and material layer settings into a cramped row unless the available desktop width is large enough.
+The top navigation and workspace tabs remain unchanged. In the main layout, the left 「元件控制」 panel now shows a 「收合」 button when expanded. After collapsing, it becomes a narrow dark rail with an expand button and compact 「元件控制」 label.
 
-On normal desktop widths, the layer stack list, 3D/2D viewer area, device summary, and material layer editor stack cleanly with full available width. On very wide screens, the layout becomes three columns: layer stack list on the left, 3D/2D viewer in the center, and material layer settings on the right.
+The right 「分析結果」 panel now behaves the same way: expanded mode shows the existing tab-specific result cards, and collapsed mode becomes a narrow rail with an expand button and compact 「分析結果」 label.
 
-The 3D viewer card has a stable canvas area, with the view controls in a compact toolbar above the canvas. The controls wrap cleanly instead of colliding with the layer editor. The layer editor stays inside its own bordered panel and scrolls internally when its form content is long.
+When one or both side panels are collapsed, the central workspace gains horizontal room. The 「元件結構」 3D viewer remains usable, the material layer editor no longer loses space unnecessarily, and the process flow and material database pages keep their existing behavior.
+
+Screenshot:
+
+```text
+C:\Users\User\OneDrive\文件\New project 2\screenshots\batch6-6-collapsible-side-panels.png
+```
 
 ## 7. Warnings or limitations
 
-- This is a UI layout hotfix only; no new physics, diffusion, oxidation, electrical analysis, material database edits, or Batch 7 work was added.
-- Screenshot capture failed through the in-app browser API, so the report uses DOM verification and visible UI description instead.
-- The known Vite chunk-size warning for the 3D viewer remains.
+- This is a UI layout improvement only; no diffusion model, oxidation model, electrical calculation, material data update, export feature, polygon CAD, literature search, or process simulation was added.
+- The collapsed side panels are rails, not full mobile drawers. Narrow-screen behavior remains simple and can be improved later if needed.
+- The known Vite 3D viewer chunk-size warning remains.
 
 ## 8. Next recommended batch
 
-Next recommended batch remains Batch 7: first annealing/diffusion approximation model, built on the existing process-flow data, with clear assumptions and literature-parameter warnings.
+Next recommended batch: Batch 7, the first annealing/diffusion approximation model, using the existing process-flow data and clear warnings for missing D0/Ea and non-quantitative assumptions.

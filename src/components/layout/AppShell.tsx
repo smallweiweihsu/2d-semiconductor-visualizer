@@ -10,6 +10,12 @@ import { Workspace } from './Workspace'
 export function AppShell() {
   const [selectedTabId, setSelectedTabId] =
     useState<WorkspaceTabId>(getInitialTabId)
+  const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(
+    getInitialCollapsedState('leftSidebarCollapsed'),
+  )
+  const [isRightInspectorCollapsed, setIsRightInspectorCollapsed] = useState(
+    getInitialCollapsedState('rightInspectorCollapsed'),
+  )
   const [deviceStructure, setDeviceStructure] = useState(() =>
     structuredClone(initialDeviceStructure),
   )
@@ -19,6 +25,22 @@ export function AppShell() {
   function handleSelectTab(tabId: WorkspaceTabId) {
     setSelectedTabId(tabId)
     window.history.replaceState(null, '', `#${tabId}`)
+  }
+
+  function handleToggleLeftSidebar() {
+    setIsLeftSidebarCollapsed((current) => {
+      const nextValue = !current
+      window.localStorage.setItem('leftSidebarCollapsed', String(nextValue))
+      return nextValue
+    })
+  }
+
+  function handleToggleRightInspector() {
+    setIsRightInspectorCollapsed((current) => {
+      const nextValue = !current
+      window.localStorage.setItem('rightInspectorCollapsed', String(nextValue))
+      return nextValue
+    })
   }
 
   return (
@@ -31,20 +53,53 @@ export function AppShell() {
           onSelectTab={handleSelectTab}
         />
 
-        <main className="grid min-h-0 flex-1 grid-cols-1 gap-4 px-4 py-4 xl:grid-cols-[280px_minmax(0,1fr)_320px]">
-          <Sidebar />
+        <main className={`grid min-h-0 flex-1 grid-cols-1 gap-4 px-4 py-4 ${getMainGridClass(
+          isLeftSidebarCollapsed,
+          isRightInspectorCollapsed,
+        )}`}>
+          <Sidebar
+            isCollapsed={isLeftSidebarCollapsed}
+            onToggleCollapsed={handleToggleLeftSidebar}
+          />
           <Workspace
             deviceStructure={deviceStructure}
             onChangeDeviceStructure={setDeviceStructure}
             tab={selectedTab}
           />
-          <RightInspector activeTabId={selectedTabId} />
+          <RightInspector
+            activeTabId={selectedTabId}
+            isCollapsed={isRightInspectorCollapsed}
+            onToggleCollapsed={handleToggleRightInspector}
+          />
         </main>
 
         <BottomPanel />
       </div>
     </div>
   )
+}
+
+function getMainGridClass(
+  isLeftSidebarCollapsed: boolean,
+  isRightInspectorCollapsed: boolean,
+) {
+  if (isLeftSidebarCollapsed && isRightInspectorCollapsed) {
+    return 'xl:grid-cols-[64px_minmax(0,1fr)_64px]'
+  }
+
+  if (isLeftSidebarCollapsed) {
+    return 'xl:grid-cols-[64px_minmax(0,1fr)_320px]'
+  }
+
+  if (isRightInspectorCollapsed) {
+    return 'xl:grid-cols-[280px_minmax(0,1fr)_64px]'
+  }
+
+  return 'xl:grid-cols-[280px_minmax(0,1fr)_320px]'
+}
+
+function getInitialCollapsedState(storageKey: string) {
+  return window.localStorage.getItem(storageKey) === 'true'
 }
 
 function getInitialTabId(): WorkspaceTabId {
