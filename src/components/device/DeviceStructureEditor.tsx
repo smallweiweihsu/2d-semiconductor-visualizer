@@ -11,13 +11,19 @@ import {
   deviceTemplates,
   initialDeviceStructure,
 } from '../../data/deviceStructures'
+import { materials } from '../../data/materials'
 import type { DeviceLayer, DeviceStructure } from '../../types/device'
+import { AddLayerPanel, type AddLayerDraft } from './AddLayerPanel'
 import { DeviceSummary } from './DeviceSummary'
 import { DeviceTemplateSelector } from './DeviceTemplateSelector'
 import { DeviceValidationPanel } from './DeviceValidationPanel'
 import { LayerEditor } from './LayerEditor'
 import { LayerStackList } from './LayerStackList'
 import { LayerStackPreview } from './LayerStackPreview'
+import {
+  createDefaultLayerFromPlacement,
+  getInsertionIndex,
+} from './layerPlacement'
 import { validateDeviceStructure } from './deviceValidation'
 
 const Device3DViewer = lazy(() =>
@@ -42,6 +48,7 @@ export function DeviceStructureEditor({
     getInitialSelectedLayerId(initialDeviceStructure),
   )
   const [visualizationMode, setVisualizationMode] = useState<'3d' | '2d'>('3d')
+  const [showAddLayerPanel, setShowAddLayerPanel] = useState(false)
 
   const warnings = useMemo(
     () => validateDeviceStructure(structure),
@@ -104,34 +111,43 @@ export function DeviceStructureEditor({
     }))
   }
 
-  function addLayer() {
-    const newLayer: DeviceLayer = {
+  function addLayer(draft: AddLayerDraft) {
+    const referenceLayer =
+      structure.layers.find((layer) => layer.id === draft.referenceLayerId) ??
+      selectedLayer
+    const material = materials.find((item) => item.id === draft.materialId)
+    const newLayer = createDefaultLayerFromPlacement({
       id: createLayerId(),
-      name: '新增材料層',
-      materialId: 'wse2',
-      role: 'custom',
-      geometry: {
-        length_um: 5,
-        width_um: 2,
-        thickness_nm: 10,
-        x_um: 0,
-        y_um: 0,
-        z_nm: getTopZ(structure.layers),
-        rotation_deg: 0,
+      materialId: draft.materialId,
+      name: createNewLayerName(draft, material?.displayName ?? '新增材料層'),
+      role: draft.role,
+      referenceLayer,
+      placement: {
+        preset: draft.placementPreset,
+        referenceLayerId: draft.referenceLayerId,
       },
-      voltageMode: 'none',
-      voltageValue_V: null,
-      visible: true,
-      opacity: 1,
-      notes_zh: '',
-    }
+      thickness_nm: draft.thickness_nm,
+      length_um: draft.length_um,
+      width_um: draft.width_um,
+      topZ_nm: getTopZ(structure.layers),
+    })
+    const insertionIndex = getInsertionIndex(
+      structure.layers,
+      referenceLayer?.id,
+      draft.placementPreset,
+    )
 
     setStructure((current) => ({
       ...current,
       updatedAt: new Date().toISOString(),
-      layers: [...current.layers, newLayer],
+      layers: [
+        ...current.layers.slice(0, insertionIndex),
+        newLayer,
+        ...current.layers.slice(insertionIndex),
+      ],
     }))
     setSelectedLayerId(newLayer.id)
+    setShowAddLayerPanel(false)
   }
 
   function deleteLayer(layerId: string) {
@@ -237,7 +253,7 @@ export function DeviceStructureEditor({
             layers={structure.layers}
             selectedLayerId={selectedLayerId}
             warnings={warnings}
-            onAddLayer={addLayer}
+            onAddLayer={() => setShowAddLayerPanel(true)}
             onDeleteLayer={deleteLayer}
             onDuplicateLayer={duplicateLayer}
             onMoveLayer={moveLayer}
@@ -247,6 +263,15 @@ export function DeviceStructureEditor({
         </div>
 
         <div className="grid min-w-0 content-start gap-4">
+          {showAddLayerPanel ? (
+            <AddLayerPanel
+              layers={structure.layers}
+              selectedLayerId={selectedLayerId}
+              onAddLayer={addLayer}
+              onCancel={() => setShowAddLayerPanel(false)}
+            />
+          ) : null}
+
           <section className="min-w-0 overflow-hidden rounded-lg border border-slate-800 bg-slate-950/30 p-2">
             <div className="mb-2 flex flex-wrap gap-2">
               <PreviewModeButton
@@ -291,11 +316,39 @@ export function DeviceStructureEditor({
           />
         </div>
 
-        <LayerEditor layer={selectedLayer} onUpdateLayer={updateLayer} />
+        <LayerEditor
+          layers={structure.layers}
+          layer={selectedLayer}
+          onUpdateLayer={updateLayer}
+        />
       </div>
       </div>
     </section>
   )
+}
+
+function createNewLayerName(draft: AddLayerDraft, materialName: string) {
+  if (draft.placementPreset === 'source_contact') {
+    return `${materialName} 源極接觸`
+  }
+
+  if (draft.placementPreset === 'drain_contact') {
+    return `${materialName} 汲極接觸`
+  }
+
+  if (draft.placementPreset === 'top_gate') {
+    return `${materialName} 上閘極`
+  }
+
+  if (draft.placementPreset === 'top_dielectric') {
+    return `${materialName} 上方介電層`
+  }
+
+  if (draft.placementPreset === 'local_oxide') {
+    return `${materialName} 局部氧化層`
+  }
+
+  return `${materialName} 材料層`
 }
 
 function createLayerId() {

@@ -16,6 +16,43 @@ export type DeviceLayerRole =
 
 export type VoltageMode = 'grounded' | 'biased' | 'floating' | 'none'
 
+export type LayerPlacementPreset =
+  | 'manual'
+  | 'fit_selected_layer'
+  | 'above_selected_layer'
+  | 'below_selected_layer'
+  | 'centered_on_selected_layer'
+  | 'left_contact'
+  | 'right_contact'
+  | 'source_contact'
+  | 'drain_contact'
+  | 'top_gate'
+  | 'top_dielectric'
+  | 'local_oxide'
+  | 'full_width_base'
+  | 'custom'
+
+export type LayerHorizontalAlign = 'left' | 'center' | 'right'
+
+export type LayerVerticalMode = 'above' | 'below' | 'same_level' | 'manual'
+
+export interface LayerPlacementReference {
+  selectedLayerId?: string | null
+  targetLayerId?: string | null
+  referenceMode?: 'selected' | 'target' | 'none'
+}
+
+export interface LayerPlacementOptions {
+  preset: LayerPlacementPreset
+  referenceLayerId?: string | null
+  horizontalAlign?: LayerHorizontalAlign
+  verticalMode?: LayerVerticalMode
+  margin_um?: number
+  overlap_um?: number
+  fitLength?: boolean
+  fitWidth?: boolean
+}
+
 export interface LayerGeometry {
   length_um: number
   width_um: number

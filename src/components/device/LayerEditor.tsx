@@ -1,22 +1,45 @@
 import type { ReactNode } from 'react'
+import { useState } from 'react'
 import { deviceRoles } from '../../data/deviceRoles'
 import {
   materialCategories,
   materialCategoryLabels,
 } from '../../data/materialCategories'
 import { materials } from '../../data/materials'
-import type { DeviceLayer, VoltageMode } from '../../types/device'
+import type { DeviceLayer, LayerPlacementPreset, VoltageMode } from '../../types/device'
 import { parseNumberInput, voltageModeLabels } from './deviceFormatting'
+import {
+  alignLayerToReference,
+  applyPlacementPreset,
+  fitLayerToReference,
+  placementPresetLabels,
+} from './layerPlacement'
 import { validateLayer } from './deviceValidation'
 
 interface LayerEditorProps {
+  layers: DeviceLayer[]
   layer: DeviceLayer | null
   onUpdateLayer: (layer: DeviceLayer) => void
 }
 
 const voltageModes: VoltageMode[] = ['none', 'grounded', 'biased', 'floating']
+const quickPlacementPresets: LayerPlacementPreset[] = [
+  'fit_selected_layer',
+  'above_selected_layer',
+  'below_selected_layer',
+  'centered_on_selected_layer',
+  'source_contact',
+  'drain_contact',
+  'top_gate',
+  'top_dielectric',
+  'local_oxide',
+]
 
-export function LayerEditor({ layer, onUpdateLayer }: LayerEditorProps) {
+export function LayerEditor({ layers, layer, onUpdateLayer }: LayerEditorProps) {
+  const [referenceLayerId, setReferenceLayerId] = useState<string>('')
+  const [placementPreset, setPlacementPreset] =
+    useState<LayerPlacementPreset>('centered_on_selected_layer')
+
   if (!layer) {
     return (
       <section className="min-w-0 rounded-lg border border-slate-800 bg-slate-950/40 p-4">
@@ -28,6 +51,11 @@ export function LayerEditor({ layer, onUpdateLayer }: LayerEditorProps) {
 
   const activeLayer = layer
   const layerWarnings = validateLayer(activeLayer)
+  const referenceLayer =
+    layers.find((item) => item.id === referenceLayerId) ??
+    layers.find((item) => item.id !== activeLayer.id && item.role === 'semiconductor') ??
+    layers.find((item) => item.id !== activeLayer.id) ??
+    null
 
   function updateLayer(updates: Partial<DeviceLayer>) {
     onUpdateLayer({ ...activeLayer, ...updates })
@@ -44,6 +72,14 @@ export function LayerEditor({ layer, onUpdateLayer }: LayerEditorProps) {
         [key]: value,
       },
     })
+  }
+
+  function applyQuickPlacement() {
+    if (!referenceLayer) {
+      return
+    }
+
+    onUpdateLayer(applyPlacementPreset(activeLayer, referenceLayer, placementPreset))
   }
 
   return (
@@ -63,6 +99,95 @@ export function LayerEditor({ layer, onUpdateLayer }: LayerEditorProps) {
       </div>
 
       <div className="mt-4 grid gap-4">
+        <section className="rounded-md border border-cyan-900/40 bg-cyan-950/10 p-3">
+          <div className="flex flex-wrap items-start justify-between gap-3">
+            <div>
+              <h4 className="text-xs font-medium text-cyan-100">快速放置</h4>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                選擇參考層後，可快速建立接觸、上閘極、介電層或對齊目前材料層。
+              </p>
+            </div>
+            <button
+              className="rounded-md border border-cyan-700 bg-cyan-950/40 px-3 py-2 text-xs text-cyan-100 hover:border-cyan-500"
+              disabled={!referenceLayer}
+              onClick={applyQuickPlacement}
+              type="button"
+            >
+              套用放置方式
+            </button>
+          </div>
+
+          <div className="mt-3 grid gap-3 lg:grid-cols-2 min-[1800px]:grid-cols-1">
+            <label className="block text-xs text-slate-400">
+              參考材料層
+              <select
+                className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-600"
+                onChange={(event) => setReferenceLayerId(event.target.value)}
+                value={referenceLayer?.id ?? ''}
+              >
+                {layers
+                  .filter((item) => item.id !== activeLayer.id)
+                  .map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))}
+              </select>
+            </label>
+
+            <label className="block text-xs text-slate-400">
+              放置方式
+              <select
+                className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-600"
+                onChange={(event) =>
+                  setPlacementPreset(event.target.value as LayerPlacementPreset)
+                }
+                value={placementPreset}
+              >
+                {quickPlacementPresets.map((preset) => (
+                  <option key={preset} value={preset}>
+                    {placementPresetLabels[preset]}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className="mt-3 flex flex-wrap gap-2">
+            <QuickPlacementButton
+              disabled={!referenceLayer}
+              label="靠左對齊"
+              onClick={() =>
+                referenceLayer &&
+                onUpdateLayer(alignLayerToReference(activeLayer, referenceLayer, 'left'))
+              }
+            />
+            <QuickPlacementButton
+              disabled={!referenceLayer}
+              label="置中對齊"
+              onClick={() =>
+                referenceLayer &&
+                onUpdateLayer(alignLayerToReference(activeLayer, referenceLayer, 'center'))
+              }
+            />
+            <QuickPlacementButton
+              disabled={!referenceLayer}
+              label="靠右對齊"
+              onClick={() =>
+                referenceLayer &&
+                onUpdateLayer(alignLayerToReference(activeLayer, referenceLayer, 'right'))
+              }
+            />
+            <QuickPlacementButton
+              disabled={!referenceLayer}
+              label="符合參考層尺寸"
+              onClick={() =>
+                referenceLayer && onUpdateLayer(fitLayerToReference(activeLayer, referenceLayer))
+              }
+            />
+          </div>
+        </section>
+
         <section className="grid min-w-0 gap-3 md:grid-cols-2 min-[1800px]:grid-cols-1">
           <TextField
             label="材料層名稱"
@@ -142,6 +267,9 @@ export function LayerEditor({ layer, onUpdateLayer }: LayerEditorProps) {
         </section>
 
         <FormSection title="幾何尺寸與位置">
+          <div className="rounded-md border border-slate-800 bg-slate-900/50 p-3 text-xs leading-5 text-slate-500 md:col-span-3 min-[1800px]:col-span-2">
+            目前 x / y 位置是以元件中心為座標原點的示意位置。若不確定數值，可先使用快速放置，例如「源極接觸」、「汲極接觸」或「置中於參考層」，再微調尺寸。
+          </div>
           <NumberField
             label="長度"
             onChange={(value) => updateGeometry('length_um', value)}
@@ -246,6 +374,27 @@ export function LayerEditor({ layer, onUpdateLayer }: LayerEditorProps) {
         ) : null}
       </div>
     </section>
+  )
+}
+
+function QuickPlacementButton({
+  disabled = false,
+  label,
+  onClick,
+}: {
+  disabled?: boolean
+  label: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      className="rounded-md border border-slate-700 px-2.5 py-1.5 text-xs text-slate-300 transition hover:border-slate-500 disabled:cursor-not-allowed disabled:opacity-40"
+      disabled={disabled}
+      onClick={onClick}
+      type="button"
+    >
+      {label}
+    </button>
   )
 }
 

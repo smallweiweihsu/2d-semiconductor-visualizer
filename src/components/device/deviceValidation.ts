@@ -6,6 +6,7 @@ import type {
   DeviceValidationSeverity,
   DeviceValidationWarning,
 } from '../../types/device'
+import { getLayerHorizontalBounds } from './layerPlacement'
 
 function createWarning(
   id: string,
@@ -42,6 +43,8 @@ export function validateDeviceStructure(
   structure.layers.forEach((layer) => {
     warnings.push(...validateLayer(layer, medianThickness))
   })
+
+  warnings.push(...validateLayerPlacement(structure.layers))
 
   if (!structure.layers.some((layer) => layer.role === 'semiconductor')) {
     warnings.push(
@@ -242,6 +245,98 @@ export function validateLayer(
   }
 
   return warnings
+}
+
+function validateLayerPlacement(layers: DeviceLayer[]) {
+  const warnings: DeviceValidationWarning[] = []
+  const semiconductorLayers = layers.filter((layer) => layer.role === 'semiconductor')
+  const bulkOrSemiconductorLayers = layers.filter((layer) =>
+    ['bulk', 'source', 'substrate', 'semiconductor'].includes(layer.role),
+  )
+
+  layers.forEach((layer) => {
+    if (['source', 'drain', 'contact'].includes(layer.role)) {
+      const overlapsSemiconductor = semiconductorLayers.some((semiconductor) =>
+        hasHorizontalOverlap(layer, semiconductor, 0.05),
+      )
+
+      if (!overlapsSemiconductor && semiconductorLayers.length > 0) {
+        warnings.push(
+          createWarning(
+            `${layer.id}-contact-not-overlapping-channel`,
+            'warning',
+            '此接觸層似乎沒有與半導體通道重疊，請檢查 x 位置與長度。',
+            layer.id,
+          ),
+        )
+      }
+    }
+
+    if (layer.role === 'gate') {
+      const overlapsSemiconductor = semiconductorLayers.some((semiconductor) =>
+        hasHorizontalOverlap(layer, semiconductor, 0.1),
+      )
+
+      if (!overlapsSemiconductor && semiconductorLayers.length > 0) {
+        warnings.push(
+          createWarning(
+            `${layer.id}-gate-low-channel-overlap`,
+            'info',
+            '此閘極與半導體通道的水平重疊較少，後續 gate control 可能有限。',
+            layer.id,
+          ),
+        )
+      }
+
+      warnings.push(
+        createWarning(
+          `${layer.id}-confirm-gate-dielectric`,
+          'info',
+          '請確認閘極與通道之間是否有介電層。',
+          layer.id,
+        ),
+      )
+    }
+
+    if (layer.role === 'oxide') {
+      const overlapsMainLayer = bulkOrSemiconductorLayers.some((mainLayer) =>
+        mainLayer.id !== layer.id && hasHorizontalOverlap(layer, mainLayer, 0.05),
+      )
+
+      if (!overlapsMainLayer && bulkOrSemiconductorLayers.length > 0) {
+        warnings.push(
+          createWarning(
+            `${layer.id}-local-oxide-detached`,
+            'info',
+            '局部氧化層目前可能未與主要材料層重疊，請確認位置。',
+            layer.id,
+          ),
+        )
+      }
+    }
+  })
+
+  return warnings
+}
+
+function hasHorizontalOverlap(
+  layer: DeviceLayer,
+  referenceLayer: DeviceLayer,
+  minimumOverlapFraction: number,
+) {
+  const layerBounds = getLayerHorizontalBounds(layer)
+  const referenceBounds = getLayerHorizontalBounds(referenceLayer)
+  const overlap = Math.max(
+    0,
+    Math.min(layerBounds.right, referenceBounds.right) -
+      Math.max(layerBounds.left, referenceBounds.left),
+  )
+  const smallerLength = Math.min(
+    layer.geometry.length_um,
+    referenceLayer.geometry.length_um,
+  )
+
+  return smallerLength > 0 && overlap / smallerLength >= minimumOverlapFraction
 }
 
 export function getLayerWarnings(
