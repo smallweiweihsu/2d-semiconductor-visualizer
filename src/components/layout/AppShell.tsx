@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { defaultProcessFlow } from '../../data/defaultProcessFlow'
 import { initialDeviceStructure } from '../../data/deviceStructures'
 import { workspaceTabs, type WorkspaceTabId } from '../../data/workspaceTabs'
 import { BottomPanel } from './BottomPanel'
@@ -18,6 +19,9 @@ export function AppShell() {
   )
   const [deviceStructure, setDeviceStructure] = useState(() =>
     structuredClone(initialDeviceStructure),
+  )
+  const [processFlow, setProcessFlow] = useState(() =>
+    structuredClone(defaultProcessFlow),
   )
   const selectedTab =
     workspaceTabs.find((tab) => tab.id === selectedTabId) ?? workspaceTabs[0]
@@ -64,6 +68,8 @@ export function AppShell() {
           <Workspace
             deviceStructure={deviceStructure}
             onChangeDeviceStructure={setDeviceStructure}
+            onChangeProcessFlow={setProcessFlow}
+            processFlow={processFlow}
             tab={selectedTab}
           />
           <RightInspector

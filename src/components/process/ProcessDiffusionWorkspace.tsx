@@ -1,5 +1,4 @@
-import { useState } from 'react'
-import { defaultProcessFlow } from '../../data/defaultProcessFlow'
+import { useState, type Dispatch, type SetStateAction } from 'react'
 import type { DeviceLayer } from '../../types/device'
 import type { ProcessFlow } from '../../types/process'
 import { DiffusionModelPanel } from '../diffusion/DiffusionModelPanel'
@@ -7,14 +6,15 @@ import { ProcessFlowEditor } from './ProcessFlowEditor'
 
 interface ProcessDiffusionWorkspaceProps {
   deviceLayers: DeviceLayer[]
+  flow: ProcessFlow
+  onChangeFlow: Dispatch<SetStateAction<ProcessFlow>>
 }
 
 export function ProcessDiffusionWorkspace({
   deviceLayers,
+  flow,
+  onChangeFlow,
 }: ProcessDiffusionWorkspaceProps) {
-  const [flow, setFlow] = useState<ProcessFlow>(() =>
-    structuredClone(defaultProcessFlow),
-  )
   const [activeView, setActiveView] = useState<'timeline' | 'diffusion'>(
     'timeline',
   )
@@ -52,7 +52,7 @@ export function ProcessDiffusionWorkspace({
         <ProcessFlowEditor
           deviceLayers={deviceLayers}
           flow={flow}
-          onChangeFlow={setFlow}
+          onChangeFlow={onChangeFlow}
         />
       ) : (
         <DiffusionModelPanel deviceLayers={deviceLayers} flow={flow} />

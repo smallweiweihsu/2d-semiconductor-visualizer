@@ -1,20 +1,26 @@
 import type { Dispatch, SetStateAction } from 'react'
 import type { WorkspaceTab } from '../../data/workspaceTabs'
 import type { DeviceStructure } from '../../types/device'
+import type { ProcessFlow } from '../../types/process'
 import { DeviceStructureEditor } from '../device/DeviceStructureEditor'
 import { MaterialDatabase } from '../materials/MaterialDatabase'
+import { OxidationWorkspace } from '../oxidation/OxidationWorkspace'
 import { ProcessDiffusionWorkspace } from '../process/ProcessDiffusionWorkspace'
 import { ViewerPlaceholder } from '../viewer3d/ViewerPlaceholder'
 
 interface WorkspaceProps {
   deviceStructure: DeviceStructure
   onChangeDeviceStructure: Dispatch<SetStateAction<DeviceStructure>>
+  onChangeProcessFlow: Dispatch<SetStateAction<ProcessFlow>>
+  processFlow: ProcessFlow
   tab: WorkspaceTab
 }
 
 export function Workspace({
   deviceStructure,
   onChangeDeviceStructure,
+  onChangeProcessFlow,
+  processFlow,
   tab,
 }: WorkspaceProps) {
   if (tab.id === 'structure') {
@@ -31,7 +37,22 @@ export function Workspace({
   }
 
   if (tab.id === 'diffusion') {
-    return <ProcessDiffusionWorkspace deviceLayers={deviceStructure.layers} />
+    return (
+      <ProcessDiffusionWorkspace
+        deviceLayers={deviceStructure.layers}
+        flow={processFlow}
+        onChangeFlow={onChangeProcessFlow}
+      />
+    )
+  }
+
+  if (tab.id === 'oxidation') {
+    return (
+      <OxidationWorkspace
+        deviceLayers={deviceStructure.layers}
+        flow={processFlow}
+      />
+    )
   }
 
   return (

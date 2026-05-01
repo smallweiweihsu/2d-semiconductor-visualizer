@@ -2,37 +2,38 @@
 
 ## 1. Summary of what was built
 
-完成 Batch 7：新增「退火 / 擴散近似模型第一版」，整合到既有「擴散與退火」工作區，並保留製程時間線。
+完成 Batch 8：新增第一版「氧化模擬與 Raman 解釋」模組，用於整理 WSe₂ → WOx、Sb → Sb₂O₃ 等氧化條件，並協助判斷氧化、O₂ RIE 或環境暴露後 Raman 仍可能看到 WSe₂ 的原因。
 
-- 新增 Arrhenius 擴散係數與 Fick-like 擴散長度計算工具。
-- 新增 Pd / In / Ti / Au 等金屬進入 Sb₂O₃ 的擴散情境 presets，D0 / Ea 未知者維持 `null` 並清楚標示需要文獻參數。
-- 新增擴散參數編輯器，可設定擴散物種、host 材料、目標材料層、關聯製程步驟、溫度、時間、D0、Ea、擴散維度與修正因子。
-- 新增結果摘要、1D 正規化濃度曲線 SVG、沉積前後示意圖與模型警告面板。
-- 擴散模型可讀取目前元件材料層厚度，用於比較估計受影響深度與目標層厚度。
-- 擴散模型可選擇關聯製程步驟，並嘗試讀取退火溫度、時間、擴散物種、host、D0 與 Ea。
-- 明確加入科學完整性聲明：此模型是定性 / 半定量輔助工具，不代表 TCAD、DFT、MD 或完整製程模擬。
+- 新增氧化 type system，涵蓋氧化方法、目標材料、產物材料、Raman 可見性、損傷風險與模型結果。
+- 新增氧化 interpretation utilities，包含估計氧化厚度、剩餘厚度、氧化比例、Raman 可見性、製程損傷風險、氧化不均勻風險與 Raman 解釋排序。
+- 新增氧化 presets：WSe₂ → WOx：O₂ RIE、UV ozone、熱氧化、環境暴露，Sb → Sb₂O₃：環境暴露、熱氧化，以及通用二維材料電漿氧化。
+- 新增氧化情境選擇器、參數編輯器、結果摘要、氧化進度示意、Raman 解釋面板與警告面板。
+- 氧化模組可讀取目前元件材料層，並用目標層厚度作為初始厚度參考。
+- 氧化模組可讀取共享製程流程步驟，並嘗試從氧化、RIE、退火或相關自訂步驟帶入時間、溫度、功率、氧氣濃度、濕度、初始材料與產物。
+- AppShell 現在共享 process flow state，讓「擴散與退火」與「氧化模擬」看到同一份製程流程。
 
 ## 2. Files changed
 
 ```text
 BATCH_REPORT.md
 README.md
-screenshots/batch7-diffusion-model.png
-screenshots/batch7-diffusion-profile.png
-src/components/diffusion/DiffusionModelPanel.tsx
-src/components/diffusion/DiffusionParameterEditor.tsx
-src/components/diffusion/DiffusionProfilePlot.tsx
-src/components/diffusion/DiffusionResultSummary.tsx
-src/components/diffusion/DiffusionScenarioSelector.tsx
-src/components/diffusion/DiffusionSchematic.tsx
-src/components/diffusion/DiffusionWarnings.tsx
-src/components/diffusion/diffusionFormatting.ts
+screenshots/batch8-oxidation-model.png
+screenshots/batch8-raman-interpretation.png
+src/components/layout/AppShell.tsx
 src/components/layout/Workspace.tsx
+src/components/oxidation/OxidationModelPanel.tsx
+src/components/oxidation/OxidationParameterEditor.tsx
+src/components/oxidation/OxidationProgressSchematic.tsx
+src/components/oxidation/OxidationResultSummary.tsx
+src/components/oxidation/OxidationScenarioSelector.tsx
+src/components/oxidation/OxidationWarnings.tsx
+src/components/oxidation/OxidationWorkspace.tsx
+src/components/oxidation/RamanInterpretationPanel.tsx
+src/components/oxidation/oxidationFormatting.ts
 src/components/process/ProcessDiffusionWorkspace.tsx
-src/components/process/ProcessFlowEditor.tsx
-src/data/diffusionPresets.ts
-src/physics/diffusion.ts
-src/types/diffusion.ts
+src/data/oxidationPresets.ts
+src/physics/oxidation.ts
+src/types/oxidation.ts
 ```
 
 ## 3. src/ file tree
@@ -81,6 +82,16 @@ src/
       MaterialList.tsx
       ParameterBadge.tsx
       materialStats.ts
+    oxidation/
+      OxidationModelPanel.tsx
+      OxidationParameterEditor.tsx
+      OxidationProgressSchematic.tsx
+      OxidationResultSummary.tsx
+      OxidationScenarioSelector.tsx
+      OxidationWarnings.tsx
+      OxidationWorkspace.tsx
+      RamanInterpretationPanel.tsx
+      oxidationFormatting.ts
     plots/
       PlotPlaceholder.tsx
     process/
@@ -110,6 +121,7 @@ src/
     diffusionPresets.ts
     materialCategories.ts
     materials.ts
+    oxidationPresets.ts
     processStepTypes.ts
     processSteps.ts
     workspaceTabs.ts
@@ -125,6 +137,7 @@ src/
     device.ts
     diffusion.ts
     material.ts
+    oxidation.ts
     process.ts
   utils/
     .gitkeep
@@ -136,24 +149,26 @@ src/
 git status --short
 git branch --show-current
 git remote -v
+npm run typecheck
+npm run lint
+npm run build
 npm install
 npm run build
 npm run lint
 npm run typecheck
 ```
 
-Browser/IAB verification:
+Browser / visual verification:
 
 ```text
-Opened http://127.0.0.1:5174/#diffusion
-Verified 製程時間線 and 擴散估算 internal tabs.
-Verified Pd 進入 Sb₂O₃ preset and missing D0/Ea empty-state warning.
-Verified target layer selector and process-step linkage controls.
-Entered D0 = 1e-18 m²/s and Ea = 0.6 eV.
-Verified result summary, diffusion length, 1D normalized concentration plot, and before/after schematic.
-Reloaded 元件結構 tab and verified 3D viewer, 新增材料層, and 快速放置 still render.
-Reloaded 材料資料庫 tab and verified search/detail UI still renders.
-Saved screenshots to screenshots/batch7-diffusion-model.png and screenshots/batch7-diffusion-profile.png.
+Opened http://127.0.0.1:5174/#oxidation
+Verified 氧化模擬與 Raman 解釋 workspace renders.
+Verified WSe₂ → WOx：O₂ RIE preset and missing oxidation-rate warning.
+Verified target layer selector and process-step selector.
+Entered oxidation rate = 0.02 nm/s and verified result summary, oxidized thickness, remaining thickness, schematic, and Raman interpretation panel update.
+Selected Sb → Sb₂O₃：環境暴露 preset and verified Sb surface oxidation warnings.
+Reloaded 元件結構, 材料資料庫, and 擴散與退火 tabs to verify existing pages still render.
+Generated screenshots with headless Edge.
 ```
 
 ## 5. Build/lint/typecheck result
@@ -171,33 +186,34 @@ Build still reports the known Vite chunk-size warning for the lazy-loaded 3D vie
 
 - Current branch: `dev`
 - Remote URL: `https://github.com/smallweiweihsu/2d-semiconductor-visualizer.git`
-- Batch 7 commit hash: `f8c5333`
-- Push result: succeeded to `origin/dev`
+- Batch 8 commit hash: pending final commit
+- Push result: pending final push to `origin/dev`
 
 ## 7. Visible UI description
 
-The 「擴散與退火」 tab now opens a combined workspace titled 「製程流程與退火擴散」. It has two internal tabs: 「製程時間線」 keeps the existing process flow editor, while 「擴散估算」 shows the new diffusion model panel.
+The 「氧化模擬」 tab now shows a real workspace titled 「氧化模擬與 Raman 解釋」. The page includes a scientific integrity notice, oxidation scenario selector, quick preset chips, parameter editor, target layer selector, process step selector, result summary, oxidation progress schematic, Raman interpretation panel, and warning panel.
 
-The diffusion model panel includes a visible scientific integrity notice, a preset selector for metal-into-Sb₂O₃ scenarios, quick chips for Pd / In / Ti / Au, a parameter editor, target material layer selector, process-step selector, result summary, warning panel, SVG concentration profile, and before/after diffusion schematic.
+When oxidation rate is missing, the UI clearly says quantitative oxidized thickness cannot be estimated and keeps Raman interpretation qualitative. When oxidation rate is manually entered, the result summary updates estimated oxidized thickness, remaining thickness, oxidation fraction, remaining fraction, Raman visibility, process damage risk, and nonuniformity risk.
 
-When D0 or Ea is missing, the UI shows that quantitative curves cannot be generated. When D0 and Ea are manually entered, the model updates D(T), effective D, diffusion length, affected depth, risk heuristic, and the normalized concentration profile.
+The Raman interpretation panel ranks possible reasons Raman may still show WSe₂ after oxidation or O₂ RIE, including surface-only oxidation, incomplete oxidation, nonuniform oxidation, laser probing remaining lower layers, weak WOx signal, peak overlap, thickness variation, and RIE-induced defects.
 
 Screenshots:
 
 ```text
-C:\Users\User\OneDrive\文件\New project 2\screenshots\batch7-diffusion-model.png
-C:\Users\User\OneDrive\文件\New project 2\screenshots\batch7-diffusion-profile.png
+C:\Users\User\OneDrive\文件\New project 2\screenshots\batch8-oxidation-model.png
+C:\Users\User\OneDrive\文件\New project 2\screenshots\batch8-raman-interpretation.png
 ```
 
 ## 8. Warnings or limitations
 
-- This is a simplified Arrhenius + Fick-like approximation only.
-- D0 / Ea values for the provided presets are intentionally unknown until verified from literature or experiments.
-- In is treated only as a candidate buffer metal; the app does not claim it improves every Sb₂O₃ interface.
-- The model does not simulate real interface chemistry, grain-scale diffusion, defect-assisted diffusion, morphology, XPS spectra, Raman / PL response, electrical I-V curves, or 3D diffusion clouds.
-- Diffusion results do not modify 2D or 3D device geometry in this batch.
-- The known Vite 3D viewer chunk-size warning remains.
+- This is a qualitative / semi-quantitative interpretation tool, not a real oxidation simulator.
+- Oxidation rates are intentionally missing in presets unless future literature or experimental calibration is added.
+- Raman visibility is a heuristic, not a Raman intensity calculation.
+- WOx stoichiometry is not fixed and must be verified experimentally.
+- Sb₂O₃ thickness and chemical state require AFM/XPS or process calibration.
+- Results do not update the 2D/3D geometry and do not create a 3D oxidation overlay.
+- No XPS spectral fitting, PL model, AFM morphology model, electrical model, TCAD, DFT, or MD simulation was added.
 
 ## 9. Next recommended batch
 
-Next recommended batch: Batch 8, oxidation / WOx / Raman interpretation module.
+Next recommended batch: Batch 9, electrical model and I-V / Id-Vg approximation module.
