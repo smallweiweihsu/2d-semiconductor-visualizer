@@ -57,11 +57,10 @@ Build still reports the known Vite chunk-size warning for the lazy-loaded 3D vie
 
 ## 5. Git commit and push result
 
-Pending final commit and push.
-
 - Current branch: `dev`
 - Remote URL: `https://github.com/smallweiweihsu/2d-semiconductor-visualizer.git`
-- Commit hash: pending
+- Batch 6.6 commit hash: `07a5e38`
+- Report metadata commit hash: pending
 - Push result: pending
 
 ## 6. Visible UI description
