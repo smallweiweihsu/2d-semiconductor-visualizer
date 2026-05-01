@@ -126,6 +126,9 @@ npm run build
 npm run lint
 npm run typecheck
 tree src /F
+git add .
+git commit -m "Batch 6: Add process flow UI"
+git rev-parse --short HEAD
 ```
 
 另外使用 Browser/IAB 開啟 `http://127.0.0.1:5174/#diffusion` 檢查製程流程 UI。DOM snapshot 已確認頁面包含「製程流程與退火擴散」。截圖 API 在本環境回傳 `Page.captureScreenshot` timeout，因此本批以文字描述記錄可見 UI。
@@ -144,11 +147,10 @@ npm run typecheck: passed
 
 ## 6. Git commit and push result
 
-Pending final verification commit.
-
 - Current branch: `dev`
 - Remote URL: `https://github.com/smallweiweihsu/2d-semiconductor-visualizer.git`
-- Batch 6 commit hash: pending
+- Batch 6 implementation commit hash: `665257e`
+- Batch report update commit hash: pending
 - Push result: pending
 
 ## 7. Warnings or limitations
