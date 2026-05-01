@@ -1,19 +1,37 @@
+import type { Dispatch, SetStateAction } from 'react'
 import type { WorkspaceTab } from '../../data/workspaceTabs'
+import type { DeviceStructure } from '../../types/device'
 import { DeviceStructureEditor } from '../device/DeviceStructureEditor'
 import { MaterialDatabase } from '../materials/MaterialDatabase'
+import { ProcessFlowEditor } from '../process/ProcessFlowEditor'
 import { ViewerPlaceholder } from '../viewer3d/ViewerPlaceholder'
 
 interface WorkspaceProps {
+  deviceStructure: DeviceStructure
+  onChangeDeviceStructure: Dispatch<SetStateAction<DeviceStructure>>
   tab: WorkspaceTab
 }
 
-export function Workspace({ tab }: WorkspaceProps) {
+export function Workspace({
+  deviceStructure,
+  onChangeDeviceStructure,
+  tab,
+}: WorkspaceProps) {
   if (tab.id === 'structure') {
-    return <DeviceStructureEditor />
+    return (
+      <DeviceStructureEditor
+        structure={deviceStructure}
+        onChangeStructure={onChangeDeviceStructure}
+      />
+    )
   }
 
   if (tab.id === 'materials') {
     return <MaterialDatabase />
+  }
+
+  if (tab.id === 'diffusion') {
+    return <ProcessFlowEditor deviceLayers={deviceStructure.layers} />
   }
 
   return (

@@ -2,41 +2,36 @@
 
 ## 1. Summary of what was built
 
-完成 Batch 5：加入第一版 3D 元件視覺化。元件結構編輯器現在可以把目前 layer stack 轉成 Three.js / React Three Fiber 的 3D 矩形幾何示意，支援 orbit、zoom、pan、視角切換、標籤顯示、透明度、可見性切換與爆炸圖模式。
+完成 Batch 6：新增第一版「製程流程與退火擴散」工作區。使用者現在可以在「擴散與退火」分頁檢視製程時間線、新增預設製程/量測樣板、刪除、複製、上下移動、啟用/停用步驟，並編輯每個步驟的製程參數、描述、註記與關聯材料層。
 
-本批也保留原本 2D 側視圖，並改善材料資料庫頁面的垂直版面，讓材料清單與材料詳情面板在 1920x1080 桌面畫面中使用更多可用高度。
+本批也把元件結構 state 提升到 AppShell，讓製程流程可以讀取目前 layer stack 中的材料層，支援步驟與 Pd 汲極、WSe₂ 通道、Sb₂O₃ 介電層等材料層做資料關聯。這仍是 UI 與資料建模，不是製程模擬。
 
 ## 2. Files changed
 
 ```text
 BATCH_REPORT.md
 README.md
-package-lock.json
-package.json
-screenshots/batch5-3d-device-viewer.png
-screenshots/batch5-3d-exploded-view.png
-screenshots/batch5-material-vertical-layout.png
 src/components/device/DeviceStructureEditor.tsx
-src/components/materials/MaterialDatabase.tsx
-src/components/materials/MaterialDetail.tsx
-src/components/materials/MaterialList.tsx
-src/components/viewer3d/Device3DViewer.tsx
-src/components/viewer3d/DeviceLayerMesh.tsx
-src/components/viewer3d/LayerLabel3D.tsx
-src/components/viewer3d/ViewerControls.tsx
-src/components/viewer3d/viewerScaling.ts
-src/components/viewer3d/viewerTypes.ts
+src/components/layout/AppShell.tsx
+src/components/layout/RightInspector.tsx
+src/components/layout/Workspace.tsx
+src/components/process/ProcessFlowEditor.tsx
+src/components/process/ProcessParameterEditor.tsx
+src/components/process/ProcessStepEditor.tsx
+src/components/process/ProcessStepTemplatePicker.tsx
+src/components/process/ProcessSummary.tsx
+src/components/process/ProcessTimeline.tsx
+src/components/process/ProcessValidationPanel.tsx
+src/components/process/processFormatting.ts
+src/components/process/processValidation.ts
+src/data/defaultProcessFlow.ts
+src/data/processSteps.ts
+src/data/processStepTypes.ts
+src/data/workspaceTabs.ts
+src/types/process.ts
 ```
 
-## 3. Dependencies added
-
-```text
-three
-@react-three/fiber
-@react-three/drei
-```
-
-## 4. src/ file tree
+## 3. src/ file tree
 
 ```text
 src/
@@ -75,6 +70,16 @@ src/
       ParameterBadge.tsx
     plots/
       PlotPlaceholder.tsx
+    process/
+      ProcessFlowEditor.tsx
+      processFormatting.ts
+      ProcessParameterEditor.tsx
+      ProcessStepEditor.tsx
+      ProcessStepTemplatePicker.tsx
+      ProcessSummary.tsx
+      ProcessTimeline.tsx
+      processValidation.ts
+      ProcessValidationPanel.tsx
     viewer3d/
       Device3DViewer.tsx
       DeviceLayerMesh.tsx
@@ -85,11 +90,13 @@ src/
       viewerTypes.ts
   data/
     .gitkeep
+    defaultProcessFlow.ts
     deviceRoles.ts
     deviceStructures.ts
     materialCategories.ts
     materials.ts
     processSteps.ts
+    processStepTypes.ts
     workspaceTabs.ts
   physics/
     bandAlignment.ts
@@ -105,92 +112,74 @@ src/
     .gitkeep
 ```
 
-## 5. Commands run
+## 4. Commands run
 
 ```bash
 git status --short
-npm install three @react-three/fiber @react-three/drei
-npm run build
-npm run lint
+git branch
+git remote -v
 npm run typecheck
+npm run lint
+npm run build
 npm install
 npm run build
 npm run lint
 npm run typecheck
 tree src /F
-git add .
-git commit -m "Batch 5: Add first 3D device viewer"
-git rev-parse --short HEAD
-git status --short
-git add BATCH_REPORT.md
-git commit -m "Batch 5: Update batch report with commit hash"
-git rev-parse --short HEAD
-git status --short
 ```
 
-另外使用 Browser/IAB 檢查 3D viewer 與材料資料庫，並使用截圖與像素檢查確認 3D canvas 不是空白：
+另外使用 Browser/IAB 開啟 `http://127.0.0.1:5174/#diffusion` 檢查製程流程 UI。DOM snapshot 已確認頁面包含「製程流程與退火擴散」。截圖 API 在本環境回傳 `Page.captureScreenshot` timeout，因此本批以文字描述記錄可見 UI。
+
+## 5. Build result
+
+Current verification status:
 
 ```text
-screenshots/batch5-3d-device-viewer.png: colored_pixels=19675
-screenshots/batch5-3d-exploded-view.png: colored_pixels=20494
+npm run build: passed
+npm run lint: passed
+npm run typecheck: passed
 ```
 
-## 6. Build result
+`npm run build` still reports the known Vite chunk-size warning for the lazy-loaded 3D viewer chunk. The build completed successfully.
 
-`npm run build` 成功通過。
+## 6. Git commit and push result
 
-建置輸出摘要：
-
-```text
-✓ 602 modules transformed.
-✓ built in 492ms
-```
-
-`npm run lint` 成功通過。
-
-`npm run typecheck` 成功通過。
-
-Vite 顯示 Three.js / React Three Fiber lazy chunk 超過 500 kB 的警告。3D viewer 已用 `React.lazy` 拆成獨立 chunk，避免材料資料庫等非 3D 頁面初始載入完整 3D 模組。
-
-## 7. Git commits created
-
-- Batch 5 commit hash: `80b7caa`
-
-## 8. Warnings or limitations
-
-- 此 3D 視覺化僅根據 layer stack 幾何參數產生結構示意，尚未代表真實製程形貌、晶格、能帶、擴散或電性結果。
-- 厚度與位置經過視覺縮放，並非真實比例。
-- 目前的 3D 幾何都是矩形 cuboid，尚未支援 polygon CAD、非矩形圖形、圓角、粗糙度或真實沉積形貌。
-- 爆炸圖模式只增加視覺層間距，不代表真實結構。
-- 尚未實作真實電性計算、擴散計算、氧化計算、製程模擬、能帶圖、真實圖表、匯出、GitHub push、文獻搜尋自動化、DFT / MD / TCAD 模擬。
-
-## 9. Visible UI description
-
-「元件結構」分頁中央新增「3D 視覺化 / 2D 側視圖」切換。3D viewer 以目前 layer stack 繪製材料層 cuboid，使用材料資料庫顏色、layer opacity 與 visible 狀態。使用者可用滑鼠旋轉、縮放與平移；也可點選 3D layer 或下方 legend 來選取材料層。
-
-3D 控制列包含「3D 視角」、「俯視圖」、「側視圖」、「前視圖」、「重設視角」、「爆炸圖模式」與「顯示標籤」。標籤顯示 layer name、材料名或偏壓標籤，例如 Vg、Vd、Vs。爆炸圖模式會拉開材料層的垂直間距，方便檢查 Sb 塊材 / Sb₂O₃ / WSe₂ / Pd / 上閘極堆疊。
-
-原本 2D 側視圖仍保留在同一區域，可用切換按鈕查看。材料資料庫頁面仍可搜尋、分類篩選、顯示材料清單、參數信心標示與分組材料詳情。
-
-材料資料庫頁面垂直間距已改善：外層 workspace 改用更大的 viewport-based `min-height`，材料清單與材料詳情面板以 `flex-1 / min-h-0 / overflow-y-auto` 使用更多可用高度。Header、搜尋列、分類篩選與科學警示維持緊湊，減少整頁過度捲動。
-
-截圖位置：
-
-```text
-C:\Users\User\OneDrive\文件\New project 2\screenshots\batch5-3d-device-viewer.png
-C:\Users\User\OneDrive\文件\New project 2\screenshots\batch5-3d-exploded-view.png
-C:\Users\User\OneDrive\文件\New project 2\screenshots\batch5-material-vertical-layout.png
-```
-
-## 10. Next recommended batch
-
-建議 Batch 6：建立製程流程 UI 的第一版，讓使用者可以把金屬沉積、Sb₂O₃ 沉積、氧化、退火、RIE、SEM、Raman、PL、AFM、XPS 與電性量測步驟排成 timeline，並和目前 device layer stack 做資料上的關聯。仍先不加入真實製程模擬或物理計算。
-
-## Batch 5.5：GitHub backup setup
+Pending final verification commit.
 
 - Current branch: `dev`
-- Corrected remote URL: `https://github.com/smallweiweihsu/2d-semiconductor-visualizer.git`
-- Latest commit hash at successful push: `e6f5f12`
-- Build/lint/typecheck result: all passed.
-- Push result: succeeded; `dev` is tracking `origin/dev`.
-- Warning: `npm run build` still shows the known Vite chunk-size warning for the lazy-loaded 3D viewer. This is not a build failure. 本次未 force push、未刪除分支、未合併到 main。
+- Remote URL: `https://github.com/smallweiweihsu/2d-semiconductor-visualizer.git`
+- Batch 6 commit hash: pending
+- Push result: pending
+
+## 7. Warnings or limitations
+
+- 目前製程流程僅用於記錄與組織實驗步驟，尚未進行真實製程、擴散、氧化、蝕刻或量測模擬。
+- 參數欄位與樣板是研究紀錄架構，不會自動預測 Raman、PL、XPS、AFM、I-V 或退火擴散結果。
+- 製程步驟與元件材料層的關聯目前只保存資料關係，不會改變 2D/3D 幾何。
+- 尚未實作真實擴散計算、氧化模型、RIE 蝕刻率、Raman/PL/XPS 解讀、AFM 形貌、電性 I-V、band diagram、匯出、polygon CAD 或文獻搜尋自動化。
+- `npm run build` 的 3D viewer chunk-size warning 是 Batch 5 既有警告，不是建置失敗。
+
+## 8. Visible UI description
+
+「擴散與退火」分頁現在顯示「製程流程與退火擴散」工作區。上方有科學誠信提醒，說明目前只記錄與組織實驗步驟，尚未進行真實製程、擴散、氧化、蝕刻或量測模擬。
+
+左側是流程時間線，顯示預設 `Sb/WSe₂ 元件製程草稿`，包含 Sb₂O₃ 沉積、WSe₂ 轉移 / 放置、E-beam lithography、Pd 金屬沉積、Lift-off、Raman、電性量測、退火、低溫電性量測與 AFM / XPS 候選量測。每張步驟卡可選取、上移、下移、複製、刪除與啟用/停用。
+
+新增製程/量測步驟會展開樣板選擇器，依「製程、微影、量測、觀察、自訂」分組，顯示樣板名稱、描述、參數數量與提醒狀態。
+
+右側步驟設定區可編輯步驟名稱、啟用狀態、描述、註記與參數。參數依型別呈現文字、數值、select、boolean 與 textarea 欄位，並顯示單位、必填標記與 confidence badge。
+
+步驟設定下方有「關聯材料層」區塊，列出目前元件結構中的 layer name、材料名稱與角色，可用 checkbox 關聯到製程或量測步驟。下方摘要區顯示總步驟數、啟用步驟數、製程/量測/觀察微影數量、關聯材料層數、警告數，以及是否包含金屬沉積、Sb₂O₃ 沉積、退火、Raman、電性量測與 XPS/AFM。
+
+流程提醒面板顯示缺少必要參數、金屬沉積未關聯材料層、退火缺少 D0/Ea 等 guidance。右側分析結果欄在此分頁改顯示製程摘要、缺少參數、量測對照與後續擴散模型的占位資訊。
+
+Screenshot status:
+
+```text
+Screenshot capture attempted, but Browser/IAB screenshot API timed out with Page.captureScreenshot.
+UI was verified by DOM snapshot and visible UI description above.
+```
+
+## 9. Next recommended batch
+
+建議 Batch 7：在既有製程流程資料上加入第一版退火/擴散近似模型。仍需清楚標示資料來源、D0/Ea 缺失狀態與假設限制，並避免宣稱為 TCAD、DFT 或 MD 等完整模擬。

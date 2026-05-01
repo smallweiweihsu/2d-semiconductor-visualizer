@@ -1,5 +1,31 @@
-export function RightInspector() {
-  const resultCards = [
+import type { WorkspaceTabId } from '../../data/workspaceTabs'
+
+interface RightInspectorProps {
+  activeTabId: WorkspaceTabId
+}
+
+export function RightInspector({ activeTabId }: RightInspectorProps) {
+  const resultCards =
+    activeTabId === 'diffusion'
+      ? [
+          {
+            title: '製程摘要',
+            description: '預留流程步驟、啟用狀態與關聯材料層的快速摘要。',
+          },
+          {
+            title: '缺少參數',
+            description: '提醒退火溫度、時間、D0、Ea、RIE 功率與量測條件等尚未填寫欄位。',
+          },
+          {
+            title: '量測對照',
+            description: '未來可將 Raman、PL、XPS、AFM 與電性量測結果連回製程步驟。',
+          },
+          {
+            title: '後續擴散模型',
+            description: '預留退火擴散、氧化與界面變化近似模型的摘要位置。',
+          },
+        ]
+      : [
     {
       title: '物理假設',
       description: '整理目前元件結構、材料分類與幾何近似所隱含的模型假設。',

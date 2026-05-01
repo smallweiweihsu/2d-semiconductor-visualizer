@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { initialDeviceStructure } from '../../data/deviceStructures'
 import { workspaceTabs, type WorkspaceTabId } from '../../data/workspaceTabs'
 import { BottomPanel } from './BottomPanel'
 import { RightInspector } from './RightInspector'
@@ -9,6 +10,9 @@ import { Workspace } from './Workspace'
 export function AppShell() {
   const [selectedTabId, setSelectedTabId] =
     useState<WorkspaceTabId>(getInitialTabId)
+  const [deviceStructure, setDeviceStructure] = useState(() =>
+    structuredClone(initialDeviceStructure),
+  )
   const selectedTab =
     workspaceTabs.find((tab) => tab.id === selectedTabId) ?? workspaceTabs[0]
 
@@ -29,8 +33,12 @@ export function AppShell() {
 
         <main className="grid min-h-0 flex-1 grid-cols-1 gap-4 px-4 py-4 xl:grid-cols-[280px_minmax(0,1fr)_320px]">
           <Sidebar />
-          <Workspace tab={selectedTab} />
-          <RightInspector />
+          <Workspace
+            deviceStructure={deviceStructure}
+            onChangeDeviceStructure={setDeviceStructure}
+            tab={selectedTab}
+          />
+          <RightInspector activeTabId={selectedTabId} />
         </main>
 
         <BottomPanel />

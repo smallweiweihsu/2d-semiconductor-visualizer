@@ -25,9 +25,10 @@ export const workspaceTabs = [
   {
     id: 'diffusion',
     label: '擴散與退火',
-    title: '擴散與退火',
-    description: '未來用於描述退火條件下的元素擴散與界面變化趨勢。',
-    features: ['退火時間與溫度', '擴散深度占位', '界面濃度標記', '參數敏感度'],
+    title: '製程流程與退火擴散',
+    description:
+      '建立金屬沉積、介電層沉積、氧化、RIE、退火與量測流程；目前僅記錄與組織製程條件，尚未進行真實擴散或製程模擬。',
+    features: ['流程時間線', '製程樣板', '參數編輯', '材料層關聯'],
   },
   {
     id: 'oxidation',

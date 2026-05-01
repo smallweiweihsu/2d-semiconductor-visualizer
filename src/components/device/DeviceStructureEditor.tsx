@@ -1,4 +1,11 @@
-import { lazy, Suspense, useMemo, useState } from 'react'
+import {
+  lazy,
+  Suspense,
+  useMemo,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from 'react'
 import {
   createDeviceStructureFromTemplate,
   deviceTemplates,
@@ -19,10 +26,15 @@ const Device3DViewer = lazy(() =>
   })),
 )
 
-export function DeviceStructureEditor() {
-  const [structure, setStructure] = useState<DeviceStructure>(() =>
-    structuredClone(initialDeviceStructure),
-  )
+interface DeviceStructureEditorProps {
+  structure: DeviceStructure
+  onChangeStructure: Dispatch<SetStateAction<DeviceStructure>>
+}
+
+export function DeviceStructureEditor({
+  structure,
+  onChangeStructure: setStructure,
+}: DeviceStructureEditorProps) {
   const [selectedTemplateId, setSelectedTemplateId] = useState(
     initialDeviceStructure.templateId ?? deviceTemplates[0].id,
   )
