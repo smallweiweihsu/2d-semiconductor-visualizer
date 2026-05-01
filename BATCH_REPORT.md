@@ -122,6 +122,10 @@ git add .
 git commit -m "Batch 5: Add first 3D device viewer"
 git rev-parse --short HEAD
 git status --short
+git add BATCH_REPORT.md
+git commit -m "Batch 5: Update batch report with commit hash"
+git rev-parse --short HEAD
+git status --short
 ```
 
 另外使用 Browser/IAB 檢查 3D viewer 與材料資料庫，並使用截圖與像素檢查確認 3D canvas 不是空白：
@@ -150,7 +154,7 @@ Vite 顯示 Three.js / React Three Fiber lazy chunk 超過 500 kB 的警告。3D
 
 ## 7. Git commits created
 
-- Batch 5 commit hash: `待提交後更新`
+- Batch 5 commit hash: `80b7caa`
 
 ## 8. Warnings or limitations
 
