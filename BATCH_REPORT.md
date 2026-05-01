@@ -2,38 +2,35 @@
 
 ## 1. Summary of what was built
 
-完成 Batch 8：新增第一版「氧化模擬與 Raman 解釋」模組，用於整理 WSe₂ → WOx、Sb → Sb₂O₃ 等氧化條件，並協助判斷氧化、O₂ RIE 或環境暴露後 Raman 仍可能看到 WSe₂ 的原因。
+完成 Batch 9：新增第一版「電性分析與 I-V 近似」模組，用於以簡化閘極電容、載子密度、通道電阻與手動接觸電阻產生 I-V / Id-Vg 趨勢，並顯示接觸、閘極控制、介電層風險與能帶 / 接觸定性提醒。
 
-- 新增氧化 type system，涵蓋氧化方法、目標材料、產物材料、Raman 可見性、損傷風險與模型結果。
-- 新增氧化 interpretation utilities，包含估計氧化厚度、剩餘厚度、氧化比例、Raman 可見性、製程損傷風險、氧化不均勻風險與 Raman 解釋排序。
-- 新增氧化 presets：WSe₂ → WOx：O₂ RIE、UV ozone、熱氧化、環境暴露，Sb → Sb₂O₃：環境暴露、熱氧化，以及通用二維材料電漿氧化。
-- 新增氧化情境選擇器、參數編輯器、結果摘要、氧化進度示意、Raman 解釋面板與警告面板。
-- 氧化模組可讀取目前元件材料層，並用目標層厚度作為初始厚度參考。
-- 氧化模組可讀取共享製程流程步驟，並嘗試從氧化、RIE、退火或相關自訂步驟帶入時間、溫度、功率、氧氣濃度、濕度、初始材料與產物。
-- AppShell 現在共享 process flow state，讓「擴散與退火」與「氧化模擬」看到同一份製程流程。
+- 新增電性 type system，涵蓋接觸模型、載子型態、電性情境、曲線資料、結果摘要與驗證結果。
+- 新增電性 physics utilities：gate capacitance、induced carrier density、channel resistance、total resistance、Ohmic-like current、Id-Vd / Id-Vg curve generation、dielectric field、breakdown/contact/gate-control risk heuristics。
+- 新增 electrical presets：Sb/WSe₂ 上閘極近似模型、通用 2D FET Ohmic-like 近似、接觸限制 2D 元件模型、Schottky-like 警示模型。
+- 新增電性 UI：情境選擇器、參數編輯器、layer selectors、材料資料庫帶入按鈕、結果摘要、Id-Vd / Id-Vg SVG plot、warning panel、band alignment preview。
+- 可從目前元件結構讀取 channel/source/drain/gate/gate dielectric layers，帶入通道尺寸、介電層厚度與材料資料庫候選參數。
+- 可連結製程流程中的電性量測或低溫電性量測步驟，嘗試帶入 Vd/Vg 掃描範圍與溫度。
 
 ## 2. Files changed
 
 ```text
 BATCH_REPORT.md
 README.md
-screenshots/batch8-oxidation-model.png
-screenshots/batch8-raman-interpretation.png
-src/components/layout/AppShell.tsx
+screenshots/batch9-electrical-model.png
+screenshots/batch9-iv-curves.png
+src/components/electrical/BandAlignmentPreview.tsx
+src/components/electrical/ElectricalCurvePlot.tsx
+src/components/electrical/ElectricalModelPanel.tsx
+src/components/electrical/ElectricalParameterEditor.tsx
+src/components/electrical/ElectricalResultSummary.tsx
+src/components/electrical/ElectricalScenarioSelector.tsx
+src/components/electrical/ElectricalWarnings.tsx
+src/components/electrical/ElectricalWorkspace.tsx
+src/components/electrical/electricalFormatting.ts
 src/components/layout/Workspace.tsx
-src/components/oxidation/OxidationModelPanel.tsx
-src/components/oxidation/OxidationParameterEditor.tsx
-src/components/oxidation/OxidationProgressSchematic.tsx
-src/components/oxidation/OxidationResultSummary.tsx
-src/components/oxidation/OxidationScenarioSelector.tsx
-src/components/oxidation/OxidationWarnings.tsx
-src/components/oxidation/OxidationWorkspace.tsx
-src/components/oxidation/RamanInterpretationPanel.tsx
-src/components/oxidation/oxidationFormatting.ts
-src/components/process/ProcessDiffusionWorkspace.tsx
-src/data/oxidationPresets.ts
-src/physics/oxidation.ts
-src/types/oxidation.ts
+src/data/electricalPresets.ts
+src/physics/electrical.ts
+src/types/electrical.ts
 ```
 
 ## 3. src/ file tree
@@ -67,6 +64,16 @@ src/
       DiffusionSchematic.tsx
       DiffusionWarnings.tsx
       diffusionFormatting.ts
+    electrical/
+      BandAlignmentPreview.tsx
+      ElectricalCurvePlot.tsx
+      ElectricalModelPanel.tsx
+      ElectricalParameterEditor.tsx
+      ElectricalResultSummary.tsx
+      ElectricalScenarioSelector.tsx
+      ElectricalWarnings.tsx
+      ElectricalWorkspace.tsx
+      electricalFormatting.ts
     layout/
       AppShell.tsx
       BottomPanel.tsx
@@ -119,6 +126,7 @@ src/
     deviceRoles.ts
     deviceStructures.ts
     diffusionPresets.ts
+    electricalPresets.ts
     materialCategories.ts
     materials.ts
     oxidationPresets.ts
@@ -136,6 +144,7 @@ src/
   types/
     device.ts
     diffusion.ts
+    electrical.ts
     material.ts
     oxidation.ts
     process.ts
@@ -149,35 +158,34 @@ src/
 git status --short
 git branch --show-current
 git remote -v
-npm run typecheck
-npm run lint
-npm run build
 npm install
-npm run build
-npm run lint
-npm run typecheck
 ```
 
-Browser / visual verification:
+`npm install` could not run in this desktop shell because `npm` was not available in PATH. The project already had `node_modules`; verification was completed with bundled Node and local project binaries:
+
+```bash
+C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe node_modules\typescript\bin\tsc -b
+C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe node_modules\eslint\bin\eslint.js .
+C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe node_modules\vite\bin\vite.js build
+```
+
+Visual verification:
 
 ```text
-Opened http://127.0.0.1:5174/#oxidation
-Verified 氧化模擬與 Raman 解釋 workspace renders.
-Verified WSe₂ → WOx：O₂ RIE preset and missing oxidation-rate warning.
-Verified target layer selector and process-step selector.
-Entered oxidation rate = 0.02 nm/s and verified result summary, oxidized thickness, remaining thickness, schematic, and Raman interpretation panel update.
-Selected Sb → Sb₂O₃：環境暴露 preset and verified Sb surface oxidation warnings.
-Reloaded 元件結構, 材料資料庫, and 擴散與退火 tabs to verify existing pages still render.
+Started local Vite dev server with bundled Node.
+Opened http://127.0.0.1:5174/#electrical by headless Edge screenshot.
+Verified 電性分析與 I-V 近似 page renders.
+Verified scenario selector, missing-parameter warnings, result summary, parameter editor area, and risk badges are visible.
 Generated screenshots with headless Edge.
 ```
 
 ## 5. Build/lint/typecheck result
 
 ```text
-npm install: passed
-npm run build: passed
-npm run lint: passed
-npm run typecheck: passed
+npm install: not available in current shell because npm was not found in PATH.
+typecheck via local TypeScript binary: passed
+lint via local ESLint binary: passed
+build via local Vite binary: passed
 ```
 
 Build still reports the known Vite chunk-size warning for the lazy-loaded 3D viewer bundle. This is not a build failure.
@@ -186,34 +194,33 @@ Build still reports the known Vite chunk-size warning for the lazy-loaded 3D vie
 
 - Current branch: `dev`
 - Remote URL: `https://github.com/smallweiweihsu/2d-semiconductor-visualizer.git`
-- Batch 8 commit hash: `49dfbe5`
-- Push result: succeeded to `origin/dev`
+- Batch 9 commit hash: pending final commit
+- Push result: pending final push to `origin/dev`
 
 ## 7. Visible UI description
 
-The 「氧化模擬」 tab now shows a real workspace titled 「氧化模擬與 Raman 解釋」. The page includes a scientific integrity notice, oxidation scenario selector, quick preset chips, parameter editor, target layer selector, process step selector, result summary, oxidation progress schematic, Raman interpretation panel, and warning panel.
+The 「電性分析」 tab now shows a real workspace titled 「電性分析與 I-V 近似」. It includes a scientific integrity notice, electrical scenario selector, quick presets, parameter editor, layer selectors, material database load buttons, measurement-step selector, result summary, Id-Vd plot, Id-Vg plot, warning panel, and qualitative band alignment preview.
 
-When oxidation rate is missing, the UI clearly says quantitative oxidized thickness cannot be estimated and keeps Raman interpretation qualitative. When oxidation rate is manually entered, the result summary updates estimated oxidized thickness, remaining thickness, oxidation fraction, remaining fraction, Raman visibility, process damage risk, and nonuniformity risk.
+When required parameters are missing, the result summary shows that quantitative I-V / Id-Vg curves cannot be generated. The model warns about missing mobility, missing dielectric constant, missing contact resistance, WSe₂ metal-contact uncertainty, Fermi-level pinning, interface states, leakage/breakdown risks, and the fact that low-temperature transport is not modeled.
 
-The Raman interpretation panel ranks possible reasons Raman may still show WSe₂ after oxidation or O₂ RIE, including surface-only oxidation, incomplete oxidation, nonuniform oxidation, laser probing remaining lower layers, weak WOx signal, peak overlap, thickness variation, and RIE-induced defects.
+When mobility, dielectric constant, dielectric thickness, geometry, and contact resistance are provided, the model can generate simple Ohmic-like Id-Vd and Id-Vg trend curves. These curves are explicitly labeled as simplified model output, not measured data.
 
 Screenshots:
 
 ```text
-C:\Users\User\OneDrive\文件\New project 2\screenshots\batch8-oxidation-model.png
-C:\Users\User\OneDrive\文件\New project 2\screenshots\batch8-raman-interpretation.png
+C:\Users\User\OneDrive\文件\New project 2\screenshots\batch9-electrical-model.png
+C:\Users\User\OneDrive\文件\New project 2\screenshots\batch9-iv-curves.png
 ```
 
 ## 8. Warnings or limitations
 
-- This is a qualitative / semi-quantitative interpretation tool, not a real oxidation simulator.
-- Oxidation rates are intentionally missing in presets unless future literature or experimental calibration is added.
-- Raman visibility is a heuristic, not a Raman intensity calculation.
-- WOx stoichiometry is not fixed and must be verified experimentally.
-- Sb₂O₃ thickness and chemical state require AFM/XPS or process calibration.
-- Results do not update the 2D/3D geometry and do not create a 3D oxidation overlay.
-- No XPS spectral fitting, PL model, AFM morphology model, electrical model, TCAD, DFT, or MD simulation was added.
+- This is a simplified capacitance / channel resistance / contact resistance approximation tool, not TCAD, NEGF, DFT, or a real 2D contact-transport solver.
+- Pd/WSe₂ or other metal/WSe₂ contacts are not assumed ideal Ohmic.
+- Work function alone does not determine real contact behavior.
+- Gate leakage, dielectric breakdown, trap states, hysteresis, low-temperature transport, Schottky transport, and measured-data fitting are not implemented.
+- Contact resistance, mobility, dielectric constants, threshold voltage, and breakdown field require experiment or literature calibration.
+- In this environment, `npm` was temporarily unavailable in PATH; checks were run through local binaries with bundled Node.
 
 ## 9. Next recommended batch
 
-Next recommended batch: Batch 9, electrical model and I-V / Id-Vg approximation module.
+Next recommended batch: Batch 10, measured data import / comparison or export report system.

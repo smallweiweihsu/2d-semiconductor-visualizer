@@ -205,6 +205,22 @@ src/
 - UI 會清楚提醒：缺少氧化速率、Raman 探測深度或材料吸收參數時，結果只能作趨勢判讀，不能視為定量預測。
 - 目前沒有真實反應動力學、Raman 強度計算、XPS 光譜擬合、製程結果回寫幾何、TCAD、DFT 或 MD 模擬；氧化速率需要未來文獻或實驗校準。
 
+## Batch 9：電性模型與 I-V / Id-Vg 近似分析
+
+本批在「電性分析」分頁加入第一版電性近似模組，用於從目前元件 layer stack 與手動參數估算 gate capacitance、載子密度、通道電阻與簡化 I-V / Id-Vg 趨勢。
+
+- 新增 gate capacitance 近似：`Cox = ε0 k / tox`，用於估算閘極介電層單位面積電容。
+- 新增 gate-induced carrier density 近似：以 `Cox(Vg - Vth) / q` 估算簡化載子密度。
+- 新增 WSe₂ / 二維通道電阻近似，使用通道長寬、遷移率與載子密度估算 drift resistance。
+- 新增總電阻估算，可包含手動輸入的 source/drain contact resistance。
+- 新增 SVG Id-Vd 與 Id-Vg 趨勢圖，支援線性與半對數顯示。
+- 新增介電層電場與 breakdown risk 啟發式提醒。
+- 新增定性 band alignment / contact warning preview，提醒功函數本身不能決定真實二維材料接觸。
+- 可從目前元件結構讀取 channel、source、drain、gate 與 gate dielectric layers，並帶入通道尺寸、介電層厚度與材料資料庫中的候選參數。
+- 可連結製程流程中的電性量測或低溫電性量測步驟，嘗試帶入 Vd/Vg 掃描範圍與溫度。
+- UI 會提醒 contact resistance、Fermi-level pinning、界面態、缺陷、穿隧、介電層漏電/崩潰、缺少 mobility、缺少介電常數與低溫 transport 尚未建模等限制。
+- 目前沒有完整 TCAD、NEGF、DFT、真實 Schottky transport、trap/hysteresis model、measured data fitting 或低溫輸運模型；接觸電阻必須由實驗校準。
+
 ## 科學準確性聲明
 
 本工具目前是「物理導向的視覺化與近似分析工具」，不是完整 TCAD、DFT 或分子動力學模擬器。所有計算結果都需要搭配實驗資料與文獻參數判讀；在未來加入任何模型或公式時，也應清楚標註假設、適用範圍與限制。

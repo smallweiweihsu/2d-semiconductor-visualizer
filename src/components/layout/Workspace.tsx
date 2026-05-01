@@ -3,6 +3,7 @@ import type { WorkspaceTab } from '../../data/workspaceTabs'
 import type { DeviceStructure } from '../../types/device'
 import type { ProcessFlow } from '../../types/process'
 import { DeviceStructureEditor } from '../device/DeviceStructureEditor'
+import { ElectricalWorkspace } from '../electrical/ElectricalWorkspace'
 import { MaterialDatabase } from '../materials/MaterialDatabase'
 import { OxidationWorkspace } from '../oxidation/OxidationWorkspace'
 import { ProcessDiffusionWorkspace } from '../process/ProcessDiffusionWorkspace'
@@ -34,6 +35,15 @@ export function Workspace({
 
   if (tab.id === 'materials') {
     return <MaterialDatabase />
+  }
+
+  if (tab.id === 'electrical') {
+    return (
+      <ElectricalWorkspace
+        deviceLayers={deviceStructure.layers}
+        flow={processFlow}
+      />
+    )
   }
 
   if (tab.id === 'diffusion') {
