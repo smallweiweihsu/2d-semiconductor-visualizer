@@ -19,7 +19,7 @@ const voltageModes: VoltageMode[] = ['none', 'grounded', 'biased', 'floating']
 export function LayerEditor({ layer, onUpdateLayer }: LayerEditorProps) {
   if (!layer) {
     return (
-      <section className="rounded-lg border border-slate-800 bg-slate-950/40 p-4">
+      <section className="min-w-0 rounded-lg border border-slate-800 bg-slate-950/40 p-4">
         <h3 className="text-sm font-medium text-slate-200">材料層設定</h3>
         <p className="mt-3 text-sm text-slate-500">請先選擇或新增一個材料層。</p>
       </section>
@@ -47,7 +47,7 @@ export function LayerEditor({ layer, onUpdateLayer }: LayerEditorProps) {
   }
 
   return (
-    <section className="rounded-lg border border-slate-800 bg-slate-950/40 p-4">
+    <section className="min-w-0 overflow-y-auto rounded-lg border border-slate-800 bg-slate-950/40 p-4 min-[1800px]:max-h-[calc(100vh-14rem)]">
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="text-sm font-medium text-slate-200">材料層設定</h3>
@@ -63,7 +63,7 @@ export function LayerEditor({ layer, onUpdateLayer }: LayerEditorProps) {
       </div>
 
       <div className="mt-4 grid gap-4">
-        <section className="grid gap-3 md:grid-cols-2">
+        <section className="grid min-w-0 gap-3 md:grid-cols-2 min-[1800px]:grid-cols-1">
           <TextField
             label="材料層名稱"
             onChange={(value) => updateLayer({ name: value })}
@@ -112,7 +112,7 @@ export function LayerEditor({ layer, onUpdateLayer }: LayerEditorProps) {
             </select>
           </label>
 
-          <div className="grid grid-cols-[1fr_120px] gap-3">
+          <div className="grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-[minmax(0,1fr)_120px] md:col-span-2 min-[1800px]:col-span-1">
             <label className="flex items-center gap-2 rounded-md border border-slate-800 bg-slate-900/60 px-3 py-2 text-sm text-slate-300">
               <input
                 checked={activeLayer.visible}
@@ -305,7 +305,7 @@ function FormSection({ title, children }: FormSectionProps) {
   return (
     <section>
       <h4 className="text-xs font-medium text-slate-300">{title}</h4>
-      <div className="mt-3 grid gap-3 md:grid-cols-3">{children}</div>
+      <div className="mt-3 grid min-w-0 gap-3 md:grid-cols-3 min-[1800px]:grid-cols-2">{children}</div>
     </section>
   )
 }

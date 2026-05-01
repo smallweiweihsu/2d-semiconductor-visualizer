@@ -31,9 +31,9 @@ export function LayerStackList({
   const layersTopToBottom = [...layers].reverse()
 
   return (
-    <section className="flex min-h-0 flex-col rounded-lg border border-slate-800 bg-slate-950/40 p-4">
-      <div className="flex items-center justify-between gap-3">
-        <div>
+    <section className="flex min-h-0 min-w-0 flex-col rounded-lg border border-slate-800 bg-slate-950/40 p-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="min-w-0">
           <h3 className="text-sm font-medium text-slate-200">材料層堆疊</h3>
           <p className="mt-1 text-xs text-slate-500">上方為元件頂部，下方為底部。</p>
         </div>
@@ -46,7 +46,7 @@ export function LayerStackList({
         </button>
       </div>
 
-      <div className="mt-4 grid min-h-0 flex-1 gap-3 overflow-y-auto pr-1">
+      <div className="mt-4 grid min-h-0 min-w-0 flex-1 gap-3 overflow-y-auto pr-1">
         {layersTopToBottom.length === 0 ? (
           <div className="rounded-lg border border-dashed border-slate-700 p-4 text-sm text-slate-500">
             目前沒有任何材料層。
@@ -75,7 +75,7 @@ export function LayerStackList({
                   type="button"
                 >
                   <div className="flex items-start justify-between gap-3">
-                    <div>
+                    <div className="min-w-0">
                       <div className="flex items-center gap-2">
                         <span className="rounded bg-slate-950 px-2 py-1 text-xs text-slate-500">
                           {displayIndex === 0
@@ -84,7 +84,7 @@ export function LayerStackList({
                               ? '下方'
                               : `第 ${displayIndex + 1} 層`}
                         </span>
-                        <h4 className="text-sm font-semibold text-slate-100">
+                        <h4 className="min-w-0 truncate text-sm font-semibold text-slate-100">
                           {layer.name}
                         </h4>
                       </div>
@@ -95,7 +95,7 @@ export function LayerStackList({
                       </p>
                     </div>
 
-                    <div className="flex flex-col items-end gap-1 text-xs">
+                    <div className="shrink-0 flex flex-col items-end gap-1 text-xs">
                       <span
                         className={`rounded-full border px-2 py-1 ${
                           layer.visible
@@ -120,7 +120,7 @@ export function LayerStackList({
                   ) : null}
                 </button>
 
-                <div className="mt-3 grid grid-cols-4 gap-2 text-xs">
+                <div className="mt-3 grid grid-cols-2 gap-2 text-xs sm:grid-cols-4 min-[1800px]:grid-cols-2">
                   <ActionButton
                     disabled={isTop}
                     label="上移"

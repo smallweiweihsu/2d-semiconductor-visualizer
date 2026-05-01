@@ -27,10 +27,10 @@ export function ViewerControls({
   onToggleLabels,
 }: ViewerControlsProps) {
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex min-w-0 flex-wrap items-center gap-2">
       {viewButtons.map((button) => (
         <button
-          className={`rounded-md border px-2.5 py-1.5 text-xs transition ${
+          className={`shrink-0 rounded-md border px-2.5 py-1.5 text-xs transition ${
             currentView === button.id
               ? 'border-cyan-600 bg-cyan-950/50 text-cyan-100'
               : 'border-slate-700 bg-slate-950/50 text-slate-300 hover:border-slate-600'
@@ -44,7 +44,7 @@ export function ViewerControls({
       ))}
 
       <button
-        className="rounded-md border border-slate-700 bg-slate-950/50 px-2.5 py-1.5 text-xs text-slate-300 transition hover:border-slate-600"
+        className="shrink-0 rounded-md border border-slate-700 bg-slate-950/50 px-2.5 py-1.5 text-xs text-slate-300 transition hover:border-slate-600"
         onClick={onResetView}
         type="button"
       >
@@ -52,7 +52,7 @@ export function ViewerControls({
       </button>
 
       <button
-        className={`rounded-md border px-2.5 py-1.5 text-xs transition ${
+        className={`shrink-0 rounded-md border px-2.5 py-1.5 text-xs transition ${
           exploded
             ? 'border-amber-600 bg-amber-950/40 text-amber-100'
             : 'border-slate-700 bg-slate-950/50 text-slate-300 hover:border-slate-600'
@@ -64,7 +64,7 @@ export function ViewerControls({
       </button>
 
       <button
-        className={`rounded-md border px-2.5 py-1.5 text-xs transition ${
+        className={`shrink-0 rounded-md border px-2.5 py-1.5 text-xs transition ${
           showLabels
             ? 'border-emerald-700 bg-emerald-950/35 text-emerald-100'
             : 'border-slate-700 bg-slate-950/50 text-slate-300 hover:border-slate-600'

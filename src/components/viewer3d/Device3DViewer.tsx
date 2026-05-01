@@ -39,9 +39,9 @@ export function Device3DViewer({
   }
 
   return (
-    <section className="rounded-lg border border-slate-800 bg-slate-950/40 p-4">
-      <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
-        <div>
+    <section className="min-w-0 overflow-hidden rounded-lg border border-slate-800 bg-slate-950/40 p-4">
+      <div className="grid min-w-0 gap-3">
+        <div className="min-w-0">
           <h3 className="text-sm font-medium text-slate-200">
             3D 元件視覺化
           </h3>
@@ -53,18 +53,20 @@ export function Device3DViewer({
           </p>
         </div>
 
-        <ViewerControls
-          currentView={currentView}
-          exploded={exploded}
-          showLabels={showLabels}
-          onResetView={handleResetView}
-          onSetView={setCurrentView}
-          onToggleExploded={() => setExploded((current) => !current)}
-          onToggleLabels={() => setShowLabels((current) => !current)}
-        />
+        <div className="min-w-0 rounded-md border border-slate-800 bg-slate-950/50 p-2">
+          <ViewerControls
+            currentView={currentView}
+            exploded={exploded}
+            showLabels={showLabels}
+            onResetView={handleResetView}
+            onSetView={setCurrentView}
+            onToggleExploded={() => setExploded((current) => !current)}
+            onToggleLabels={() => setShowLabels((current) => !current)}
+          />
+        </div>
       </div>
 
-      <div className="mt-4 h-[30rem] overflow-hidden rounded-lg border border-slate-800 bg-slate-950">
+      <div className="mt-4 h-[420px] overflow-hidden rounded-lg border border-slate-800 bg-slate-950 xl:h-[520px]">
         {fallbackMessage ? (
           <div className="grid h-full place-items-center px-6 text-center text-sm text-slate-500">
             {fallbackMessage}
@@ -113,7 +115,7 @@ export function Device3DViewer({
         )}
       </div>
 
-      <div className="mt-3 flex flex-wrap gap-3 text-xs text-slate-500">
+      <div className="mt-3 flex max-h-28 flex-wrap gap-2 overflow-y-auto pr-1 text-xs text-slate-500">
         {geometry.renderLayers.map((renderLayer) => (
           <button
             className="flex items-center gap-2 rounded-full border border-slate-800 bg-slate-900/60 px-2.5 py-1 text-left hover:border-slate-700"

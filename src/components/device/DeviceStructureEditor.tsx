@@ -210,7 +210,8 @@ export function DeviceStructureEditor({
   }
 
   return (
-    <section className="flex min-h-[36rem] min-w-0 flex-col gap-4 rounded-lg border border-slate-800 bg-slate-900/70 p-4 shadow-2xl shadow-slate-950/30">
+    <section className="flex min-h-[36rem] min-w-0 overflow-hidden rounded-lg border border-slate-800 bg-slate-900/70 shadow-2xl shadow-slate-950/30">
+      <div className="flex min-w-0 flex-1 flex-col gap-4 overflow-y-auto p-4">
       <header className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
         <div>
           <h2 className="text-2xl font-semibold text-slate-50">元件結構</h2>
@@ -230,8 +231,8 @@ export function DeviceStructureEditor({
         onSelectTemplate={handleSelectTemplate}
       />
 
-      <div className="grid min-h-0 gap-4 2xl:grid-cols-[320px_minmax(0,1fr)_420px]">
-        <div className="flex min-h-[40rem] flex-col gap-4">
+      <div className="grid min-h-0 min-w-0 gap-4 min-[1800px]:grid-cols-[300px_minmax(520px,1fr)_420px]">
+        <div className="flex min-h-0 min-w-0 flex-col gap-4 min-[1800px]:max-h-[calc(100vh-14rem)]">
           <LayerStackList
             layers={structure.layers}
             selectedLayerId={selectedLayerId}
@@ -245,8 +246,8 @@ export function DeviceStructureEditor({
           <DeviceValidationPanel warnings={warnings} />
         </div>
 
-        <div className="grid content-start gap-4">
-          <section className="rounded-lg border border-slate-800 bg-slate-950/30 p-2">
+        <div className="grid min-w-0 content-start gap-4">
+          <section className="min-w-0 overflow-hidden rounded-lg border border-slate-800 bg-slate-950/30 p-2">
             <div className="mb-2 flex flex-wrap gap-2">
               <PreviewModeButton
                 active={visualizationMode === '3d'}
@@ -263,7 +264,7 @@ export function DeviceStructureEditor({
             {visualizationMode === '3d' ? (
               <Suspense
                 fallback={
-                  <div className="grid min-h-[30rem] place-items-center rounded-lg border border-slate-800 bg-slate-950/40 text-sm text-slate-500">
+                  <div className="grid min-h-[420px] place-items-center rounded-lg border border-slate-800 bg-slate-950/40 text-sm text-slate-500 xl:min-h-[520px]">
                     3D 視覺化載入中...
                   </div>
                 }
@@ -291,6 +292,7 @@ export function DeviceStructureEditor({
         </div>
 
         <LayerEditor layer={selectedLayer} onUpdateLayer={updateLayer} />
+      </div>
       </div>
     </section>
   )
