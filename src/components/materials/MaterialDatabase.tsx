@@ -73,7 +73,7 @@ export function MaterialDatabase() {
   )
 
   return (
-    <section className="flex min-h-[36rem] min-w-0 max-h-[calc(100vh-19rem)] flex-col gap-3 overflow-hidden rounded-lg border border-slate-800 bg-slate-900/70 p-4 shadow-2xl shadow-slate-950/30">
+    <section className="flex min-h-[calc(100vh-12rem)] min-w-0 flex-col gap-3 overflow-hidden rounded-lg border border-slate-800 bg-slate-900/70 p-4 shadow-2xl shadow-slate-950/30">
       <header className="flex flex-col gap-3 xl:flex-row xl:items-end xl:justify-between">
         <div>
           <h2 className="text-2xl font-semibold text-slate-50">材料資料庫</h2>

@@ -34,7 +34,7 @@ export function MaterialDetail({ material }: MaterialDetailProps) {
   const stats = getMaterialParameterStats(material)
 
   return (
-    <section className="min-h-0 overflow-y-auto rounded-lg border border-slate-800/80 bg-slate-950/25 p-4">
+    <section className="h-full min-h-[34rem] overflow-y-auto rounded-lg border border-slate-800/80 bg-slate-950/25 p-4 xl:min-h-0">
       <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div className="min-w-0">
           <div className="flex items-center gap-3">
@@ -89,10 +89,10 @@ export function MaterialDetail({ material }: MaterialDetailProps) {
         ))}
 
         <section className="rounded-md border border-slate-800/80 bg-slate-900/35">
-          <div className="border-b border-slate-800/80 px-3 py-2">
+          <div className="border-b border-slate-800/80 px-4 py-3">
             <h4 className="text-sm font-medium text-slate-200">擴散參數</h4>
           </div>
-          <div className="grid gap-3 p-3 text-sm text-slate-400 md:grid-cols-3">
+          <div className="grid gap-4 p-4 text-sm text-slate-400 md:grid-cols-3">
             <div>
               <div className="text-xs text-slate-500">D0_m2s</div>
               <div className="mt-1">
@@ -112,7 +112,7 @@ export function MaterialDetail({ material }: MaterialDetailProps) {
               </div>
             </div>
           </div>
-          <p className="border-t border-slate-800/80 px-3 py-2 text-xs leading-5 text-slate-500">
+          <p className="border-t border-slate-800/80 px-4 py-3 text-xs leading-5 text-slate-500">
             {material.diffusion.notes}
           </p>
         </section>
@@ -150,7 +150,7 @@ interface ParameterGroupProps {
 function ParameterGroup({ groupTitle, keys, material }: ParameterGroupProps) {
   return (
     <section className="overflow-hidden rounded-md border border-slate-800/80 bg-slate-900/35">
-      <div className="border-b border-slate-800/80 px-3 py-2">
+      <div className="border-b border-slate-800/80 px-4 py-3">
         <h4 className="text-sm font-medium text-slate-200">{groupTitle}</h4>
       </div>
 
@@ -158,11 +158,11 @@ function ParameterGroup({ groupTitle, keys, material }: ParameterGroupProps) {
         <table className="w-full min-w-[720px] border-collapse text-left text-sm">
           <thead className="bg-slate-950/70 text-xs text-slate-500">
             <tr>
-              <th className="px-3 py-2 font-medium">參數</th>
-              <th className="px-3 py-2 font-medium">數值</th>
-              <th className="px-3 py-2 font-medium">單位</th>
-              <th className="px-3 py-2 font-medium">信心標示</th>
-              <th className="px-3 py-2 font-medium">註記</th>
+              <th className="px-4 py-3 font-medium">參數</th>
+              <th className="px-4 py-3 font-medium">數值</th>
+              <th className="px-4 py-3 font-medium">單位</th>
+              <th className="px-4 py-3 font-medium">信心標示</th>
+              <th className="px-4 py-3 font-medium">註記</th>
             </tr>
           </thead>
           <tbody>
@@ -174,19 +174,19 @@ function ParameterGroup({ groupTitle, keys, material }: ParameterGroupProps) {
                   className="border-t border-slate-800/70 align-top text-slate-300"
                   key={parameterKey}
                 >
-                  <td className="px-3 py-2 font-medium text-slate-100">
+                  <td className="px-4 py-3 font-medium text-slate-100">
                     {parameterLabels[parameterKey]}
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-4 py-3">
                     {formatParameterValue(parameter)}
                   </td>
-                  <td className="px-3 py-2 text-slate-400">
+                  <td className="px-4 py-3 text-slate-400">
                     {parameter.unit ?? '無單位'}
                   </td>
-                  <td className="px-3 py-2">
+                  <td className="px-4 py-3">
                     <ParameterBadge confidence={parameter.confidence} />
                   </td>
-                  <td className="max-w-md px-3 py-2 text-xs leading-5 text-slate-500">
+                  <td className="max-w-md px-4 py-3 text-xs leading-5 text-slate-500">
                     {parameter.note ?? '無補充註記'}
                   </td>
                 </tr>

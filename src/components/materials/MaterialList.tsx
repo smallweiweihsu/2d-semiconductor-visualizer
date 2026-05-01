@@ -15,7 +15,7 @@ export function MaterialList({
   onSelectMaterial,
 }: MaterialListProps) {
   return (
-    <section className="flex min-h-0 flex-col rounded-lg border border-slate-800/80 bg-slate-950/25 p-3">
+    <section className="flex h-full min-h-[34rem] flex-col rounded-lg border border-slate-800/80 bg-slate-950/25 p-3 xl:min-h-0">
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-sm font-medium text-slate-200">材料清單</h3>
         <span className="text-xs text-slate-500">{materials.length} 筆</span>

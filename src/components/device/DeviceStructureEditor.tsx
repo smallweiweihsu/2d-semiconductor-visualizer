@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { lazy, Suspense, useMemo, useState } from 'react'
 import {
   createDeviceStructureFromTemplate,
   deviceTemplates,
@@ -13,6 +13,12 @@ import { LayerStackList } from './LayerStackList'
 import { LayerStackPreview } from './LayerStackPreview'
 import { validateDeviceStructure } from './deviceValidation'
 
+const Device3DViewer = lazy(() =>
+  import('../viewer3d/Device3DViewer').then((module) => ({
+    default: module.Device3DViewer,
+  })),
+)
+
 export function DeviceStructureEditor() {
   const [structure, setStructure] = useState<DeviceStructure>(() =>
     structuredClone(initialDeviceStructure),
@@ -23,6 +29,7 @@ export function DeviceStructureEditor() {
   const [selectedLayerId, setSelectedLayerId] = useState<string | null>(
     getInitialSelectedLayerId(initialDeviceStructure),
   )
+  const [visualizationMode, setVisualizationMode] = useState<'3d' | '2d'>('3d')
 
   const warnings = useMemo(
     () => validateDeviceStructure(structure),
@@ -226,12 +233,44 @@ export function DeviceStructureEditor() {
           <DeviceValidationPanel warnings={warnings} />
         </div>
 
-        <div className="grid gap-4">
-          <LayerStackPreview
-            layers={structure.layers}
-            selectedLayerId={selectedLayerId}
-            onSelectLayer={setSelectedLayerId}
-          />
+        <div className="grid content-start gap-4">
+          <section className="rounded-lg border border-slate-800 bg-slate-950/30 p-2">
+            <div className="mb-2 flex flex-wrap gap-2">
+              <PreviewModeButton
+                active={visualizationMode === '3d'}
+                label="3D 視覺化"
+                onClick={() => setVisualizationMode('3d')}
+              />
+              <PreviewModeButton
+                active={visualizationMode === '2d'}
+                label="2D 側視圖"
+                onClick={() => setVisualizationMode('2d')}
+              />
+            </div>
+
+            {visualizationMode === '3d' ? (
+              <Suspense
+                fallback={
+                  <div className="grid min-h-[30rem] place-items-center rounded-lg border border-slate-800 bg-slate-950/40 text-sm text-slate-500">
+                    3D 視覺化載入中...
+                  </div>
+                }
+              >
+                <Device3DViewer
+                  layers={structure.layers}
+                  selectedLayerId={selectedLayerId}
+                  onSelectLayer={setSelectedLayerId}
+                />
+              </Suspense>
+            ) : (
+              <LayerStackPreview
+                layers={structure.layers}
+                selectedLayerId={selectedLayerId}
+                onSelectLayer={setSelectedLayerId}
+              />
+            )}
+          </section>
+
           <DeviceSummary
             structure={structure}
             warnings={warnings}
@@ -271,4 +310,26 @@ function getStructureSignature(structure: DeviceStructure) {
     description_zh: structure.description_zh,
     layers: structure.layers,
   })
+}
+
+interface PreviewModeButtonProps {
+  active: boolean
+  label: string
+  onClick: () => void
+}
+
+function PreviewModeButton({ active, label, onClick }: PreviewModeButtonProps) {
+  return (
+    <button
+      className={`rounded-md border px-3 py-2 text-sm transition ${
+        active
+          ? 'border-cyan-600 bg-cyan-950/50 text-cyan-100'
+          : 'border-slate-700 bg-slate-950/50 text-slate-300 hover:border-slate-600'
+      }`}
+      onClick={onClick}
+      type="button"
+    >
+      {label}
+    </button>
+  )
 }
