@@ -2,52 +2,44 @@
 
 ## 1. Summary of what was built
 
-完成 Batch 13：新增文獻候選資料庫基礎、材料參數來源追蹤、文獻衝突 / 共識整理，以及第一版 UI 資訊架構重整。
+完成 Batch 14：建立第一版實用的文獻資料輸入、審核、比較與匯入 / 匯出工作流。
 
-- 新增「文獻資料庫」分頁，集中管理候選文獻來源、參數證據與 conflict groups。
-- 新增 literature type system，包含 review status、agreement status、source type、material parameter key、parameter evidence 與 conflict group。
-- 新增 placeholder / seed 文獻候選資料，全部標示為 `candidate`，不包含未驗證 DOI 或可信材料參數。
-- Material Detail 新增可收合「文獻來源」區，顯示該材料相關 evidence、candidate/reviewed/verified counts 與 conflict summaries。
-- 新增共用 `InfoIcon`、`InfoNotice`、`CollapsibleSection`、`AcknowledgableNotice` 元件。
-- 將元件結構、材料資料庫、擴散估算、氧化模擬與電性分析中的重要限制說明改為較精簡、可展開、可標示已讀的 notice。
-- 改善新增材料層後的回饋：自動選取新 layer、在 layer stack list 高亮、顯示放置方式與快速對齊 / 移動動作。
-- JSON / Markdown 匯出整合 literature database summary。
+- 新增 literature source editor，可建立/編輯候選來源、作者、年份、來源類型、DOI、URL、review status、tags 與 notes。
+- 新增 parameter evidence editor，可輸入 source、materials、parameter key、value、unit、condition、method、agreement status、confidence、summary、applicability 與 warnings。
+- 新增 conflict group editor，可整理 evidence IDs、agreement counts、summary、recommended status 與候選 recommended value。
+- 新增 recommendation workflow，可從 conflict group 建立 draft recommendation，並標示 reviewed、ready to promote 或 rejected。
+- 新增 Material Literature TODO dataset，涵蓋 WSe₂、Sb₂O₃、Sb bulk、Pd、In、WOx 與其他目標材料的高/中/低優先待查項目。
+- 文獻資料庫分頁改為 internal sections：待查清單、文獻來源、參數證據、衝突 / 共識、推薦參數、匯入 / 匯出。
+- 新增 literature database JSON 匯入 / 匯出，以及 TODO list / evidence summary Markdown 匯出。
+- Material Detail 文獻來源區升級，顯示 TODO、evidence、conflict group、recommendation counts，並分區收合。
+- Project JSON / Markdown report 可包含 literature database、todos、recommendations 摘要。
+- Export warnings、measurement warnings、process validation panel 改為可收合區塊，延續 UI decluttering。
 
 ## 2. Files changed
 
 ```text
 BATCH_REPORT.md
 README.md
-screenshots/batch13-add-layer-feedback.png
-screenshots/batch13-decluttered-materials.png
-screenshots/batch13-literature-database.png
-src/components/common/AcknowledgableNotice.tsx
-src/components/common/CollapsibleSection.tsx
-src/components/common/InfoIcon.tsx
-src/components/common/InfoNotice.tsx
-src/components/device/DeviceStructureEditor.tsx
-src/components/device/LayerStackList.tsx
-src/components/diffusion/DiffusionModelPanel.tsx
-src/components/electrical/ElectricalModelPanel.tsx
+screenshots/batch14-literature-todo-list.png
+screenshots/batch14-parameter-evidence-editor.png
+screenshots/batch14-recommendation-panel.png
+src/components/export/ExportWarnings.tsx
 src/components/export/ProjectExportWorkspace.tsx
-src/components/layout/Workspace.tsx
-src/components/literature/ConflictGroupPanel.tsx
+src/components/literature/ConflictGroupEditor.tsx
 src/components/literature/LiteratureDatabaseWorkspace.tsx
-src/components/literature/LiteratureDetailDrawer.tsx
-src/components/literature/LiteratureFilters.tsx
-src/components/literature/LiteratureSourceList.tsx
-src/components/literature/LiteratureStatusBadge.tsx
-src/components/literature/ParameterEvidenceTable.tsx
+src/components/literature/LiteratureImportExportPanel.tsx
+src/components/literature/LiteratureReviewWorkflow.tsx
+src/components/literature/LiteratureSourceEditor.tsx
+src/components/literature/MaterialLiteratureTodoPanel.tsx
+src/components/literature/ParameterEvidenceEditor.tsx
+src/components/literature/ParameterRecommendationPanel.tsx
 src/components/literature/literatureFormatting.ts
-src/components/materials/MaterialDatabase.tsx
 src/components/materials/MaterialDetail.tsx
-src/components/oxidation/OxidationModelPanel.tsx
-src/data/literatureSources.ts
-src/data/parameterConflictGroups.ts
-src/data/parameterEvidence.ts
-src/data/workspaceTabs.ts
+src/components/measurements/MeasurementWarnings.tsx
+src/components/process/ProcessValidationPanel.tsx
+src/data/materialLiteratureTodos.ts
+src/data/parameterRecommendations.ts
 src/types/literature.ts
-src/types/project.ts
 src/utils/markdownReport.ts
 src/utils/projectExport.ts
 ```
@@ -116,13 +108,20 @@ src/
       TopBar.tsx
       Workspace.tsx
     literature/
+      ConflictGroupEditor.tsx
       ConflictGroupPanel.tsx
       LiteratureDatabaseWorkspace.tsx
       LiteratureDetailDrawer.tsx
       LiteratureFilters.tsx
+      LiteratureImportExportPanel.tsx
+      LiteratureReviewWorkflow.tsx
+      LiteratureSourceEditor.tsx
       LiteratureSourceList.tsx
       LiteratureStatusBadge.tsx
+      MaterialLiteratureTodoPanel.tsx
+      ParameterEvidenceEditor.tsx
       ParameterEvidenceTable.tsx
+      ParameterRecommendationPanel.tsx
       literatureFormatting.ts
     materials/
       MaterialCategoryFilter.tsx
@@ -188,10 +187,12 @@ src/
     electricalPresets.ts
     literatureSources.ts
     materialCategories.ts
+    materialLiteratureTodos.ts
     materials.ts
     oxidationPresets.ts
     parameterConflictGroups.ts
     parameterEvidence.ts
+    parameterRecommendations.ts
     processStepTypes.ts
     processSteps.ts
     workspaceTabs.ts
@@ -233,9 +234,9 @@ C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\
 C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe node_modules\eslint\bin\eslint.js .
 C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe node_modules\vite\bin\vite.js build
 Invoke-WebRequest http://127.0.0.1:5174/
-msedge --headless=new --disable-gpu --window-size=1600,1200 --screenshot=...
+msedge --headless=new --no-sandbox --disable-gpu --window-size=1600,1200 --screenshot=...
 git add .
-git commit -m "Batch 13: Add literature database and declutter UI"
+git commit -m "Batch 14: Add literature review workflow"
 git rev-parse --short HEAD
 ```
 
@@ -267,39 +268,41 @@ normal npm unavailable; used bundled Node fallback with local TypeScript, ESLint
 
 ## 6. Git commit and push result
 
-- Batch 13 implementation commit hash: `4665655`
+- Batch 14 commit hash: `81f6d21`
 - Current branch: `dev`
 - Remote URL: `https://github.com/smallweiweihsu/2d-semiconductor-visualizer.git`
-- Push result: origin/dev push completed for Batch 13 implementation and final report update.
+- Push result: origin/dev push completed for Batch 14 implementation and final report update.
 
 ## 7. Visible UI description
 
-- 新增「文獻資料庫」分頁，包含 compact intro notice、filters、文獻來源、參數證據與衝突 / 共識整理。
-- 文獻來源列表顯示 title、year、source type、review status 與 tags。
-- 參數證據表格顯示 material、parameter、value、condition、method、source、agreement status 與 confidence。
-- 衝突整理 panel 顯示 material、parameter、summary、evidence count、supports / contradicts / condition-dependent counts 與 recommendation status。
-- 點選 source / evidence / conflict 後，右側 detail area 顯示詳細資訊。
-- Material Detail 新增 collapsed「文獻來源」區，顯示 related evidence、candidate / reviewed / verified counts 與 conflict summaries。
-- 元件結構、材料資料庫、擴散、氧化、電性分析的主要限制提醒改為較精簡的可展開 notice，並可標示已讀。
-- 新增材料層後，layer stack list 會高亮新 layer，中間會顯示新增成功訊息與快速動作：靠左、置中、靠右、符合參考層、移到上方、移到下方。
+- 文獻資料庫分頁現在有內部分頁：待查清單、文獻來源、參數證據、衝突 / 共識、推薦參數、匯入 / 匯出。
+- 待查清單可依 priority、material、parameter、status 與 search text 篩選，並可標示 in progress、candidate found、reviewed、verified。
+- 待查項目可一鍵切到 parameter evidence editor，預填 material 與 parameter key。
+- Source editor 可新增/儲存候選文獻來源、複製 source ID，並以 review workflow 切換 candidate/reviewed/verified/rejected。
+- Parameter evidence editor 支援多材料、null value、qualitative claim、agreement status、confidence、condition、method、summary、applicability 與 warnings。
+- Conflict group editor 可選 evidence IDs，顯示 supports/contradicts/condition-dependent/unclear/not-applicable counts。
+- Recommendation panel 可從 conflict group 建立 draft recommendation，標記 reviewed / ready to promote / rejected，並複製推薦摘要。
+- Import/export panel 可匯出 literature database JSON、TODO Markdown、evidence summary Markdown，也可貼上 JSON 匯入。
+- Material Detail 文獻來源區顯示 TODO/evidence/conflict/recommendation counts，細節預設收合，避免重新變擁擠。
+- Project export report 的文獻摘要包含 sources/evidence/todos/recommendations/conflict group counts。
 
 Screenshots:
 
 ```text
-screenshots/batch13-literature-database.png
-screenshots/batch13-decluttered-materials.png
-screenshots/batch13-add-layer-feedback.png
+screenshots/batch14-literature-todo-list.png
+screenshots/batch14-parameter-evidence-editor.png
+screenshots/batch14-recommendation-panel.png
 ```
 
 ## 8. Warnings or limitations
 
-- 本批只建立 literature candidate database foundation，沒有自動 web search、DOI lookup、PDF parsing 或 literature automation。
-- 目前 seed records 都是 placeholder / candidate，不可視為真實引用或正式材料參數。
-- 沒有自動 parameter promotion；材料資料庫正式參數仍需人工審核。
-- Acknowledged notice state 使用 localStorage，尚未納入全域同步或後端保存。
-- Add-layer feedback 可以高亮與提供 quick actions；更完整的互動式幾何編輯仍留待後續批次。
+- 本批沒有 automatic web search、DOI lookup、PDF parsing 或 literature automation。
+- 所有 seed TODO / placeholder records 都不是正式文獻引用，也不是 verified material parameters。
+- Candidate evidence 不會自動寫入 `materials.ts`；recommendation 也只是待人工審核的候選摘要。
+- Literature workspace 的新增/編輯狀態目前是瀏覽器 session state；可用本批新增的 literature JSON 匯出保存。
+- Project export currently includes the seeded literature database snapshot;跨頁即時文獻編輯狀態尚未提升成全域 app state。
 - Normal npm 仍不可用，本批使用 bundled Node fallback 完成 typecheck、lint、build。
 
 ## 9. Next recommended batch
 
-Batch 14: verified literature data entry workflow and first curated material parameter set.
+Batch 15: first real curated literature entry batch for WSe₂, Sb₂O₃, Sb, Pd, In, and WOx.
