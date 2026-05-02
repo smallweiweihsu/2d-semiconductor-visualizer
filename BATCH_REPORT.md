@@ -2,43 +2,43 @@
 
 ## 1. Summary of what was built
 
-完成 Batch 11：新增第一版「量測資料匯入與比較」功能。
+完成 Batch 12：新增第一版量測資料基本處理工具，支援非破壞式 processing pipeline、處理後資料集、peak markers、raw vs processed 視覺化，以及 JSON / Markdown 匯出整合。
 
-- 新增 `MeasurementDataset`、`MeasurementColumn`、`MeasurementSeries`、`MeasurementComparison` 等量測資料型別。
-- 新增 CSV / TXT / DAT / manual paste 的輕量解析工具，支援自動偵測逗號、Tab、空白與分號分隔。
-- 新增欄位類型推論與手動欄位對應，可標示 Raman shift、wavelength、energy、intensity、voltage、current、temperature、time 或 custom。
-- 新增「量測資料」分頁，包含匯入面板、欄位對應器、資料集清單、metadata 編輯器、資料預覽、SVG plot、比較面板與提醒區。
-- 可把量測資料連結到目前 device layers 與 process steps。
-- 支援同類型資料集疊圖與 before / after / reference comparison 物件。
-- JSON 匯出已整合 `measurementDatasets` 與 `measurementComparisons`。
-- Markdown 報告已新增量測資料摘要與量測比較摘要，不嵌入完整原始資料表以避免報告過大。
+- 新增 measurement processing 型別：`ProcessingOperation`、`ProcessedMeasurementDataset`、`PeakMarker`、`MeasurementProcessingState`。
+- 新增純函式處理工具：`abs(Y)`、`Y 取負號`、最大值正規化、Min-Max 正規化、面積正規化、常數 baseline、線性 baseline、local maximum peak suggestion。
+- 新增資料處理面板，可選 source dataset、x/y 欄位、加入 operation、調整 operation 參數、啟用 / 停用 / 移除 / 排序 operation。
+- 新增電性 abs(I) helper 與光譜正規化 helper，並顯示資料處理的科學限制。
+- 新增處理後資料預覽，不覆蓋原始資料。
+- 新增手動 peak marker 與自動 peak suggestion panel。
+- 更新 SVG plot，可疊加原始資料與處理後資料，並以垂直標線顯示 peak markers。
+- 更新量測比較提醒，說明不同處理流程不可直接比較。
+- JSON 匯出整合 raw datasets、processed datasets、peak markers 與 comparisons。
+- Markdown 報告新增「量測資料處理摘要」，列出 source dataset、處理步驟、警告與 peak marker table。
 
 ## 2. Files changed
 
 ```text
 BATCH_REPORT.md
 README.md
-screenshots/batch11-measurement-comparison.png
-screenshots/batch11-measurement-import.png
-screenshots/batch11-measurement-plot.png
+screenshots/batch12-electrical-abs-current.png
+screenshots/batch12-measurement-processing.png
+screenshots/batch12-peak-markers.png
 src/components/export/ProjectExportWorkspace.tsx
 src/components/layout/AppShell.tsx
 src/components/layout/Workspace.tsx
-src/components/measurements/MeasurementColumnMapper.tsx
 src/components/measurements/MeasurementComparisonPanel.tsx
-src/components/measurements/MeasurementDataPreview.tsx
-src/components/measurements/MeasurementDatasetList.tsx
-src/components/measurements/MeasurementImportPanel.tsx
-src/components/measurements/MeasurementMetadataEditor.tsx
 src/components/measurements/MeasurementPlot.tsx
-src/components/measurements/MeasurementWarnings.tsx
+src/components/measurements/MeasurementProcessingControls.tsx
+src/components/measurements/MeasurementProcessingOperationList.tsx
+src/components/measurements/MeasurementProcessingPanel.tsx
 src/components/measurements/MeasurementWorkspace.tsx
-src/components/measurements/measurementFormatting.ts
-src/data/workspaceTabs.ts
+src/components/measurements/PeakMarkerList.tsx
+src/components/measurements/PeakMarkerPanel.tsx
+src/components/measurements/ProcessedDataPreview.tsx
 src/types/measurement.ts
 src/types/project.ts
 src/utils/markdownReport.ts
-src/utils/measurementImport.ts
+src/utils/measurementProcessing.ts
 src/utils/projectExport.ts
 ```
 
@@ -115,8 +115,14 @@ src/
       MeasurementImportPanel.tsx
       MeasurementMetadataEditor.tsx
       MeasurementPlot.tsx
+      MeasurementProcessingControls.tsx
+      MeasurementProcessingOperationList.tsx
+      MeasurementProcessingPanel.tsx
       MeasurementWarnings.tsx
       MeasurementWorkspace.tsx
+      PeakMarkerList.tsx
+      PeakMarkerPanel.tsx
+      ProcessedDataPreview.tsx
       measurementFormatting.ts
     oxidation/
       OxidationModelPanel.tsx
@@ -181,29 +187,28 @@ src/
     .gitkeep
     markdownReport.ts
     measurementImport.ts
+    measurementProcessing.ts
     projectExport.ts
 ```
 
 ## 4. Commands run
 
 ```text
+git status --short
+git branch --show-current
+git remote -v
 where.exe node
 where.exe npm
 node -v
 npm -v
-git status --short
-git branch --show-current
-git remote -v
-git add BATCH_REPORT.md
-git commit -m "Batch 10: Final report update"
 C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe node_modules\typescript\bin\tsc -b
 C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe node_modules\eslint\bin\eslint.js .
 C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe node_modules\vite\bin\vite.js build
 tree src /F
 Microsoft Edge headless screenshots for #measurements
 git add ...
-git commit -m "Batch 11: Add measured data import and comparison"
-git commit -m "Batch 11: Final report update"
+git commit -m "Batch 12: Add measurement data processing tools"
+git commit -m "Batch 12: Final report update"
 git push origin dev
 ```
 
@@ -223,38 +228,38 @@ git push origin dev
 
 ## 6. Git commit and push result
 
-- Batch 11 commit hash：`ad96a16`
+- Batch 12 commit hash：`af58b8b`
 - Current branch：`dev`
 - Remote URL：`https://github.com/smallweiweihsu/2d-semiconductor-visualizer.git`
-- Push result：Batch 11 implementation 與 final report update 已推送到 `origin/dev`。
+- Push result：Batch 12 implementation 與 final report update 已推送到 `origin/dev`。
 
 ## 7. Visible UI description
 
-- 新增頂部分頁「量測資料」，tab bar 仍維持水平捲動。
-- 工作區標題為「量測資料匯入與比較」，並顯示科學誠信提醒：匯入功能只用於整理、視覺化與初步比較，不能直接視為定量結論。
-- 匯入面板提供量測類型選擇、檔案輸入、分隔符號選擇、資料集名稱與手動貼上資料欄位。
-- 內建 Raman-like 範例資料可用於快速測試 manual paste import。
-- 欄位對應器會列出原始欄位、推測欄位類型、單位與樣本值，使用者可手動修改欄位 mapping。
-- 資料集清單顯示資料集名稱、量測類型、匯入時間、資料列數、關聯材料層 / 製程步驟數與警告數。
-- Metadata editor 可編輯 before/after/reference 標籤、儀器與 Raman / PL / electrical 相關 metadata，並可勾選關聯 device layers 與 process steps。
-- Data preview 顯示前 20 筆資料。
-- SVG plot 可顯示同類型資料集 overlay，並支援 abs(I) 與 log10(Y) toggle。
-- Comparison panel 可儲存同類型資料集的 before/after/reference 比較，並顯示 Raman、PL、電性資料的判讀提醒。
-- Export integration：JSON 匯出包含量測資料與比較；Markdown 報告包含量測資料摘要與比較摘要。
+- 「量測資料」分頁新增內部分區：匯入資料、資料處理、視覺化 / 比較、Metadata / 關聯。
+- 資料處理面板可選擇 source dataset、X column 與 Y column。
+- Operation controls 可新增 abs(Y)、Y 取負號、最大值正規化、Min-Max 正規化、面積正規化、扣除常數 baseline、扣除線性 baseline。
+- Operation list 支援 enabled/disabled、移除、上移、下移與 baseline 參數編輯。
+- 電性資料會顯示「電流正負號處理」helper，提醒 abs(I) 需確認接線方向與掃描方向。
+- Raman / PL 資料會顯示「光譜正規化」helper，提醒正規化會改變強度判讀。
+- 可按「產生處理後資料」建立 processed dataset，並在 processed data preview 查看前 20 筆。
+- Peak marker panel 支援手動輸入 x 值、label、assignment，也支援 local maximum auto suggestion。
+- Peak marker list 可編輯 label / assignment 並刪除 marker。
+- Plot 可疊加 raw 與 processed data，並顯示 peak markers 的垂直 dashed lines。
+- Markdown 報告會新增處理摘要；JSON 匯出會包含原始資料、處理後資料、peak markers 與 comparisons。
 - 截圖已儲存：
-  - `screenshots/batch11-measurement-import.png`
-  - `screenshots/batch11-measurement-plot.png`
-  - `screenshots/batch11-measurement-comparison.png`
+  - `screenshots/batch12-measurement-processing.png`
+  - `screenshots/batch12-peak-markers.png`
+  - `screenshots/batch12-electrical-abs-current.png`
 
 ## 8. Warnings or limitations
 
 - Browser Use / Node REPL browser automation 仍因 Codex WindowsApps node 存取權限問題無法啟動，因此使用 Edge headless 截圖作為 fallback。
-- 目前量測資料只存在瀏覽器 state；需透過專案 JSON 匯出保存。
-- 目前不支援 Origin binary、Excel parser、baseline correction、smoothing、peak fitting、Raman mode assignment、PL quantum yield、electrical fitting、TLM fitting、XPS fitting 或 AFM image import。
-- Plot 是快速視覺化，不包含儀器校正、背景扣除或 fitting。
-- before/after 比較不會自動判定氧化態、材料品質或導電機制。
-- Markdown 報告只列量測摘要；完整 raw data 保存在 JSON 匯出中。
+- 目前資料處理是初步視覺化與整理工具，不是 publication-grade analysis。
+- baseline correction 尚未做物理或統計驗證。
+- auto peak suggestion 只是 local maximum 規則，不是 fitting、Raman mode assignment 或材料相鑑定。
+- abs(I) 不一定適合所有電性資料，仍需確認接線方向、掃描方向與物理問題。
+- 尚未實作 Lorentzian / Gaussian / Voigt fitting、smoothing、TLM fitting、XPS fitting、AFM image import、Origin binary parser 或 Excel parser。
 
 ## 9. Next recommended batch
 
-Batch 12：basic data processing tools，例如 abs(I)、normalization、baseline correction placeholder，以及 simple Raman / PL peak marking。
+Batch 13：Raman / PL peak analysis and before-after interpretation helpers。
