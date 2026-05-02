@@ -3,6 +3,8 @@ import type { DeviceStructure } from '../../types/device'
 import type {
   MeasurementComparison,
   MeasurementDataset,
+  PeakMarker,
+  ProcessedMeasurementDataset,
 } from '../../types/measurement'
 import type { ProcessFlow } from '../../types/process'
 import type { ProjectMetadata } from '../../types/project'
@@ -24,11 +26,17 @@ interface ProjectExportWorkspaceProps {
   deviceStructure: DeviceStructure
   measurementComparisons: MeasurementComparison[]
   measurementDatasets: MeasurementDataset[]
+  peakMarkers: PeakMarker[]
+  processedMeasurementDatasets: ProcessedMeasurementDataset[]
   onChangeDeviceStructure: Dispatch<SetStateAction<DeviceStructure>>
   onChangeMeasurementComparisons: Dispatch<
     SetStateAction<MeasurementComparison[]>
   >
   onChangeMeasurementDatasets: Dispatch<SetStateAction<MeasurementDataset[]>>
+  onChangePeakMarkers: Dispatch<SetStateAction<PeakMarker[]>>
+  onChangeProcessedMeasurementDatasets: Dispatch<
+    SetStateAction<ProcessedMeasurementDataset[]>
+  >
   processFlow: ProcessFlow
   onChangeProcessFlow: Dispatch<SetStateAction<ProcessFlow>>
 }
@@ -37,10 +45,14 @@ export function ProjectExportWorkspace({
   deviceStructure,
   measurementComparisons,
   measurementDatasets,
+  peakMarkers,
+  processedMeasurementDatasets,
   onChangeDeviceStructure,
   onChangeMeasurementComparisons,
   onChangeMeasurementDatasets,
+  onChangePeakMarkers,
   onChangeProcessFlow,
+  onChangeProcessedMeasurementDatasets,
   processFlow,
 }: ProjectExportWorkspaceProps) {
   const [metadata, setMetadata] = useState<ProjectMetadata>(() =>
@@ -56,12 +68,22 @@ export function ProjectExportWorkspace({
         deviceStructure,
         measurementComparisons,
         measurementDatasets,
+        peakMarkers,
+        processedMeasurementDatasets,
         processFlow,
         appNotes_zh: [
           'Batch 10 目前支援本機 JSON 匯出 / 匯入與 Markdown 報告產生。',
         ],
       }),
-    [deviceStructure, measurementComparisons, measurementDatasets, metadata, processFlow],
+    [
+      deviceStructure,
+      measurementComparisons,
+      measurementDatasets,
+      metadata,
+      peakMarkers,
+      processFlow,
+      processedMeasurementDatasets,
+    ],
   )
 
   const previewContent =
@@ -120,6 +142,10 @@ export function ProjectExportWorkspace({
               onChangeMeasurementComparisons(
                 result.data.measurementComparisons ?? [],
               )
+              onChangeProcessedMeasurementDatasets(
+                result.data.processedMeasurementDatasets ?? [],
+              )
+              onChangePeakMarkers(result.data.peakMarkers ?? [])
               setMetadata(result.data.metadata)
               setStatusMessage(
                 [

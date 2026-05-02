@@ -1,5 +1,10 @@
 import { useMemo, useState } from 'react'
-import type { MeasurementDataset, MeasurementSeries } from '../../types/measurement'
+import type {
+  MeasurementDataset,
+  MeasurementSeries,
+  PeakMarker,
+  ProcessedMeasurementDataset,
+} from '../../types/measurement'
 import { createSeriesFromDataset } from '../../utils/measurementImport'
 import {
   formatAxisType,
@@ -9,14 +14,18 @@ import {
 
 interface MeasurementPlotProps {
   datasets: MeasurementDataset[]
+  peakMarkers?: PeakMarker[]
   selectedDataset?: MeasurementDataset
+  selectedProcessedDataset?: ProcessedMeasurementDataset
 }
 
 const plotColors = ['#22d3ee', '#f59e0b', '#a78bfa', '#34d399', '#fb7185']
 
 export function MeasurementPlot({
   datasets,
+  peakMarkers = [],
   selectedDataset,
+  selectedProcessedDataset,
 }: MeasurementPlotProps) {
   const numericColumns =
     selectedDataset?.columns.filter((column) =>
@@ -67,8 +76,38 @@ export function MeasurementPlot({
       return useLogY ? Math.log10(Math.max(Math.abs(currentValue), 1e-18)) : currentValue
     }),
   }))
-  const allX = transformed.flatMap((item) => item.x)
-  const allY = transformed.flatMap((item) => item.y)
+  const processedSeries =
+    selectedDataset && selectedProcessedDataset && effectiveX && effectiveY
+      ? createSeriesFromProcessedDataset(
+          selectedProcessedDataset,
+          effectiveX,
+          effectiveY,
+          `${selectedProcessedDataset.name_zh}`,
+        )
+      : undefined
+  const processedTransformed = processedSeries
+    ? {
+        ...processedSeries,
+        y: processedSeries.y.map((value) => {
+          const currentValue = useAbsCurrent ? Math.abs(value) : value
+          return useLogY
+            ? Math.log10(Math.max(Math.abs(currentValue), 1e-18))
+            : currentValue
+        }),
+      }
+    : undefined
+  const displaySeries = processedTransformed
+    ? [...transformed, processedTransformed]
+    : transformed
+  const relevantMarkers = peakMarkers.filter(
+    (marker) =>
+      marker.datasetId === selectedDataset?.id &&
+      (!selectedProcessedDataset ||
+        marker.processedDatasetId === selectedProcessedDataset.id ||
+        !marker.processedDatasetId),
+  )
+  const allX = displaySeries.flatMap((item) => item.x)
+  const allY = displaySeries.flatMap((item) => item.y)
   const xMin = Math.min(...allX)
   const xMax = Math.max(...allX)
   const yMin = Math.min(...allY)
@@ -170,7 +209,7 @@ export function MeasurementPlot({
             })}
             <line stroke="#475569" x1="56" x2="664" y1="260" y2="260" />
             <line stroke="#475569" x1="56" x2="56" y1="28" y2="260" />
-            {transformed.map((item, index) => (
+            {displaySeries.map((item, index) => (
               <polyline
                 fill="none"
                 key={item.id}
@@ -190,6 +229,32 @@ export function MeasurementPlot({
                 strokeWidth="2"
               />
             ))}
+            {relevantMarkers.map((marker) => {
+              const x = scale(marker.xValue, xMin, xMax, 56, 664)
+
+              return (
+                <g key={marker.id}>
+                  <line
+                    stroke={marker.peakType === 'manual' ? '#fbbf24' : '#a78bfa'}
+                    strokeDasharray="5 5"
+                    strokeWidth="1.5"
+                    x1={x}
+                    x2={x}
+                    y1="28"
+                    y2="260"
+                  />
+                  <text
+                    fill={marker.peakType === 'manual' ? '#fbbf24' : '#c4b5fd'}
+                    fontSize="10"
+                    textAnchor="middle"
+                    x={x}
+                    y="22"
+                  >
+                    {marker.label_zh}
+                  </text>
+                </g>
+              )
+            })}
             <text fill="#94a3b8" fontSize="11" x="56" y="292">
               {selectedDataset?.columns.find((column) => column.id === effectiveX)
                 ? formatAxisType(
@@ -228,9 +293,54 @@ export function MeasurementPlot({
             {dataset.name_zh} / {getBeforeAfterTagLabel(dataset.metadata.beforeAfterTag)}
           </span>
         ))}
+        {processedTransformed ? (
+          <span className="flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-full bg-rose-300" />
+            處理後資料 / raw vs processed
+          </span>
+        ) : null}
+        {relevantMarkers.length > 0 ? (
+          <span className="flex items-center gap-2">
+            <span className="h-2.5 w-2.5 rounded-full bg-amber-300" />
+            peak 標記 {relevantMarkers.length} 個
+          </span>
+        ) : null}
       </div>
     </section>
   )
+}
+
+function createSeriesFromProcessedDataset(
+  dataset: ProcessedMeasurementDataset,
+  xColumnId: string,
+  yColumnId: string,
+  label_zh: string,
+): MeasurementSeries | undefined {
+  const points = dataset.rows
+    .map((row) => ({
+      x: row.values[xColumnId],
+      y: row.values[yColumnId],
+    }))
+    .filter(
+      (point): point is { x: number; y: number } =>
+        typeof point.x === 'number' && typeof point.y === 'number',
+    )
+  const xColumn = dataset.columns.find((column) => column.id === xColumnId)
+  const yColumn = dataset.columns.find((column) => column.id === yColumnId)
+
+  if (points.length === 0) {
+    return undefined
+  }
+
+  return {
+    id: `series-${dataset.id}-${xColumnId}-${yColumnId}`,
+    datasetId: dataset.sourceDatasetId,
+    label_zh,
+    x: points.map((point) => point.x),
+    y: points.map((point) => point.y),
+    xAxisType: xColumn?.mappedType ?? 'custom',
+    yAxisType: yColumn?.mappedType ?? 'custom',
+  }
 }
 
 function scale(

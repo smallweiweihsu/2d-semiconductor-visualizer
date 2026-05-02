@@ -4,6 +4,8 @@ import type { DeviceStructure } from '../../types/device'
 import type {
   MeasurementComparison,
   MeasurementDataset,
+  PeakMarker,
+  ProcessedMeasurementDataset,
 } from '../../types/measurement'
 import type { ProcessFlow } from '../../types/process'
 import { DeviceStructureEditor } from '../device/DeviceStructureEditor'
@@ -19,12 +21,18 @@ interface WorkspaceProps {
   deviceStructure: DeviceStructure
   measurementComparisons: MeasurementComparison[]
   measurementDatasets: MeasurementDataset[]
+  peakMarkers: PeakMarker[]
+  processedMeasurementDatasets: ProcessedMeasurementDataset[]
   onChangeDeviceStructure: Dispatch<SetStateAction<DeviceStructure>>
   onChangeMeasurementComparisons: Dispatch<
     SetStateAction<MeasurementComparison[]>
   >
   onChangeMeasurementDatasets: Dispatch<SetStateAction<MeasurementDataset[]>>
+  onChangePeakMarkers: Dispatch<SetStateAction<PeakMarker[]>>
   onChangeProcessFlow: Dispatch<SetStateAction<ProcessFlow>>
+  onChangeProcessedMeasurementDatasets: Dispatch<
+    SetStateAction<ProcessedMeasurementDataset[]>
+  >
   processFlow: ProcessFlow
   tab: WorkspaceTab
 }
@@ -33,10 +41,14 @@ export function Workspace({
   deviceStructure,
   measurementComparisons,
   measurementDatasets,
+  peakMarkers,
+  processedMeasurementDatasets,
   onChangeDeviceStructure,
   onChangeMeasurementComparisons,
   onChangeMeasurementDatasets,
+  onChangePeakMarkers,
   onChangeProcessFlow,
+  onChangeProcessedMeasurementDatasets,
   processFlow,
   tab,
 }: WorkspaceProps) {
@@ -88,8 +100,14 @@ export function Workspace({
         flow={processFlow}
         measurementComparisons={measurementComparisons}
         measurementDatasets={measurementDatasets}
+        peakMarkers={peakMarkers}
+        processedMeasurementDatasets={processedMeasurementDatasets}
         onChangeMeasurementComparisons={onChangeMeasurementComparisons}
         onChangeMeasurementDatasets={onChangeMeasurementDatasets}
+        onChangePeakMarkers={onChangePeakMarkers}
+        onChangeProcessedMeasurementDatasets={
+          onChangeProcessedMeasurementDatasets
+        }
       />
     )
   }
@@ -100,10 +118,16 @@ export function Workspace({
         deviceStructure={deviceStructure}
         measurementComparisons={measurementComparisons}
         measurementDatasets={measurementDatasets}
+        peakMarkers={peakMarkers}
+        processedMeasurementDatasets={processedMeasurementDatasets}
         onChangeDeviceStructure={onChangeDeviceStructure}
         onChangeMeasurementComparisons={onChangeMeasurementComparisons}
         onChangeMeasurementDatasets={onChangeMeasurementDatasets}
+        onChangePeakMarkers={onChangePeakMarkers}
         onChangeProcessFlow={onChangeProcessFlow}
+        onChangeProcessedMeasurementDatasets={
+          onChangeProcessedMeasurementDatasets
+        }
         processFlow={processFlow}
       />
     )

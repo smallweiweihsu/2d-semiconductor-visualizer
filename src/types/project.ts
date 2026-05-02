@@ -4,6 +4,8 @@ import type { ElectricalResult, ElectricalScenario } from './electrical'
 import type {
   MeasurementComparison,
   MeasurementDataset,
+  PeakMarker,
+  ProcessedMeasurementDataset,
 } from './measurement'
 import type { OxidationResult, OxidationScenario } from './oxidation'
 import type { ProcessFlow } from './process'
@@ -34,6 +36,8 @@ export interface ProjectSaveData {
   electricalResult?: ElectricalResult
   measurementDatasets?: MeasurementDataset[]
   measurementComparisons?: MeasurementComparison[]
+  processedMeasurementDatasets?: ProcessedMeasurementDataset[]
+  peakMarkers?: PeakMarker[]
   appNotes_zh?: string[]
   warnings_zh?: string[]
 }

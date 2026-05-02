@@ -49,10 +49,13 @@ export function generateMarkdownReport(projectData: ProjectSaveData) {
     '## 10. 量測比較',
     measurementComparisonSection(projectData),
     '',
-    '## 11. 主要警告與缺少參數',
+    '## 11. 量測資料處理摘要',
+    measurementProcessingSection(projectData),
+    '',
+    '## 12. 主要警告與缺少參數',
     warningSection(projectData),
     '',
-    '## 12. 後續建議',
+    '## 13. 後續建議',
     nextStepSection(),
     '',
   ].join('\n')
@@ -266,6 +269,9 @@ function warningSection(projectData: ProjectSaveData) {
     ...(projectData.measurementDatasets ?? []).flatMap(
       (dataset) => dataset.warnings_zh,
     ),
+    ...(projectData.processedMeasurementDatasets ?? []).flatMap(
+      (dataset) => dataset.warnings_zh,
+    ),
   ]
 
   return [...new Set(warnings)].map((warning) => `- ${warning}`).join('\n')
@@ -323,6 +329,72 @@ function measurementComparisonSection(projectData: ProjectSaveData) {
   return comparisons
     .map((comparison) => measurementComparisonText(comparison, datasets))
     .join('\n\n')
+}
+
+function measurementProcessingSection(projectData: ProjectSaveData) {
+  const processed = projectData.processedMeasurementDatasets ?? []
+  const markers = projectData.peakMarkers ?? []
+
+  if (processed.length === 0 && markers.length === 0) {
+    return '目前尚未建立處理後量測資料或 peak 標記。'
+  }
+
+  return [
+    '完整原始與處理後資料已包含於 JSON 匯出中；Markdown 報告只列處理摘要。',
+    '',
+    '### 處理後資料集',
+    processed.length > 0
+      ? [
+          '| 處理後資料 | Source dataset | 處理步驟 | 警告 |',
+          '| --- | --- | --- | --- |',
+          ...processed.map((dataset) =>
+            processedMeasurementRow(dataset, projectData),
+          ),
+        ].join('\n')
+      : '目前沒有處理後資料集。',
+    '',
+    '### Peak 標記',
+    markers.length > 0
+      ? [
+          '| Dataset | x value | label | assignment | 類型 |',
+          '| --- | --- | --- | --- | --- |',
+          ...markers.map((marker) => peakMarkerRow(marker, projectData)),
+        ].join('\n')
+      : '目前沒有 peak 標記。',
+  ].join('\n')
+}
+
+function processedMeasurementRow(
+  dataset: NonNullable<ProjectSaveData['processedMeasurementDatasets']>[number],
+  projectData: ProjectSaveData,
+) {
+  const source = projectData.measurementDatasets?.find(
+    (item) => item.id === dataset.sourceDatasetId,
+  )
+
+  return [
+    escapeCell(dataset.name_zh),
+    escapeCell(source?.name_zh ?? dataset.sourceDatasetId),
+    escapeCell(dataset.operations.map((operation) => operation.name_zh).join(' → ') || '無'),
+    dataset.warnings_zh.length,
+  ].join(' | ').replace(/^/, '| ').replace(/$/, ' |')
+}
+
+function peakMarkerRow(
+  marker: NonNullable<ProjectSaveData['peakMarkers']>[number],
+  projectData: ProjectSaveData,
+) {
+  const source = projectData.measurementDatasets?.find(
+    (dataset) => dataset.id === marker.datasetId,
+  )
+
+  return [
+    escapeCell(source?.name_zh ?? marker.datasetId),
+    marker.xValue,
+    escapeCell(marker.label_zh),
+    escapeCell(marker.assignment_zh || '未指定'),
+    marker.peakType === 'manual' ? '手動' : '建議',
+  ].join(' | ').replace(/^/, '| ').replace(/$/, ' |')
 }
 
 function measurementComparisonText(

@@ -5,6 +5,8 @@ import { workspaceTabs, type WorkspaceTabId } from '../../data/workspaceTabs'
 import type {
   MeasurementComparison,
   MeasurementDataset,
+  PeakMarker,
+  ProcessedMeasurementDataset,
 } from '../../types/measurement'
 import { BottomPanel } from './BottomPanel'
 import { RightInspector } from './RightInspector'
@@ -33,6 +35,9 @@ export function AppShell() {
   const [measurementComparisons, setMeasurementComparisons] = useState<
     MeasurementComparison[]
   >([])
+  const [processedMeasurementDatasets, setProcessedMeasurementDatasets] =
+    useState<ProcessedMeasurementDataset[]>([])
+  const [peakMarkers, setPeakMarkers] = useState<PeakMarker[]>([])
   const selectedTab =
     workspaceTabs.find((tab) => tab.id === selectedTabId) ?? workspaceTabs[0]
 
@@ -79,10 +84,16 @@ export function AppShell() {
             deviceStructure={deviceStructure}
             measurementComparisons={measurementComparisons}
             measurementDatasets={measurementDatasets}
+            peakMarkers={peakMarkers}
+            processedMeasurementDatasets={processedMeasurementDatasets}
             onChangeDeviceStructure={setDeviceStructure}
             onChangeMeasurementComparisons={setMeasurementComparisons}
             onChangeMeasurementDatasets={setMeasurementDatasets}
+            onChangePeakMarkers={setPeakMarkers}
             onChangeProcessFlow={setProcessFlow}
+            onChangeProcessedMeasurementDatasets={
+              setProcessedMeasurementDatasets
+            }
             processFlow={processFlow}
             tab={selectedTab}
           />

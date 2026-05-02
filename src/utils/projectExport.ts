@@ -2,6 +2,8 @@ import type { DeviceStructure } from '../types/device'
 import type {
   MeasurementComparison,
   MeasurementDataset,
+  PeakMarker,
+  ProcessedMeasurementDataset,
 } from '../types/measurement'
 import type { ProcessFlow } from '../types/process'
 import type {
@@ -17,6 +19,8 @@ export interface CreateProjectSaveDataInput {
   deviceStructure: DeviceStructure
   measurementComparisons?: MeasurementComparison[]
   measurementDatasets?: MeasurementDataset[]
+  peakMarkers?: PeakMarker[]
+  processedMeasurementDatasets?: ProcessedMeasurementDataset[]
   processFlow: ProcessFlow
   appNotes_zh?: string[]
   warnings_zh?: string[]
@@ -27,6 +31,8 @@ export function createProjectSaveData({
   deviceStructure,
   measurementComparisons = [],
   measurementDatasets = [],
+  peakMarkers = [],
+  processedMeasurementDatasets = [],
   processFlow,
   appNotes_zh = [],
   warnings_zh = [],
@@ -43,6 +49,8 @@ export function createProjectSaveData({
     deviceStructure,
     measurementComparisons,
     measurementDatasets,
+    peakMarkers,
+    processedMeasurementDatasets,
     processFlow,
     appNotes_zh,
     warnings_zh: [
@@ -146,6 +154,17 @@ export function validateProjectSaveData(data: unknown): ProjectImportResult {
     !Array.isArray(candidate.measurementComparisons)
   ) {
     errors_zh.push('量測比較欄位格式不正確。')
+  }
+
+  if (
+    candidate.processedMeasurementDatasets &&
+    !Array.isArray(candidate.processedMeasurementDatasets)
+  ) {
+    errors_zh.push('處理後量測資料欄位格式不正確。')
+  }
+
+  if (candidate.peakMarkers && !Array.isArray(candidate.peakMarkers)) {
+    errors_zh.push('Peak 標記欄位格式不正確。')
   }
 
   return {

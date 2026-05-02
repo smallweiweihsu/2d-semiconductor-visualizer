@@ -254,6 +254,23 @@ src/
 - JSON 匯出已整合量測資料集與量測比較；Markdown 報告會加入量測資料摘要與比較摘要，但不嵌入完整原始資料表。
 - 目前沒有 Origin binary parser、Excel parser、baseline correction、smoothing、peak fitting、Raman mode assignment、PL quantum yield、electrical fitting、TLM fitting、XPS fitting 或 publication-grade analysis。
 
+## Batch 12：量測資料基本處理工具
+
+本批在「量測資料」分頁加入第一版非破壞式資料處理工具，讓使用者可以保留原始資料，同時建立處理後資料集供視覺化與比較。
+
+- 新增 abs(I) 與 Y 取負號處理，協助電性資料進行 log plot 或電流大小比較，但 UI 會提醒必須確認接線方向、掃描方向與物理問題。
+- 新增正規化工具：以最大值正規化、Min-Max 正規化與面積正規化。
+- 新增簡單 baseline 工具：扣除常數 baseline 與扣除線性 baseline。
+- 新增 processing pipeline，每個處理步驟可啟用 / 停用、移除、排序，並保留處理歷史。
+- 新增處理後資料集與處理後資料預覽，原始資料不會被覆蓋。
+- 新增手動 peak marker，可輸入 x 值、label、assignment 與 notes。
+- 新增簡單 local maximum auto peak suggestion，可設定 threshold、minimum separation 與最多建議數量。
+- 更新快速 SVG plot，可疊加原始資料與處理後資料，並顯示 peak marker 垂直標線。
+- JSON 匯出已整合 processed measurement datasets 與 peak markers。
+- Markdown 報告新增「量測資料處理摘要」，列出 source dataset、處理步驟、警告與 peak marker 表格。
+- 目前沒有 Lorentzian / Gaussian / Voigt fitting、正式 baseline algorithm validation、smoothing、Raman mode assignment、PL quantum yield、electrical fitting、TLM fitting、XPS fitting 或 publication-grade analysis。
+- 所有資料處理都應標示處理步驟並保留原始資料；處理後圖形不可直接視為定量結論。
+
 ## 科學準確性聲明
 
 本工具目前是「物理導向的視覺化與近似分析工具」，不是完整 TCAD、DFT 或分子動力學模擬器。所有計算結果都需要搭配實驗資料與文獻參數判讀；在未來加入任何模型或公式時，也應清楚標註假設、適用範圍與限制。

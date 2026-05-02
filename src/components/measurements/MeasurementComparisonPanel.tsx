@@ -93,6 +93,9 @@ export function MeasurementComparisonPanel({
         <p className="mt-1 text-sm text-slate-400">
           選擇同類型資料集進行 before / after / reference 疊圖比較。
         </p>
+        <p className="mt-1 text-xs leading-5 text-amber-200/80">
+          比較不同處理流程時，需確認處理方式一致，否則強度與趨勢可能不可直接比較。
+        </p>
       </div>
 
       <label className="mt-4 block text-sm font-medium text-slate-300">
@@ -171,4 +174,3 @@ export function MeasurementComparisonPanel({
     </section>
   )
 }
-

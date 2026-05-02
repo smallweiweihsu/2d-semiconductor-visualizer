@@ -98,3 +98,55 @@ export interface MeasurementComparison {
   notes_zh?: string
 }
 
+export type ProcessingOperationType =
+  | 'abs_y'
+  | 'invert_y'
+  | 'normalize_max'
+  | 'normalize_min_max'
+  | 'normalize_area'
+  | 'subtract_constant_baseline'
+  | 'subtract_linear_baseline'
+  | 'manual_peak_marker'
+  | 'auto_peak_suggestion'
+  | 'custom'
+
+export interface ProcessingOperation {
+  id: string
+  type: ProcessingOperationType
+  name_zh: string
+  enabled: boolean
+  parameters: Record<string, number | string | boolean | null>
+  createdAt: string
+  notes_zh?: string
+  warnings_zh?: string[]
+}
+
+export interface ProcessedMeasurementDataset {
+  id: string
+  sourceDatasetId: string
+  name_zh: string
+  operations: ProcessingOperation[]
+  rows: MeasurementRow[]
+  columns: MeasurementColumn[]
+  warnings_zh: string[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface PeakMarker {
+  id: string
+  datasetId: string
+  processedDatasetId?: string
+  xValue: number
+  yValue: number
+  label_zh: string
+  peakType: 'manual' | 'suggested'
+  assignment_zh?: string
+  confidence: 'manual' | 'suggested' | 'unknown'
+  notes_zh?: string
+}
+
+export interface MeasurementProcessingState {
+  processedDatasets: ProcessedMeasurementDataset[]
+  peakMarkers: PeakMarker[]
+}
