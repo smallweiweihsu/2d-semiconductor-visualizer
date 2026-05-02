@@ -2,21 +2,20 @@
 
 ## 1. Summary of what was built
 
-完成 Batch 15B：擴充 Sb₂O₃ / Sb / In interface 與金屬擴散文獻追蹤工作流。
+完成 Batch 15C：擴充 WSe₂ 金屬接觸、work-function 限制、contact resistance 不確定性，以及 lower-priority metals into Sb₂O₃ 擴散/界面反應追蹤。
 
-- 擴充 Sb₂O₃、Sb bulk、In、Pd、Ti、Au、Cr、Ni、Pt、Al、Ag、Cu、Sc、WOx 等材料的 literature TODOs。
-- 新增可核對的 candidate source records：Sb₂O₃/WSe₂ dielectric、Sb₂O₃ breakdown mechanism、Sb surface oxidation XPS。
-- 新增 placeholder sources：Pd/In/Ti/Au into Sb₂O₃ diffusion、Sb₂O₃ leakage/trap behavior、metal deposition damage on Sb₂O₃。
-- 新增 candidate evidence：Sb₂O₃ dielectric constant / breakdown / trap behavior、Sb surface oxidation、In/Sb₂O₃ interface buffer、Pd/In/Ti/Au into Sb₂O₃ D0/Ea placeholder evidence。
-- 新增 conflict groups：In/Sb₂O₃ buffer effect、metal diffusion into Sb₂O₃、Sb surface oxidation、metal deposition damage on Sb₂O₃。
-- 新增 draft recommendations，明確阻擋未驗證 D0/Ea 的定量擴散模型，並保留 In/Sb₂O₃ buffer 為 candidate-only。
-- 文獻資料庫 UI 新增「Sb₂O₃ / Sb / In interface 重點」summary card。
-- TODO panel 新增快速篩選：高優先、Sb₂O₃、In/Sb₂O₃、金屬擴散、表面氧化、缺 D0/Ea。
-- Evidence table 對 null value 顯示「需補參數」標記。
-- Recommendation panel 對阻擋定量模型的 draft recommendation 顯示提示。
-- Diffusion module 在 Pd/In/Ti/Au → Sb₂O₃ 情境顯示 D0/Ea 文獻缺口提醒。
-- Oxidation module 在 Sb/Sb₂O₃ 情境顯示 XPS / AFM 校準提醒。
-- Markdown / project export literature warnings 加入關鍵未解缺口。
+- 新增 WSe₂ metal contact candidate sources：2D semiconductor contacts review、WSe₂-metal interface Ohmic/Schottky 議題、Au/WSe₂ vdW contact、oxidized-edge Fermi-level pinning、Ni-contact WSe₂ environmental/electrical study。
+- 新增 grouped placeholder sources：metal/WSe₂ contact comparison、Sc/WSe₂ contact engineering、lower-priority metal diffusion into Sb₂O₃。
+- 擴充 Pd/Ti/Au/Cr/Ni/Pt/Al/Ag/Cu/Sc/In 的 WSe₂ contact、work function、contact resistance、Fermi-level pinning、adhesion/interface layer、thermal stability 與 Raman/PL/electrical indirect effects TODOs。
+- 新增 contact resistance placeholder evidence 與 work-function context evidence；work function 只作背景，不做金屬排名。
+- 新增 Ti/Au/Cr/Ni/Pt/Al/Ag/Cu/Sc into Sb₂O₃ 的 D0/Ea placeholder evidence。
+- 新增 qualitative interface-risk evidence：Ti reactive/adhesion risk、Au/Pt noble metals not automatically harmless、Al oxide-forming risk、Cu/Ag diffusion concern、Pt/Ni/Cr interface uncertainty、Sc contact-engineering placeholder。
+- 新增 conflict groups：WSe₂ metal contact condition dependence、Ti/Au/Pd/In/Sc comparison under review、lower-priority metal diffusion into Sb₂O₃、reactive metals/oxide damage、noble metals not automatically harmless。
+- 新增 draft recommendations：維持 manual/fitted contact resistance、不要 work-function-only ranking、lower-priority metal diffusion 不啟用定量、adhesion/reactive metals 作為 interface-risk variables。
+- Literature UI 新增「金屬接觸與擴散重點」summary card、contact/diffusion counts、TODO quick filters、evidence topic markers。
+- Electrical module 新增 WSe₂ 金屬接觸文獻提醒。
+- Diffusion module 文獻提醒擴展到 Pd/In/Ti/Au/Cr/Ni/Pt/Al/Ag/Cu/Sc into Sb₂O₃。
+- Material Detail 對金屬顯示 WSe₂ contact、work function、Sb₂O₃ diffusion、recommendations 與 unresolved gaps compact counts。
 - 沒有修改 `src/data/materials.ts`，沒有自動 promotion candidate values。
 
 ## 2. Files changed
@@ -24,16 +23,16 @@
 ```text
 BATCH_REPORT.md
 README.md
-screenshots/batch15b-diffusion-literature-warning.png
-screenshots/batch15b-metal-diffusion-evidence.png
-screenshots/batch15b-sb2o3-interface-summary.png
+screenshots/batch15c-contact-evidence.png
+screenshots/batch15c-electrical-literature-warning.png
+screenshots/batch15c-metal-contact-summary.png
 src/components/diffusion/DiffusionModelPanel.tsx
+src/components/electrical/ElectricalModelPanel.tsx
 src/components/literature/LiteratureDatabaseWorkspace.tsx
 src/components/literature/MaterialLiteratureTodoPanel.tsx
 src/components/literature/ParameterEvidenceTable.tsx
 src/components/literature/ParameterRecommendationPanel.tsx
-src/components/oxidation/OxidationModelPanel.tsx
-src/components/process/ProcessDiffusionWorkspace.tsx
+src/components/materials/MaterialDetail.tsx
 src/data/literatureSources.ts
 src/data/materialLiteratureTodos.ts
 src/data/parameterConflictGroups.ts
@@ -230,21 +229,20 @@ where.exe npm
 node -v
 npm -v
 web searches:
-  Sb2O3 dielectric constant thin film breakdown field antimony oxide
-  Sb surface oxidation Sb2O3 XPS antimony oxide air exposure
-  indium buffer layer oxide interface Sb2O3
-  metal diffusion into antimony oxide Sb2O3 palladium indium titanium gold
-  "Epitaxially grown single-crystalline antimony trioxide dielectrics for two-dimensional electronics"
-  "Dielectric Breakdown Mechanisms in High-k Antimony Trioxide" "10.1021/acsaelm.4c01818"
-  "Surface and interface XPS characterization of the oxide layer grown on antimony under UV laser irradiation"
-  "palladium diffusion" "antimony oxide"
+  WSe2 metal contacts Fermi level pinning Schottky barrier work function contact resistance review
+  WSe2 van der Waals metal contacts Fermi-Level Pinning-Free WSe2 Transistors DOI
+  metal-induced gap states WSe2 metal contacts Fermi level pinning
+  contact engineering WSe2 MoS2 transition metal dichalcogenide contacts review DOI
+  Allain Kang Banerjee Kis Electrical contacts to two-dimensional semiconductors Nat Mater 2015 DOI
+  Does p-type ohmic contact exist in WSe2 metal interfaces Nanoscale 2016 DOI
+  WSe2 metal contact resistance Ti Au Pd In Sc contact Fermi level pinning DOI
 C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe -v
 C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe node_modules\typescript\bin\tsc -b
 C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe node_modules\eslint\bin\eslint.js .
 C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe node_modules\vite\bin\vite.js build
-Chrome headless screenshots for Batch 15B UI
+Chrome headless screenshots for Batch 15C UI
 git add ...
-git commit -m "Batch 15B: Expand Sb2O3 Sb In interface literature tracking"
+git commit -m "Batch 15C: Expand metal contact and diffusion literature tracking"
 git rev-parse --short HEAD
 git push origin dev
 ```
@@ -261,11 +259,13 @@ Node / npm environment:
 Web access:
 
 - Web access was available.
-- Verified candidate source records added from searchable pages/DOIs:
-  - Nature Electronics: `https://www.nature.com/articles/s41928-026-01580-w`
-  - ACS Applied Electronic Materials DOI: `https://doi.org/10.1021/acsaelm.4c01818`
-  - Surface Science DOI: `https://doi.org/10.1016/0039-6028(91)90542-7`
-- Topics still TODO: In/Sb₂O₃ buffer effect, Pd/In/Ti/Au D0/Ea into Sb₂O₃, lower-priority metal diffusion values, Sb ambient oxidation rate.
+- Verified candidate sources added from DOI/publisher-searchable records:
+  - Nature Materials DOI: `https://doi.org/10.1038/nmat4452`
+  - Nanoscale DOI: `https://doi.org/10.1039/C5NR09094H`
+  - Nature Electronics DOI: `https://doi.org/10.1038/s41928-022-00746-6`
+  - Nanoscale Advances DOI: `https://doi.org/10.1039/D2NA00307H`
+  - Nanomaterials DOI: `https://doi.org/10.3390/nano8110901`
+- Topics still TODO: comparable Pd/Ti/Au/In/Sc contact resistance for the user’s exact geometry, lower-priority metals into Sb₂O₃ D0/Ea, metal/Sb₂O₃ interface reaction data.
 
 ## 5. Build/lint/typecheck result
 
@@ -277,41 +277,43 @@ Web access:
 
 ## 6. Git commit and push result
 
-- Batch 15B commit hash: `8e68759`
+- Batch 15C commit hash: `f2b437d`
 - Current branch: `dev`
 - Remote URL: `https://github.com/smallweiweihsu/2d-semiconductor-visualizer.git`
-- Push result: `8e68759` successfully pushed to `origin/dev`.
+- Push result: `f2b437d` successfully pushed to `origin/dev`.
 - Final report update commit: created after this report update.
 
 ## 7. Visible UI description
 
-- 文獻資料庫分頁顯示新的「Sb₂O₃ / Sb / In interface 重點」summary card。
-- Summary card 顯示 In/Sb₂O₃ buffer evidence、金屬擴散 evidence、Sb 表面氧化 evidence、Sb₂O₃ dielectric evidence counts。
-- TODO panel 顯示快速篩選：高優先、Sb₂O₃、In/Sb₂O₃、金屬擴散、表面氧化、缺 D0/Ea。
-- Evidence table 對 null values 顯示「需補參數」，可清楚看出 D0/Ea 仍缺 verified value。
-- Conflict groups 顯示 In/Sb₂O₃ buffer effect、metal diffusion into Sb₂O₃、Sb₂O₃ dielectric process dependence、Sb surface oxidation、metal deposition damage。
-- Recommendation panel 對阻擋定量模型的 draft recommendation 顯示「阻擋定量模型」。
-- Diffusion tab 在 Pd/In/Ti/Au → Sb₂O₃ 情境顯示 D0/Ea 文獻缺口提醒。
-- Oxidation tab 在 Sb/Sb₂O₃ 情境顯示 XPS / AFM 校準提醒。
+- 文獻資料庫分頁顯示新的「金屬接觸與擴散重點」summary card。
+- Summary card 顯示 WSe₂ contact evidence、WSe₂ contact TODO、Sb₂O₃ diffusion evidence、diffusion TODO、缺 contact R、缺 D0/Ea counts。
+- TODO panel 顯示 WSe₂ 接觸、金屬 work function、接觸電阻、Fermi-level pinning、Sb₂O₃ 擴散、反應性金屬、惰性金屬、缺 contact resistance、缺 D0/Ea 快速篩選。
+- Evidence table 顯示 WSe₂ contact、work function context、diffusion missing、oxide interface risk markers。
+- Conflict groups 顯示 WSe₂ metal contact condition dependence、Ti/Au/Pd/In/Sc comparison under review、lower-priority metal diffusion、reactive metals oxide damage、noble metals not automatically harmless。
+- Recommendation panel 對 default contact resistance、work-function-only ranking、quantitative diffusion modeling blockers 顯示阻擋提示。
+- Electrical tab 顯示 WSe₂ 金屬接觸文獻提醒。
+- Diffusion tab 對 Pd/In/Ti/Au/Cr/Ni/Pt/Al/Ag/Cu/Sc into Sb₂O₃ 顯示 D0/Ea evidence 提醒。
+- Material Detail 對 Pd/Ti/Au/In 等金屬顯示 WSe₂ contact、work function、Sb₂O₃ diffusion、recommendations、unresolved gaps compact counts。
 
 ## 8. Warnings or limitations
 
 - 沒有自動 promotion 到 `materials.ts`。
 - 沒有 verified source 或 verified parameter。
-- In/Sb₂O₃ buffer effect 仍未驗證，不可視為結論。
-- Pd/In/Ti/Au into Sb₂O₃ 的 D0/Ea 仍為 placeholder/null，擴散模型不可定量。
-- Sb surface oxidation rate 仍缺 ambient/process-calibrated value。
-- Sb₂O₃ dielectric properties 仍需依相、厚度、缺陷、氧空缺、沉積方法與電極條件分開整理。
-- 沒有 DOI lookup automation、PDF parsing、backend database 或 cloud sync。
+- 沒有 contact fitting、TLM fitting 或 diffusion coefficient fitting。
+- Work function evidence 只作背景，不可用於金屬排名。
+- WSe₂ contact resistance 仍需手動輸入、量測、TLM 或 fitting。
+- Lower-priority metals into Sb₂O₃ 的 D0/Ea 仍是 null placeholder，不可定量。
+- Reactive / noble metal interface risk evidence 仍多為 placeholder，不可視為結論。
+- 沒有 automatic DOI lookup、PDF parsing、backend database 或 cloud sync。
 
 ## 9. Next recommended batch
 
-Batch 15C: metal contact and diffusion candidate tracking for Ti, Au, Cr, Ni, Pt, Al, Ag, Cu, Sc and WSe₂ contact behavior.
+Batch 15D: dielectric literature expansion for HfO₂, Al₂O₃, SiO₂, hBN and band offset / leakage parameter tracking.
 
 Screenshots:
 
 ```text
-screenshots/batch15b-sb2o3-interface-summary.png
-screenshots/batch15b-metal-diffusion-evidence.png
-screenshots/batch15b-diffusion-literature-warning.png
+screenshots/batch15c-metal-contact-summary.png
+screenshots/batch15c-contact-evidence.png
+screenshots/batch15c-electrical-literature-warning.png
 ```
