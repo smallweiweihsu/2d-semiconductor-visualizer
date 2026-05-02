@@ -28,3 +28,25 @@ textarea,
 select {
   font: inherit;
 }
+
+@layer components {
+  .field-input {
+    @apply w-full rounded-md border border-slate-700 bg-slate-950/70 px-3 py-2 text-sm text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-cyan-500 focus:ring-2 focus:ring-cyan-500/20;
+  }
+
+  .action-button {
+    @apply rounded-md border border-cyan-700/60 bg-cyan-500/15 px-3 py-2 text-sm font-medium text-cyan-100 transition hover:border-cyan-500 hover:bg-cyan-500/25;
+  }
+
+  .secondary-button {
+    @apply rounded-md border border-slate-700 bg-slate-900/70 px-3 py-2 text-sm text-slate-200 transition hover:border-slate-500 hover:bg-slate-800;
+  }
+
+  .tab-button {
+    @apply rounded-md border border-slate-700 bg-slate-950/70 px-3 py-2 text-sm text-slate-300 transition hover:border-slate-500 hover:bg-slate-900;
+  }
+
+  .tab-button-active {
+    @apply rounded-md border border-cyan-500/70 bg-cyan-500/15 px-3 py-2 text-sm font-medium text-cyan-100 shadow shadow-cyan-950/40;
+  }
+}

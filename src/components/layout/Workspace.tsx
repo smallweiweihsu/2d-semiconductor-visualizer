@@ -4,6 +4,7 @@ import type { DeviceStructure } from '../../types/device'
 import type { ProcessFlow } from '../../types/process'
 import { DeviceStructureEditor } from '../device/DeviceStructureEditor'
 import { ElectricalWorkspace } from '../electrical/ElectricalWorkspace'
+import { ProjectExportWorkspace } from '../export/ProjectExportWorkspace'
 import { MaterialDatabase } from '../materials/MaterialDatabase'
 import { OxidationWorkspace } from '../oxidation/OxidationWorkspace'
 import { ProcessDiffusionWorkspace } from '../process/ProcessDiffusionWorkspace'
@@ -61,6 +62,17 @@ export function Workspace({
       <OxidationWorkspace
         deviceLayers={deviceStructure.layers}
         flow={processFlow}
+      />
+    )
+  }
+
+  if (tab.id === 'results') {
+    return (
+      <ProjectExportWorkspace
+        deviceStructure={deviceStructure}
+        onChangeDeviceStructure={onChangeDeviceStructure}
+        onChangeProcessFlow={onChangeProcessFlow}
+        processFlow={processFlow}
       />
     )
   }
