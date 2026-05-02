@@ -2,6 +2,8 @@ import { useMemo, useState, type Dispatch, type SetStateAction } from 'react'
 import { parameterConflictGroups } from '../../data/parameterConflictGroups'
 import { parameterEvidence } from '../../data/parameterEvidence'
 import { literatureSources } from '../../data/literatureSources'
+import { materialLiteratureTodos } from '../../data/materialLiteratureTodos'
+import { parameterRecommendations } from '../../data/parameterRecommendations'
 import type { DeviceStructure } from '../../types/device'
 import type {
   MeasurementComparison,
@@ -77,6 +79,8 @@ export function ProjectExportWorkspace({
           sources: literatureSources,
           evidence: parameterEvidence,
           conflictGroups: parameterConflictGroups,
+          recommendations: parameterRecommendations,
+          todos: materialLiteratureTodos,
         },
         processFlow,
         appNotes_zh: [

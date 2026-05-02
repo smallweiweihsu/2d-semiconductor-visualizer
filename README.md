@@ -286,6 +286,22 @@ src/
 - 目前尚未實作文獻自動搜尋、DOI 查詢、PDF 解析、自動參數升級、後端資料庫或雲端同步。
 - placeholder 文獻不是正式引用；任何材料參數仍需人工審核、文獻校準與實驗驗證。
 
+## Batch 14：文獻資料匯入 / 審核流程與材料參數待查清單
+
+本批把文獻資料庫從候選資料展示升級為第一版可操作的資料輸入、審核與匯入/匯出工作流。
+
+- 新增材料參數待查清單，涵蓋 WSe₂、Sb₂O₃、Sb bulk、Pd、In、WOx，以及 Ti、Au、Cr、Ni、Pt、Al、Ag、Cu、Sc、HfO₂、Al₂O₃、SiO₂、hBN、MoS₂、WS₂、MoSe₂、MoTe₂、graphene、black phosphorus 等材料。
+- 高優先材料包含 band gap、electron affinity、mobility、dielectric constant、breakdown field、D0、Ea、oxidation rate、Raman visibility、contact behavior 等待查項目。
+- 新增文獻來源 editor，可輸入 title、authors、year、source type、journal、DOI、URL、review status、tags 與 notes。
+- 新增參數證據 editor，可輸入 source、materials、parameter key、value、unit、condition、method、agreement status、confidence、summary、applicability 與 warnings；value 可為 `null`，支援 qualitative claim。
+- 新增衝突 / 共識 editor，可整理 evidence IDs、agreement counts、summary、recommended status、recommended value 與 warnings。
+- 新增推薦參數 panel，可從 conflict group 建立 draft recommendation，並標示 reviewed、ready to promote 或 rejected；本批不會自動寫入 `materials.ts`。
+- 新增文獻資料庫 JSON 匯入 / 匯出，以及 TODO list / evidence summary Markdown 匯出。
+- Material Detail 的文獻來源區升級為 compact summary，顯示 TODO、evidence、conflict group 與 recommendation counts，並預設收合。
+- Project JSON / Markdown report 會包含 literature database、TODO 與 recommendation 摘要。
+- 目前沒有 automatic web search、DOI lookup、PDF parsing、automatic parameter promotion、backend database 或 cloud sync。
+- seed records 都是 placeholder / candidate，必須人工審核與實驗條件比對後才可作為正式參數候選。
+
 ## 科學準確性聲明
 
 本工具目前是「物理導向的視覺化與近似分析工具」，不是完整 TCAD、DFT 或分子動力學模擬器。所有計算結果都需要搭配實驗資料與文獻參數判讀；在未來加入任何模型或公式時，也應清楚標註假設、適用範圍與限制。

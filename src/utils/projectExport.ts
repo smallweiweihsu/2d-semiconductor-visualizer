@@ -180,7 +180,11 @@ export function validateProjectSaveData(data: unknown): ProjectImportResult {
     candidate.literatureDatabase &&
     (!Array.isArray(candidate.literatureDatabase.sources) ||
       !Array.isArray(candidate.literatureDatabase.evidence) ||
-      !Array.isArray(candidate.literatureDatabase.conflictGroups))
+      !Array.isArray(candidate.literatureDatabase.conflictGroups) ||
+      (candidate.literatureDatabase.recommendations !== undefined &&
+        !Array.isArray(candidate.literatureDatabase.recommendations)) ||
+      (candidate.literatureDatabase.todos !== undefined &&
+        !Array.isArray(candidate.literatureDatabase.todos)))
   ) {
     errors_zh.push('文獻資料庫欄位格式不正確。')
   }

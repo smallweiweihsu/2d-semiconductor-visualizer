@@ -3,7 +3,9 @@ import type {
   LiteratureReviewStatus,
   LiteratureSourceType,
   MaterialParameterKey,
+  MaterialLiteratureTodo,
   ParameterConflictGroup,
+  ParameterRecommendation,
 } from '../../types/literature'
 
 export function formatReviewStatus(status: LiteratureReviewStatus) {
@@ -76,6 +78,41 @@ export function formatRecommendationStatus(
     condition_dependent: '依條件分類',
     needs_review: '需要審核',
     ready_to_use: '可候選使用',
+  }
+
+  return labels[status]
+}
+
+export function formatParameterRecommendationStatus(
+  status: ParameterRecommendation['status'],
+) {
+  const labels: Record<ParameterRecommendation['status'], string> = {
+    draft: '草稿',
+    reviewed: '已檢閱',
+    ready_to_promote: '可候選推廣',
+    rejected: '不採用',
+  }
+
+  return labels[status]
+}
+
+export function formatTodoPriority(priority: MaterialLiteratureTodo['priority']) {
+  const labels: Record<MaterialLiteratureTodo['priority'], string> = {
+    high: '高',
+    medium: '中',
+    low: '低',
+  }
+
+  return labels[priority]
+}
+
+export function formatTodoStatus(status: MaterialLiteratureTodo['status']) {
+  const labels: Record<MaterialLiteratureTodo['status'], string> = {
+    todo: '待查',
+    in_progress: '查找中',
+    candidate_found: '已有候選',
+    reviewed: '已檢閱',
+    verified: '已驗證',
   }
 
   return labels[status]

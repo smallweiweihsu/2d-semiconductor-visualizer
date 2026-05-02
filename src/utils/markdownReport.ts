@@ -391,6 +391,8 @@ function literatureDatabaseSection(projectData: ProjectSaveData) {
   return [
     `- 文獻來源數：${database.sources.length}`,
     `- 參數證據數：${database.evidence.length}`,
+    `- 待查項目數：${database.todos?.length ?? 0}`,
+    `- 推薦參數數：${database.recommendations?.length ?? 0}`,
     `- 衝突 / 共識整理數：${database.conflictGroups.length}`,
     `- 候選：${reviewCounts.candidate}`,
     `- 已檢閱：${reviewCounts.reviewed}`,

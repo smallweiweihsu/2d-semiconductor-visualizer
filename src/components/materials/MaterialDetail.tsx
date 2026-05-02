@@ -1,13 +1,19 @@
+import type { ReactNode } from 'react'
 import { parameterConflictGroups } from '../../data/parameterConflictGroups'
 import { parameterEvidence } from '../../data/parameterEvidence'
+import { materialLiteratureTodos } from '../../data/materialLiteratureTodos'
 import { getMaterialCategoryDefinition } from '../../data/materialCategories'
 import { literatureSources } from '../../data/literatureSources'
+import { parameterRecommendations } from '../../data/parameterRecommendations'
 import type { Material, MaterialParameterKey } from '../../types/material'
 import { CollapsibleSection } from '../common/CollapsibleSection'
 import {
   formatAgreementStatus,
   formatParameterKey,
+  formatParameterRecommendationStatus,
   formatReviewStatus,
+  formatTodoPriority,
+  formatTodoStatus,
 } from '../literature/literatureFormatting'
 import { ParameterBadge } from './ParameterBadge'
 import {
@@ -46,6 +52,12 @@ export function MaterialDetail({ material }: MaterialDetailProps) {
   )
   const relatedConflictGroups = parameterConflictGroups.filter(
     (group) => group.materialId === material.id,
+  )
+  const relatedTodos = materialLiteratureTodos.filter(
+    (todo) => todo.materialId === material.id,
+  )
+  const relatedRecommendations = parameterRecommendations.filter(
+    (recommendation) => recommendation.materialId === material.id,
   )
 
   return (
@@ -107,8 +119,10 @@ export function MaterialDetail({ material }: MaterialDetailProps) {
 
       <div className="mt-4">
         <MaterialLiteratureSection
+          todos={relatedTodos}
           evidence={relatedEvidence}
           conflictGroups={relatedConflictGroups}
+          recommendations={relatedRecommendations}
         />
       </div>
 
@@ -258,11 +272,15 @@ function InfoList({ items, tone = 'default' }: InfoListProps) {
 }
 
 function MaterialLiteratureSection({
+  todos,
   evidence,
   conflictGroups,
+  recommendations,
 }: {
+  todos: typeof materialLiteratureTodos
   evidence: typeof parameterEvidence
   conflictGroups: typeof parameterConflictGroups
+  recommendations: typeof parameterRecommendations
 }) {
   const candidateCount = evidence.filter((item) =>
     getSourceStatus(item.sourceId) === 'candidate',
@@ -277,14 +295,20 @@ function MaterialLiteratureSection({
   return (
     <CollapsibleSection
       defaultOpen={false}
-      summary={`${evidence.length} 筆證據 · ${conflictGroups.length} 組衝突整理`}
+      summary={`${todos.length} 待查 · ${evidence.length} 證據 · ${conflictGroups.length} 衝突 · ${recommendations.length} 推薦`}
       title="文獻來源"
     >
-      {evidence.length === 0 && conflictGroups.length === 0 ? (
+      {evidence.length === 0 &&
+      conflictGroups.length === 0 &&
+      todos.length === 0 &&
+      recommendations.length === 0 ? (
         <p className="text-sm text-slate-500">目前尚無文獻候選資料。</p>
       ) : (
         <div className="grid gap-4">
           <div className="flex flex-wrap gap-2 text-xs">
+            <span className="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-slate-400">
+              待查 {todos.length}
+            </span>
             <span className="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-slate-400">
               候選 {candidateCount}
             </span>
@@ -294,55 +318,96 @@ function MaterialLiteratureSection({
             <span className="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-slate-400">
               已驗證 {verifiedCount}
             </span>
+            <span className="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-slate-400">
+              推薦 {recommendations.length}
+            </span>
           </div>
 
-          <div>
-            <h4 className="text-sm font-medium text-slate-200">相關參數證據</h4>
-            <div className="mt-2 grid gap-2">
-              {evidence.map((item) => (
-                <div
-                  className="rounded-md border border-slate-800 bg-slate-950/35 p-3 text-xs leading-5 text-slate-400"
-                  key={item.id}
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-2">
-                    <span className="font-medium text-slate-200">
-                      {formatParameterKey(item.parameterKey)}
-                    </span>
-                    <span>
-                      {formatReviewStatus(getSourceStatus(item.sourceId) ?? 'candidate')}
-                    </span>
-                  </div>
-                  <p className="mt-1">
+          <CollapsibleSection
+            defaultOpen={false}
+            summary={`${todos.length} 項`}
+            title="待查項目"
+          >
+            <div className="grid gap-2">
+              {todos.length > 0 ? (
+                todos.map((todo) => (
+                  <CompactLiteratureRow key={todo.id}>
+                    {formatParameterKey(todo.parameterKey)} · 優先{' '}
+                    {formatTodoPriority(todo.priority)} · {formatTodoStatus(todo.status)}
+                    <br />
+                    {todo.reason_zh}
+                  </CompactLiteratureRow>
+                ))
+              ) : (
+                <p className="text-xs text-slate-500">目前沒有待查項目。</p>
+              )}
+            </div>
+          </CollapsibleSection>
+
+          <CollapsibleSection
+            defaultOpen={false}
+            summary={`${evidence.length} 筆`}
+            title="參數證據"
+          >
+            <div className="grid gap-2">
+              {evidence.length > 0 ? (
+                evidence.map((item) => (
+                  <CompactLiteratureRow key={item.id}>
+                    {formatParameterKey(item.parameterKey)} ·{' '}
                     {item.value === null
                       ? '數值待補'
                       : `${item.value}${item.unit ? ` ${item.unit}` : ''}`}
                     {' · '}
-                    {formatAgreementStatus(item.agreementStatus)}
-                    {' · '}
-                    {item.condition_zh || '條件待補'}
-                  </p>
-                </div>
-              ))}
+                    {formatAgreementStatus(item.agreementStatus)} ·{' '}
+                    {formatReviewStatus(getSourceStatus(item.sourceId) ?? 'candidate')}
+                  </CompactLiteratureRow>
+                ))
+              ) : (
+                <p className="text-xs text-slate-500">目前沒有參數證據。</p>
+              )}
             </div>
-          </div>
+          </CollapsibleSection>
 
-          <div>
-            <h4 className="text-sm font-medium text-slate-200">衝突 / 共識整理</h4>
-            <div className="mt-2 grid gap-2">
+          <CollapsibleSection
+            defaultOpen={false}
+            summary={`${conflictGroups.length} 組`}
+            title="衝突 / 共識"
+          >
+            <div className="grid gap-2">
               {conflictGroups.length > 0 ? (
                 conflictGroups.map((group) => (
-                  <div
-                    className="rounded-md border border-slate-800 bg-slate-950/35 p-3 text-xs leading-5 text-slate-400"
-                    key={group.id}
-                  >
+                  <CompactLiteratureRow key={group.id}>
                     {group.summary_zh}
-                  </div>
+                  </CompactLiteratureRow>
                 ))
               ) : (
                 <p className="text-xs text-slate-500">目前沒有衝突整理。</p>
               )}
             </div>
-          </div>
+          </CollapsibleSection>
+
+          <CollapsibleSection
+            defaultOpen={false}
+            summary={`${recommendations.length} 筆`}
+            title="推薦參數"
+          >
+            <div className="grid gap-2">
+              {recommendations.length > 0 ? (
+                recommendations.map((recommendation) => (
+                  <CompactLiteratureRow key={recommendation.id}>
+                    {formatParameterKey(recommendation.parameterKey)} ·{' '}
+                    {recommendation.recommendedValue === null
+                      ? '尚無建議值'
+                      : `${recommendation.recommendedValue}${recommendation.unit ? ` ${recommendation.unit}` : ''}`}
+                    {' · '}
+                    {formatParameterRecommendationStatus(recommendation.status)}
+                  </CompactLiteratureRow>
+                ))
+              ) : (
+                <p className="text-xs text-slate-500">目前沒有推薦參數。</p>
+              )}
+            </div>
+          </CollapsibleSection>
 
           <p className="text-xs leading-5 text-slate-500">
             文獻候選資料只用於來源追蹤與人工審核，不會自動改寫材料 notes 或正式參數。
@@ -350,6 +415,14 @@ function MaterialLiteratureSection({
         </div>
       )}
     </CollapsibleSection>
+  )
+}
+
+function CompactLiteratureRow({ children }: { children: ReactNode }) {
+  return (
+    <div className="rounded-md border border-slate-800 bg-slate-950/35 p-3 text-xs leading-5 text-slate-400">
+      {children}
+    </div>
   )
 }
 

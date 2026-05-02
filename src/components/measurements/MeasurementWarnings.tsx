@@ -1,4 +1,5 @@
 import type { MeasurementDataset } from '../../types/measurement'
+import { CollapsibleSection } from '../common/CollapsibleSection'
 
 interface MeasurementWarningsProps {
   dataset?: MeasurementDataset
@@ -19,9 +20,12 @@ export function MeasurementWarnings({ dataset }: MeasurementWarningsProps) {
   const warnings = [...globalWarnings, ...(dataset?.warnings_zh ?? [])]
 
   return (
-    <section className="rounded-lg border border-amber-900/50 bg-amber-950/20 p-4">
-      <h3 className="text-base font-semibold text-amber-100">量測資料提醒</h3>
-      <ul className="mt-3 space-y-2 text-sm leading-6 text-amber-100/80">
+    <CollapsibleSection
+      defaultOpen={false}
+      summary={`${new Set(warnings).size} 項量測資料提醒`}
+      title="量測資料提醒"
+    >
+      <ul className="space-y-2 text-sm leading-6 text-amber-100/80">
         {[...new Set(warnings)].map((warning) => (
           <li className="flex gap-2" key={warning}>
             <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-amber-300" />
@@ -29,7 +33,6 @@ export function MeasurementWarnings({ dataset }: MeasurementWarningsProps) {
           </li>
         ))}
       </ul>
-    </section>
+    </CollapsibleSection>
   )
 }
-

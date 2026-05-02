@@ -54,6 +54,10 @@ export interface LiteratureSource {
   tags_zh?: string[]
 }
 
+export type LiteratureSourceInput = Omit<LiteratureSource, 'id'> & {
+  id?: string
+}
+
 export interface ParameterEvidence {
   id: string
   sourceId: string
@@ -68,6 +72,10 @@ export interface ParameterEvidence {
   quoteOrSummary_zh?: string
   applicability_zh?: string
   warnings_zh?: string[]
+}
+
+export type ParameterEvidenceInput = Omit<ParameterEvidence, 'id'> & {
+  id?: string
 }
 
 export interface ParameterConflictGroup {
@@ -86,8 +94,40 @@ export interface ParameterConflictGroup {
   warnings_zh?: string[]
 }
 
+export type ConflictGroupInput = Omit<ParameterConflictGroup, 'id'> & {
+  id?: string
+}
+
+export interface ParameterRecommendation {
+  id: string
+  materialId: string
+  parameterKey: MaterialParameterKey
+  recommendedValue: number | string | null
+  unit?: string
+  status: 'draft' | 'reviewed' | 'ready_to_promote' | 'rejected'
+  basedOnEvidenceIds: string[]
+  rationale_zh: string
+  limitation_zh?: string
+  condition_zh?: string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface MaterialLiteratureTodo {
+  id: string
+  materialId: string
+  priority: 'high' | 'medium' | 'low'
+  parameterKey: MaterialParameterKey
+  reason_zh: string
+  suggestedSearchTerms: string[]
+  status: 'todo' | 'in_progress' | 'candidate_found' | 'reviewed' | 'verified'
+  notes_zh?: string
+}
+
 export interface LiteratureDatabase {
   sources: LiteratureSource[]
   evidence: ParameterEvidence[]
   conflictGroups: ParameterConflictGroup[]
+  recommendations: ParameterRecommendation[]
+  todos: MaterialLiteratureTodo[]
 }

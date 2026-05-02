@@ -1,4 +1,5 @@
 import type { ProcessValidationWarning } from '../../types/process'
+import { CollapsibleSection } from '../common/CollapsibleSection'
 import { getSeverityClass } from './processFormatting'
 
 interface ProcessValidationPanelProps {
@@ -7,9 +8,12 @@ interface ProcessValidationPanelProps {
 
 export function ProcessValidationPanel({ warnings }: ProcessValidationPanelProps) {
   return (
-    <section className="rounded-lg border border-slate-800 bg-slate-950/35 p-4">
+    <CollapsibleSection
+      defaultOpen={warnings.length > 0}
+      summary={`${warnings.length} 則流程提醒`}
+      title="流程提醒"
+    >
       <div className="flex items-center justify-between gap-3">
-        <h3 className="text-sm font-semibold text-slate-100">流程提醒</h3>
         <span className="rounded-full border border-slate-700 px-2 py-1 text-xs text-slate-400">
           {warnings.length} 則
         </span>
@@ -39,6 +43,6 @@ export function ProcessValidationPanel({ warnings }: ProcessValidationPanelProps
           </div>
         ))}
       </div>
-    </section>
+    </CollapsibleSection>
   )
 }
