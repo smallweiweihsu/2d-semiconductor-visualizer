@@ -4,6 +4,80 @@ const createdAt = '2026-05-02T00:00:00.000Z'
 
 export const parameterRecommendations: ParameterRecommendation[] = [
   {
+    id: 'recommendation-sb2o3-metal-diffusion-blocker-15b',
+    materialId: 'sb2o3',
+    parameterKey: 'D0_m2s',
+    recommendedValue: null,
+    status: 'draft',
+    basedOnEvidenceIds: [
+      'evidence-pd-sb2o3-d0-placeholder',
+      'evidence-in-sb2o3-d0-placeholder',
+      'evidence-ti-sb2o3-d0-placeholder',
+      'evidence-au-sb2o3-d0-placeholder',
+    ],
+    rationale_zh:
+      '目前 Pd/In/Ti/Au into Sb₂O₃ 的 D0/Ea 仍缺 verified evidence，因此擴散模組應繼續顯示缺少文獻參數，不應自動給定數值。',
+    limitation_zh:
+      '所有 D0/Ea evidence 目前皆為 placeholder 或 candidate；不可定量使用。',
+    condition_zh: 'metal diffusion into Sb₂O₃ literature gap。',
+    createdAt,
+    updatedAt: createdAt,
+  },
+  {
+    id: 'recommendation-in-sb2o3-buffer-candidate-only-15b',
+    materialId: 'in',
+    parameterKey: 'custom',
+    recommendedValue: null,
+    status: 'draft',
+    basedOnEvidenceIds: [
+      'evidence-in-sb2o3-buffer',
+      'evidence-in-sb2o3-interface-reaction-placeholder',
+    ],
+    rationale_zh:
+      'In 可作為實驗候選緩衝金屬，但目前資料庫未驗證其一定能降低 Sb₂O₃ 介面衝擊。',
+    limitation_zh:
+      '需補真實來源，並確認 deposition method、thickness、temperature、annealing 與 measurement method。',
+    condition_zh: 'In / Sb₂O₃ interface buffer remains candidate only。',
+    createdAt,
+    updatedAt: createdAt,
+  },
+  {
+    id: 'recommendation-sb2o3-dielectric-condition-specific-15b',
+    materialId: 'sb2o3',
+    parameterKey: 'dielectricConstant',
+    recommendedValue: null,
+    status: 'draft',
+    basedOnEvidenceIds: [
+      'evidence-messalea-2021-sb2o3-dielectric-constant',
+      'evidence-zhang-2026-sb2o3-dielectric-constant',
+      'evidence-sb2o3-breakdown-2024-leakage-traps',
+    ],
+    rationale_zh:
+      'Sb₂O₃ dielectric constant / breakdown / leakage 應依相、厚度、製程與電極條件分開記錄，不建議只使用單一全域值。',
+    limitation_zh:
+      'candidate values 尚未完整人工審核；正式材料資料庫仍不應自動更新。',
+    condition_zh: 'process-dependent Sb₂O₃ dielectric properties。',
+    createdAt,
+    updatedAt: createdAt,
+  },
+  {
+    id: 'recommendation-sb-surface-oxidation-xps-afm-15b',
+    materialId: 'sb-bulk',
+    parameterKey: 'oxidationRate_nm_per_s',
+    recommendedValue: null,
+    status: 'draft',
+    basedOnEvidenceIds: [
+      'evidence-millet-1991-sb-surface-oxidation-xps',
+      'evidence-sb-surface-oxidation-rate-placeholder',
+    ],
+    rationale_zh:
+      'Sb 表面氧化推論應搭配 XPS 化學態與 AFM 厚度，不能僅由暴露時間直接定量。',
+    limitation_zh: '目前沒有 verified ambient oxidation rate。',
+    condition_zh: 'Sb surface oxidation to Sb₂O₃ calibration needed。',
+    createdAt,
+    updatedAt: createdAt,
+  },
+  {
     id: 'recommendation-wse2-band-gap-condition-specific',
     materialId: 'wse2',
     parameterKey: 'bandGap_eV',

@@ -34,6 +34,9 @@ export function DiffusionModelPanel({
     () => calculateDiffusionScenario(scenario, targetLayerThickness_nm),
     [scenario, targetLayerThickness_nm],
   )
+  const isMetalIntoSb2O3 =
+    scenario.hostMaterialId === 'sb2o3' &&
+    ['pd', 'in', 'ti', 'au'].includes(scenario.diffusingSpecies.toLowerCase())
 
   function updateScenario(updates: Partial<DiffusionScenario>) {
     setScenario((current) => ({ ...current, ...updates }))
@@ -69,6 +72,16 @@ export function DiffusionModelPanel({
           </p>
         ) : null}
       </AcknowledgableNotice>
+
+      {isMetalIntoSb2O3 ? (
+        <AcknowledgableNotice
+          id="diffusion-sb2o3-literature-gap"
+          title="Sb₂O₃ 金屬擴散文獻缺口"
+          type="missing_parameter"
+        >
+          文獻資料庫目前標記 Pd/In/Ti/Au 進入 Sb₂O₃ 的 D0/Ea 仍需 verified evidence；若手動輸入 D0/Ea，請在文獻資料庫建立對應 evidence。
+        </AcknowledgableNotice>
+      ) : null}
 
       <div className="grid min-w-0 gap-4 2xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
         <div className="grid min-w-0 gap-4">

@@ -197,7 +197,11 @@ export function ParameterRecommendationPanel({
           ) : (
             recommendations.map((recommendation) => (
               <article
-                className="rounded-md border border-slate-800 bg-slate-900/45 p-3"
+                className={`rounded-md border p-3 ${
+                  isModelBlocker(recommendation)
+                    ? 'border-amber-800/70 bg-amber-950/15'
+                    : 'border-slate-800 bg-slate-900/45'
+                }`}
                 key={recommendation.id}
               >
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -213,6 +217,11 @@ export function ParameterRecommendationPanel({
                       {' · '}
                       {formatParameterRecommendationStatus(recommendation.status)}
                     </p>
+                    {isModelBlocker(recommendation) ? (
+                      <span className="mt-2 inline-flex rounded-full border border-amber-700 bg-amber-950/40 px-2 py-1 text-[11px] text-amber-100">
+                        阻擋定量模型
+                      </span>
+                    ) : null}
                   </div>
                   <button
                     className="secondary-button"
@@ -280,6 +289,15 @@ function createEmptyRecommendation(
 
 function getMaterialName(materialId: string) {
   return materials.find((material) => material.id === materialId)?.displayName ?? materialId
+}
+
+function isModelBlocker(recommendation: ParameterRecommendation) {
+  return (
+    recommendation.parameterKey === 'D0_m2s' ||
+    recommendation.parameterKey === 'Ea_eV' ||
+    recommendation.rationale_zh.includes('不應自動給定') ||
+    recommendation.rationale_zh.includes('不可定量')
+  )
 }
 
 function parseValue(value: string) {

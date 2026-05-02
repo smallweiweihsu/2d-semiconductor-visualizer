@@ -316,6 +316,21 @@ src/
 - 更新 Markdown 報告文獻摘要，列出真實來源數、placeholder 來源數、review status、材料證據分布與推薦參數數量。
 - 本批未執行 automatic web search、DOI lookup、PDF parsing，也未自動 promotion 到 `materials.ts`；所有 candidate values 仍需人工審核、條件比對與實驗校準。
 
+## Batch 15B：Sb₂O₃ / Sb / In interface 與金屬擴散文獻擴充
+
+本批針對使用者最急迫的 Sb₂O₃、Sb surface oxidation、In/Sb₂O₃ interface buffer 與金屬進入 Sb₂O₃ 擴散問題，擴充文獻待查清單、candidate evidence、conflict groups 與 draft recommendations。
+
+- 擴充 Sb₂O₃ 待查項目：dielectric constant、band gap、breakdown field、resistivity、band offset、leakage / trap behavior、oxygen vacancy / defect behavior，以及 metal deposition stability。
+- 擴充 Sb bulk / Sb surface oxidation 待查項目：work function、resistivity、Sb → Sb₂O₃ surface oxidation、Sb/Sb₂O₃ interface behavior，以及 air / oxygen / moisture exposure。
+- 擴充 In / Sb₂O₃ interface 待查項目：In work function、melting point、D0/Ea、interface reaction、buffer behavior 與 thermal stability。
+- 擴充 Pd / In / Ti / Au into Sb₂O₃ 的 D0/Ea placeholder evidence；Cr、Ni、Pt、Al、Ag、Cu、Sc 也加入金屬擴散與 oxide interface reaction 待查追蹤。
+- 新增少量可核對的 candidate sources，用於 Sb₂O₃/WSe₂ dielectric、Sb₂O₃ breakdown mechanism 與 Sb surface oxidation XPS；所有來源仍為 candidate，沒有標記 verified。
+- In/Sb₂O₃ buffer effect 仍維持未驗證，不能宣稱 In 一定降低 Sb₂O₃ 介面衝擊。
+- Pd/In/Ti/Au into Sb₂O₃ 的 D0/Ea 仍為缺口；擴散模型不應自動啟用定量數值。
+- 擴散與氧化模組新增文獻提醒：手動輸入 D0/Ea 或判斷 Sb surface oxidation 時，應建立 literature evidence 並搭配 XPS / AFM 或製程校準。
+- 文獻資料庫 UI 新增 Sb₂O₃ / Sb / In interface topic summary、TODO 快速篩選、null value「需補參數」標記，以及阻擋定量模型的 draft recommendation 提示。
+- 本批沒有 automatic DOI lookup、PDF parsing、verified parameter promotion、`materials.ts` 更新、backend database 或 cloud sync。
+
 ## 科學準確性聲明
 
 本工具目前是「物理導向的視覺化與近似分析工具」，不是完整 TCAD、DFT 或分子動力學模擬器。所有計算結果都需要搭配實驗資料與文獻參數判讀；在未來加入任何模型或公式時，也應清楚標註假設、適用範圍與限制。

@@ -34,6 +34,10 @@ export function OxidationModelPanel({
     () => calculateOxidationScenario(scenario),
     [scenario],
   )
+  const isSbOxidationContext =
+    scenario.targetMaterialId === 'sb-bulk' ||
+    scenario.targetMaterialId === 'sb2o3' ||
+    scenario.productMaterialId === 'sb2o3'
 
   function updateScenario(updates: Partial<OxidationScenario>) {
     setScenario((current) => ({ ...current, ...updates }))
@@ -66,6 +70,16 @@ export function OxidationModelPanel({
           若氧化速率、Raman 穿透深度、反應能障或材料吸收參數缺失，結果只能作為趨勢判讀，不能視為定量預測。
         </p>
       </AcknowledgableNotice>
+
+      {isSbOxidationContext ? (
+        <AcknowledgableNotice
+          id="oxidation-sb-literature-calibration"
+          title="Sb 表面氧化校準"
+          type="literature"
+        >
+          Sb 表面氧化與 Sb₂O₃ 厚度需搭配 XPS / AFM 或製程校準；目前不可僅用暴露時間定量判斷。
+        </AcknowledgableNotice>
+      ) : null}
 
       <div className="grid min-w-0 gap-4 2xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
         <div className="grid min-w-0 gap-4">

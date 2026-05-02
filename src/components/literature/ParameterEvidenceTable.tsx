@@ -56,9 +56,13 @@ export function ParameterEvidenceTable({
                 {formatParameterKey(item.parameterKey)}
               </td>
               <td className="px-3 py-3 text-slate-300">
-                {item.value === null || item.value === ''
-                  ? '待補'
-                  : `${item.value}${item.unit ? ` ${item.unit}` : ''}`}
+                {item.value === null || item.value === '' ? (
+                  <span className="rounded-full border border-amber-700/70 bg-amber-950/30 px-2 py-1 text-xs text-amber-100">
+                    需補參數
+                  </span>
+                ) : (
+                  `${item.value}${item.unit ? ` ${item.unit}` : ''}`
+                )}
               </td>
               <td className="px-3 py-3 text-xs leading-5 text-slate-500">
                 {item.condition_zh || '條件待補'}

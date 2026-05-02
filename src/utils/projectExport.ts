@@ -65,6 +65,7 @@ export function createProjectSaveData({
     warnings_zh: [
       ...warnings_zh,
       '目前擴散、氧化與電性模組的即時情境狀態尚未納入跨模組專案匯出，後續批次將強化狀態保存。',
+      '文獻資料庫中的 candidate evidence 不代表正式材料參數；In/Sb₂O₃ buffer、金屬進入 Sb₂O₃ 的 D0/Ea、Sb 表面氧化速率與 Sb₂O₃ dielectric properties 仍需人工審核與校準。',
     ],
   }
 }

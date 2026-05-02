@@ -80,7 +80,36 @@ export const literatureSources: LiteratureSource[] = [
     reviewStatus: 'candidate',
     tags_zh: ['Sb2O3', 'breakdown', 'dielectric constant', 'high-k'],
     notes_zh:
-      '候選來源：用於 Sb₂O₃ dielectric constant 與 breakdown field 機制。需人工確認完整作者資訊與適用條件。',
+      '候選來源：用於 Sb₂O₃ dielectric constant、oxygen vacancy、breakdown field 與 dielectric breakdown mechanism。需人工確認完整作者資訊與適用條件。',
+  },
+  {
+    id: 'src-zhang-2026-sb2o3-wse2-dielectric',
+    title:
+      'Epitaxially grown single-crystalline antimony trioxide dielectrics for two-dimensional electronics',
+    authors: [],
+    year: 2026,
+    sourceType: 'journal_article',
+    journal: 'Nature Electronics',
+    doi: '10.1038/s41928-026-01580-w',
+    url: 'https://www.nature.com/articles/s41928-026-01580-w',
+    reviewStatus: 'candidate',
+    tags_zh: ['Sb2O3', 'WSe2', 'dielectric', 'breakdown', '2D electronics'],
+    notes_zh:
+      '候選來源：網頁摘要顯示 monolayer Sb₂O₃ 用於 WSe₂ transistor dielectric，包含 dielectric constant、breakdown field 與 interface trap density 等資訊；需人工完整審核後才可使用。',
+  },
+  {
+    id: 'src-millet-1991-sb-surface-oxidation-xps',
+    title:
+      'Surface and interface XPS characterization of the oxide layer grown on antimony under UV laser irradiation',
+    authors: ['H. Millet', 'G. Ponsolle', 'D. B. Danel'],
+    year: 1991,
+    sourceType: 'journal_article',
+    journal: 'Surface Science',
+    doi: '10.1016/0039-6028(91)90542-7',
+    reviewStatus: 'candidate',
+    tags_zh: ['Sb', 'Sb2O3', 'surface oxidation', 'XPS'],
+    notes_zh:
+      '候選來源：用於 Sb 表面氧化層與 XPS characterization；需要回查原文確認氧化條件、厚度與是否適用於環境暴露或目前製程。',
   },
   {
     id: 'src-wse2-vdw-contacts-2022',
@@ -143,5 +172,38 @@ export const literatureSources: LiteratureSource[] = [
     reviewStatus: 'candidate',
     notes_zh: placeholderNote,
     tags_zh: ['金屬擴散', 'Sb₂O₃', 'D0', 'Ea', '待補'],
+  },
+  {
+    id: 'src-placeholder-pd-in-ti-au-sb2o3-diffusion',
+    title: '待查：Pd / In / Ti / Au diffusion into Sb₂O₃ literature',
+    authors: [],
+    year: null,
+    sourceType: 'unknown',
+    reviewStatus: 'candidate',
+    notes_zh:
+      '此為待查文獻占位資料，尚未填入真實 DOI、作者、D0、Ea、溫度範圍或量測方法。不可視為引用。',
+    tags_zh: ['Pd', 'In', 'Ti', 'Au', 'Sb2O3', 'diffusion', 'D0', 'Ea'],
+  },
+  {
+    id: 'src-placeholder-sb2o3-leakage-trap-behavior',
+    title: '待查：Sb₂O₃ leakage / trap / oxygen vacancy behavior',
+    authors: [],
+    year: null,
+    sourceType: 'unknown',
+    reviewStatus: 'candidate',
+    notes_zh:
+      '此為待查文獻占位資料，尚未填入真實 DOI、作者、漏電模型、trap density 或 oxygen vacancy 量測資料。不可視為引用。',
+    tags_zh: ['Sb2O3', 'leakage', 'trap', 'oxygen vacancy', '待補'],
+  },
+  {
+    id: 'src-placeholder-metal-deposition-damage-sb2o3',
+    title: '待查：metal deposition damage on Sb₂O₃ interface',
+    authors: [],
+    year: null,
+    sourceType: 'unknown',
+    reviewStatus: 'candidate',
+    notes_zh:
+      '此為待查文獻占位資料，尚未填入真實 DOI、作者或界面損傷結論。不可視為 In 或其他金屬已被證實可降低 Sb₂O₃ 損傷。',
+    tags_zh: ['Sb2O3', 'metal deposition', 'interface damage', 'In buffer', '待補'],
   },
 ]

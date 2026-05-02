@@ -16,7 +16,7 @@ export function ProcessDiffusionWorkspace({
   onChangeFlow,
 }: ProcessDiffusionWorkspaceProps) {
   const [activeView, setActiveView] = useState<'timeline' | 'diffusion'>(
-    'timeline',
+    getInitialProcessView,
   )
 
   return (
@@ -59,6 +59,11 @@ export function ProcessDiffusionWorkspace({
       )}
     </section>
   )
+}
+
+function getInitialProcessView() {
+  const view = new URLSearchParams(window.location.search).get('processView')
+  return view === 'diffusion' ? 'diffusion' : 'timeline'
 }
 
 function WorkspaceModeButton({

@@ -2,6 +2,68 @@ import type { ParameterConflictGroup } from '../types/literature'
 
 export const parameterConflictGroups: ParameterConflictGroup[] = [
   {
+    id: 'conflict-in-sb2o3-buffer-effect-15b',
+    materialId: 'in',
+    parameterKey: 'custom',
+    evidenceIds: [
+      'evidence-in-sb2o3-buffer',
+      'evidence-in-sb2o3-interface-reaction-placeholder',
+      'evidence-metal-deposition-damage-sb2o3-placeholder',
+    ],
+    summary_zh:
+      'In 可能作為候選緩衝金屬，但目前資料庫尚未有 verified evidence 證明其一定能降低金屬沉積對 Sb₂O₃ 的衝擊。此議題高度依賴沉積方法、厚度、溫度、退火與量測方式。',
+    recommendedStatus: 'needs_review',
+    warnings_zh: [
+      '不得將 In 作為已驗證解方；需先補真實文獻與實驗校準。',
+    ],
+  },
+  {
+    id: 'conflict-metal-diffusion-into-sb2o3-15b',
+    materialId: 'sb2o3',
+    parameterKey: 'D0_m2s',
+    evidenceIds: [
+      'evidence-pd-sb2o3-d0-placeholder',
+      'evidence-pd-sb2o3-ea-placeholder',
+      'evidence-in-sb2o3-d0-placeholder',
+      'evidence-in-sb2o3-ea-placeholder',
+      'evidence-ti-sb2o3-d0-placeholder',
+      'evidence-ti-sb2o3-ea-placeholder',
+      'evidence-au-sb2o3-d0-placeholder',
+      'evidence-au-sb2o3-ea-placeholder',
+      'evidence-metal-diffusion-sb2o3',
+    ],
+    summary_zh:
+      'Pd / In / Ti / Au 等金屬進入 Sb₂O₃ 的 D0 / Ea 參數目前缺乏 verified evidence，擴散模型不可定量使用。',
+    recommendedStatus: 'needs_review',
+    warnings_zh: ['手動輸入 D0/Ea 時，應同步在文獻資料庫建立對應 evidence。'],
+  },
+  {
+    id: 'conflict-sb-surface-oxidation-15b',
+    materialId: 'sb-bulk',
+    parameterKey: 'oxidationRate_nm_per_s',
+    evidenceIds: [
+      'evidence-millet-1991-sb-surface-oxidation-xps',
+      'evidence-sb-surface-oxidation-rate-placeholder',
+    ],
+    summary_zh:
+      'Sb 表面在空氣或氧/水環境中可能形成 Sb₂O₃，但厚度、速率與化學態需 AFM / XPS 或製程校準確認。',
+    recommendedStatus: 'needs_review',
+    warnings_zh: ['不可只用暴露時間推定 Sb₂O₃ 厚度。'],
+  },
+  {
+    id: 'conflict-metal-deposition-damage-sb2o3-15b',
+    materialId: 'sb2o3',
+    parameterKey: 'custom',
+    evidenceIds: [
+      'evidence-metal-deposition-damage-sb2o3-placeholder',
+      'evidence-in-sb2o3-interface-reaction-placeholder',
+    ],
+    summary_zh:
+      '金屬沉積可能造成界面混合、缺陷或局部損傷；不同金屬與沉積方式可能造成不同程度影響。In 是否能降低此衝擊仍需文獻與實驗驗證。',
+    recommendedStatus: 'needs_review',
+    warnings_zh: ['需要分金屬、沉積能量、溫度與後續退火條件建立 evidence。'],
+  },
+  {
     id: 'conflict-wse2-band-gap-layer-method',
     materialId: 'wse2',
     parameterKey: 'bandGap_eV',
@@ -35,14 +97,17 @@ export const parameterConflictGroups: ParameterConflictGroup[] = [
     materialId: 'sb2o3',
     parameterKey: 'dielectricConstant',
     evidenceIds: [
+      'evidence-zhang-2026-sb2o3-dielectric-constant',
+      'evidence-zhang-2026-sb2o3-breakdown-field',
+      'evidence-sb2o3-breakdown-2024-leakage-traps',
       'evidence-messalea-2021-sb2o3-band-gap',
       'evidence-messalea-2021-sb2o3-dielectric-constant',
       'evidence-sb2o3-breakdown-2024-breakdown-field',
       'evidence-sb2o3-dielectric',
     ],
     summary_zh:
-      'Sb₂O₃ 介電常數與 breakdown field 可能受相、厚度、缺陷、氧空缺與沉積方法影響，不應只用單一常數。',
-    recommendedStatus: 'needs_review',
+      'Sb₂O₃ 的介電常數、漏電與 breakdown 可能與相、厚度、缺陷、氧空缺、沉積方法與電極材料相關。',
+    recommendedStatus: 'condition_dependent',
     warnings_zh: ['正式材料資料庫應保留製程條件與量測方法欄位。'],
   },
   {

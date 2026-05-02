@@ -230,9 +230,129 @@ const mediumMaterials = [
   'hbn',
 ]
 const lowMaterials = ['mos2', 'ws2', 'mose2', 'mote2', 'graphene', 'black-phosphorus']
+const diffusionMetals = ['pd', 'in', 'ti', 'au', 'cr', 'ni', 'pt', 'al', 'ag', 'cu', 'sc']
+
+const batch15BTodos: MaterialLiteratureTodo[] = [
+  createBatch15BTodo(
+    'sb2o3',
+    'high',
+    'bandGap_eV',
+    'Sb₂O₃ band gap 會影響 band alignment、gate leakage 與 dielectric barrier 判讀。',
+    [
+      'Sb2O3 band gap thin film high-k dielectric',
+      'antimony trioxide optical band gap dielectric',
+    ],
+  ),
+  createBatch15BTodo(
+    'sb2o3',
+    'high',
+    'custom',
+    'Sb₂O₃ leakage / trap behavior 會影響 hysteresis、gate leakage 與 breakdown interpretation。',
+    [
+      'Sb2O3 leakage trap oxygen vacancy dielectric',
+      'antimony oxide trap density breakdown leakage',
+    ],
+  ),
+  createBatch15BTodo(
+    'sb2o3',
+    'high',
+    'custom',
+    '氧空缺與缺陷可能影響 Sb₂O₃ 介電常數、漏電與金屬擴散風險。',
+    [
+      'Sb2O3 oxygen vacancy defect dielectric breakdown',
+      'high-k antimony oxide oxygen vacancy trap',
+    ],
+  ),
+  createBatch15BTodo(
+    'sb2o3',
+    'high',
+    'custom',
+    '金屬沉積時 Sb₂O₃ 是否受損、混合或形成 interface defects 是目前最急需釐清的製程問題。',
+    [
+      'metal deposition damage Sb2O3 interface',
+      'metal antimony oxide interface mixing deposition damage',
+    ],
+  ),
+  createBatch15BTodo(
+    'sb-bulk',
+    'high',
+    'oxidationRate_nm_per_s',
+    'Sb 表面在 air、oxygen、moisture 或 glovebox leakage 下形成 Sb₂O₃ 的速率需要校準。',
+    [
+      'Sb surface oxidation Sb2O3 air exposure XPS AFM',
+      'antimony oxidation rate ambient moisture Sb2O3',
+    ],
+  ),
+  createBatch15BTodo(
+    'sb-bulk',
+    'high',
+    'custom',
+    'Sb/Sb₂O₃ interface behavior 可能影響底部 source、局部氧化層與 WSe₂ 接觸區域。',
+    [
+      'Sb Sb2O3 interface XPS electronic properties',
+      'antimony antimony oxide interface oxidation moisture',
+    ],
+  ),
+  createBatch15BTodo(
+    'in',
+    'high',
+    'Ea_eV',
+    'In into Sb₂O₃ 的 Ea 缺失會阻止擴散模型做定量估算。',
+    ['In diffusion Sb2O3 activation energy', 'indium diffusion antimony oxide Ea'],
+  ),
+  createBatch15BTodo(
+    'in',
+    'high',
+    'custom',
+    'In/Sb₂O₃ interface reaction 與 buffer effect 需要直接文獻或實驗，不能由一般 In 性質推論。',
+    [
+      'In Sb2O3 interface reaction buffer layer',
+      'indium antimony oxide interface deposition',
+    ],
+  ),
+  createBatch15BTodo(
+    'in',
+    'high',
+    'custom',
+    'In contact layer 的低熔點與熱穩定性可能影響退火、擴散與界面形貌。',
+    [
+      'indium contact thermal stability annealing oxide interface',
+      'indium thin film diffusion low melting point device',
+    ],
+  ),
+  createBatch15BTodo(
+    'pd',
+    'high',
+    'Ea_eV',
+    'Pd into Sb₂O₃ 的 Ea 缺失會阻止擴散模型做定量估算。',
+    ['Pd diffusion Sb2O3 activation energy', 'palladium diffusion antimony oxide Ea'],
+  ),
+  createBatch15BTodo(
+    'pd',
+    'high',
+    'custom',
+    'Pd/Sb₂O₃ interface reaction 與 deposition damage risk 需要與 Pd/WSe₂ contact 分開追蹤。',
+    [
+      'Pd Sb2O3 interface reaction deposition damage',
+      'palladium antimony oxide interface mixing',
+    ],
+  ),
+  createBatch15BTodo(
+    'wox',
+    'high',
+    'custom',
+    'WSe₂ oxidation product may be non-stoichiometric WOx；Raman signatures 與 electrical resistivity 需按 composition 追蹤。',
+    [
+      'WSe2 oxidation WOx composition Raman signature',
+      'tungsten oxide WOx resistivity oxygen vacancy Raman',
+    ],
+  ),
+]
 
 export const materialLiteratureTodos: MaterialLiteratureTodo[] = [
   ...todoSeeds.flatMap(seedToTodos),
+  ...batch15BTodos,
+  ...diffusionMetals.flatMap((materialId) => seedMetalDiffusionTodos(materialId)),
   ...mediumMaterials.flatMap((materialId) =>
     seedGenericTodos(materialId, 'medium'),
   ),
@@ -292,6 +412,65 @@ function seedGenericTodos(materialId: string, priority: TodoPriority) {
   )
 }
 
+function seedMetalDiffusionTodos(materialId: string) {
+  const priority: TodoPriority = ['pd', 'in', 'ti', 'au'].includes(materialId)
+    ? 'high'
+    : 'medium'
+  const materialLabel = materialId.toUpperCase()
+
+  return [
+    createBatch15BTodo(
+      materialId,
+      priority,
+      'D0_m2s',
+      `${materialLabel} into Sb₂O₃ 的 D0 缺失會阻止擴散模型做定量估算。`,
+      [
+        `${materialId} diffusion Sb2O3 D0`,
+        `${materialId} diffusion antimony oxide coefficient`,
+      ],
+    ),
+    createBatch15BTodo(
+      materialId,
+      priority,
+      'Ea_eV',
+      `${materialLabel} into Sb₂O₃ 的 Ea 缺失會阻止 Arrhenius 擴散模型做定量估算。`,
+      [
+        `${materialId} diffusion Sb2O3 activation energy`,
+        `${materialId} antimony oxide diffusion Ea`,
+      ],
+    ),
+    createBatch15BTodo(
+      materialId,
+      priority,
+      'custom',
+      `${materialLabel}/Sb₂O₃ oxide interface reaction、adhesion layer behavior 或 deposition damage 需與 diffusion 分開追蹤。`,
+      [
+        `${materialId} Sb2O3 interface reaction`,
+        `${materialId} oxide interface deposition damage adhesion layer`,
+      ],
+    ),
+  ]
+}
+
+function createBatch15BTodo(
+  materialId: string,
+  priority: TodoPriority,
+  parameterKey: MaterialParameterKey,
+  reason_zh: string,
+  suggestedSearchTerms: string[],
+): MaterialLiteratureTodo {
+  return {
+    id: `todo-15b-${materialId}-${parameterKey}-${slugify(suggestedSearchTerms[0])}`,
+    materialId,
+    priority,
+    parameterKey,
+    reason_zh,
+    suggestedSearchTerms,
+    status: 'todo',
+    notes_zh: 'Batch 15B 新增待查項目；尚未人工審核。',
+  }
+}
+
 function createTodo(
   materialId: string,
   priority: TodoPriority,
@@ -310,4 +489,11 @@ function createTodo(
     status: 'todo',
     notes_zh: '待查文獻；尚未人工審核。',
   }
+}
+
+function slugify(value: string) {
+  return value
+    .replace(/[^\dA-Za-z]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 36)
 }

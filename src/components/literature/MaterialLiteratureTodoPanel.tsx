@@ -82,6 +82,59 @@ export function MaterialLiteratureTodoPanel({
   return (
     <section className="grid gap-4">
       <section className="rounded-lg border border-slate-800 bg-slate-950/35 p-4">
+        <div className="mb-3 flex flex-wrap gap-2 text-xs">
+          <QuickFilterButton
+            label="高優先"
+            onClick={() =>
+              setFilters((current) => ({ ...current, priority: 'high' }))
+            }
+          />
+          <QuickFilterButton
+            label="Sb₂O₃"
+            onClick={() =>
+              setFilters((current) => ({ ...current, materialId: 'sb2o3' }))
+            }
+          />
+          <QuickFilterButton
+            label="In/Sb₂O₃"
+            onClick={() =>
+              setFilters((current) => ({
+                ...current,
+                materialId: 'all',
+                searchText: 'In Sb2O3 interface buffer',
+              }))
+            }
+          />
+          <QuickFilterButton
+            label="金屬擴散"
+            onClick={() =>
+              setFilters((current) => ({
+                ...current,
+                parameterKey: 'D0_m2s',
+                searchText: 'diffusion Sb2O3',
+              }))
+            }
+          />
+          <QuickFilterButton
+            label="表面氧化"
+            onClick={() =>
+              setFilters((current) => ({
+                ...current,
+                searchText: 'surface oxidation Sb2O3',
+              }))
+            }
+          />
+          <QuickFilterButton
+            label="缺 D0/Ea"
+            onClick={() =>
+              setFilters((current) => ({
+                ...current,
+                parameterKey: 'all',
+                searchText: 'D0 Ea',
+              }))
+            }
+          />
+        </div>
         <div className="grid gap-3 md:grid-cols-6">
           <SelectField
             label="優先"
@@ -259,6 +312,24 @@ function TodoCard({
               />
             </label>
           </article>
+  )
+}
+
+function QuickFilterButton({
+  label,
+  onClick,
+}: {
+  label: string
+  onClick: () => void
+}) {
+  return (
+    <button
+      className="rounded-md border border-slate-700 bg-slate-900 px-2.5 py-1.5 text-slate-300 transition hover:border-cyan-700 hover:text-cyan-100"
+      onClick={onClick}
+      type="button"
+    >
+      {label}
+    </button>
   )
 }
 

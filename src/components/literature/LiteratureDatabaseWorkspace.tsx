@@ -175,6 +175,8 @@ export function LiteratureDatabaseWorkspace() {
         sources={sources}
       />
 
+      <InterfaceTopicSummaryCard evidence={evidence} />
+
       <nav className="flex gap-2 overflow-x-auto rounded-lg border border-slate-800 bg-slate-950/35 p-2">
         {sections.map((section) => (
           <button
@@ -423,6 +425,55 @@ function SeedSummaryCard({
           <SummaryPill label="候選 evidence" value={candidateEvidenceCount} />
           <SummaryPill label="reviewed" value={reviewedCount} />
           <SummaryPill label="verified" value={verifiedCount} />
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function InterfaceTopicSummaryCard({ evidence }: { evidence: ParameterEvidence[] }) {
+  const inSb2O3BufferEvidence = evidence.filter(
+    (item) =>
+      item.materialIds.includes('in') &&
+      item.materialIds.includes('sb2o3') &&
+      item.parameterKey === 'custom',
+  ).length
+  const metalDiffusionEvidence = evidence.filter(
+    (item) =>
+      item.materialIds.includes('sb2o3') &&
+      (item.parameterKey === 'D0_m2s' || item.parameterKey === 'Ea_eV'),
+  ).length
+  const sbSurfaceOxidationEvidence = evidence.filter(
+    (item) =>
+      item.materialIds.includes('sb-bulk') &&
+      (item.parameterKey === 'custom' ||
+        item.parameterKey === 'oxidationRate_nm_per_s'),
+  ).length
+  const sb2o3DielectricEvidence = evidence.filter(
+    (item) =>
+      item.materialIds.includes('sb2o3') &&
+      ['dielectricConstant', 'breakdownField_MVcm', 'bandGap_eV'].includes(
+        item.parameterKey,
+      ),
+  ).length
+
+  return (
+    <section className="rounded-lg border border-amber-900/50 bg-amber-950/10 p-4">
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+        <div>
+          <h3 className="text-sm font-semibold text-amber-100">
+            Sb₂O₃ / Sb / In interface 重點
+          </h3>
+          <p className="mt-2 text-xs leading-5 text-amber-100/75">
+            目前最關鍵缺口：D0/Ea 仍缺 verified evidence、In/Sb₂O₃ buffer claim
+            未驗證、Sb 表面氧化速率仍需 XPS / AFM 或製程校準。
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2 text-xs">
+          <SummaryPill label="In/Sb₂O₃ buffer" value={inSb2O3BufferEvidence} />
+          <SummaryPill label="金屬擴散" value={metalDiffusionEvidence} />
+          <SummaryPill label="Sb 表面氧化" value={sbSurfaceOxidationEvidence} />
+          <SummaryPill label="Sb₂O₃ dielectric" value={sb2o3DielectricEvidence} />
         </div>
       </div>
     </section>

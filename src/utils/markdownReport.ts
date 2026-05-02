@@ -423,6 +423,12 @@ function literatureDatabaseSection(projectData: ProjectSaveData) {
       ? ['- 目前沒有參數證據。']
       : []),
     '',
+    '### 關鍵未解缺口',
+    '- In/Sb₂O₃ buffer effect 尚未有 verified evidence，不可視為已證實可降低界面衝擊。',
+    '- Pd/In/Ti/Au 等金屬進入 Sb₂O₃ 的 D0/Ea 仍缺 verified evidence，擴散模型不可定量使用。',
+    '- Sb 表面氧化速率與 Sb₂O₃ 厚度仍需 XPS / AFM 或製程校準。',
+    '- Sb₂O₃ dielectric constant、leakage 與 breakdown 具有製程與缺陷條件依賴性。',
+    '',
     '- 候選來源不是正式材料參數，必須經過人工審核與實驗條件比對後才能使用。',
   ].join('\n')
 }
