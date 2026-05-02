@@ -2,35 +2,35 @@
 
 ## 1. Summary of what was built
 
-完成 Batch 9：新增第一版「電性分析與 I-V 近似」模組，用於以簡化閘極電容、載子密度、通道電阻與手動接觸電阻產生 I-V / Id-Vg 趨勢，並顯示接觸、閘極控制、介電層風險與能帶 / 接觸定性提醒。
+完成 Batch 10：新增第一版「結果與匯出」工作區，用於本機專案 JSON 儲存 / 載入與 Markdown 研究報告產生。
 
-- 新增電性 type system，涵蓋接觸模型、載子型態、電性情境、曲線資料、結果摘要與驗證結果。
-- 新增電性 physics utilities：gate capacitance、induced carrier density、channel resistance、total resistance、Ohmic-like current、Id-Vd / Id-Vg curve generation、dielectric field、breakdown/contact/gate-control risk heuristics。
-- 新增 electrical presets：Sb/WSe₂ 上閘極近似模型、通用 2D FET Ohmic-like 近似、接觸限制 2D 元件模型、Schottky-like 警示模型。
-- 新增電性 UI：情境選擇器、參數編輯器、layer selectors、材料資料庫帶入按鈕、結果摘要、Id-Vd / Id-Vg SVG plot、warning panel、band alignment preview。
-- 可從目前元件結構讀取 channel/source/drain/gate/gate dielectric layers，帶入通道尺寸、介電層厚度與材料資料庫候選參數。
-- 可連結製程流程中的電性量測或低溫電性量測步驟，嘗試帶入 Vd/Vg 掃描範圍與溫度。
+- 新增 project save data 型別，整合 metadata、元件結構、製程流程，以及未來擴散、氧化、電性模組狀態欄位。
+- 新增專案 metadata 編輯器，可填寫專案名稱、樣品名稱、研究者、單位 / 實驗室、標籤與備註。
+- 新增專案 JSON 匯出，可下載目前元件結構、製程流程與 metadata。
+- 新增專案 JSON 匯入，可還原元件結構、製程流程與 metadata，匯入前會提示目前狀態將被取代。
+- 新增 Markdown 完整報告匯出，包含元件結構、材料堆疊、製程流程、擴散 / 氧化 / 電性狀態、主要警告與後續建議。
+- 新增輕量實驗摘要匯出，方便快速整理樣品與製程重點。
+- 新增報告預覽與複製 Markdown 報告功能。
+- 匯出報告會包含科學限制聲明，提醒所有模型結果皆為簡化模型或定性 / 半定量輔助判讀。
 
 ## 2. Files changed
 
 ```text
 BATCH_REPORT.md
 README.md
-screenshots/batch9-electrical-model.png
-screenshots/batch9-iv-curves.png
-src/components/electrical/BandAlignmentPreview.tsx
-src/components/electrical/ElectricalCurvePlot.tsx
-src/components/electrical/ElectricalModelPanel.tsx
-src/components/electrical/ElectricalParameterEditor.tsx
-src/components/electrical/ElectricalResultSummary.tsx
-src/components/electrical/ElectricalScenarioSelector.tsx
-src/components/electrical/ElectricalWarnings.tsx
-src/components/electrical/ElectricalWorkspace.tsx
-src/components/electrical/electricalFormatting.ts
+screenshots/batch10-export-workspace.png
+screenshots/batch10-report-preview.png
+src/components/export/ExportActions.tsx
+src/components/export/ExportWarnings.tsx
+src/components/export/ImportProjectPanel.tsx
+src/components/export/ProjectExportWorkspace.tsx
+src/components/export/ProjectMetadataEditor.tsx
+src/components/export/ReportPreview.tsx
 src/components/layout/Workspace.tsx
-src/data/electricalPresets.ts
-src/physics/electrical.ts
-src/types/electrical.ts
+src/index.css
+src/types/project.ts
+src/utils/markdownReport.ts
+src/utils/projectExport.ts
 ```
 
 ## 3. src/ file tree
@@ -38,6 +38,8 @@ src/types/electrical.ts
 ```text
 src/
   App.tsx
+  index.css
+  main.tsx
   components/
     controls/
       DeviceControlsPlaceholder.tsx
@@ -74,6 +76,13 @@ src/
       ElectricalWarnings.tsx
       ElectricalWorkspace.tsx
       electricalFormatting.ts
+    export/
+      ExportActions.tsx
+      ExportWarnings.tsx
+      ImportProjectPanel.tsx
+      ProjectExportWorkspace.tsx
+      ProjectMetadataEditor.tsx
+      ReportPreview.tsx
     layout/
       AppShell.tsx
       BottomPanel.tsx
@@ -130,11 +139,9 @@ src/
     materialCategories.ts
     materials.ts
     oxidationPresets.ts
-    processStepTypes.ts
     processSteps.ts
+    processStepTypes.ts
     workspaceTabs.ts
-  index.css
-  main.tsx
   physics/
     bandAlignment.ts
     constants.ts
@@ -148,79 +155,69 @@ src/
     material.ts
     oxidation.ts
     process.ts
+    project.ts
   utils/
     .gitkeep
+    markdownReport.ts
+    projectExport.ts
 ```
 
 ## 4. Commands run
 
-```bash
+```text
 git status --short
 git branch --show-current
 git remote -v
 npm install
-```
-
-`npm install` could not run in this desktop shell because `npm` was not available in PATH. The project already had `node_modules`; verification was completed with bundled Node and local project binaries:
-
-```bash
 C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe node_modules\typescript\bin\tsc -b
 C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe node_modules\eslint\bin\eslint.js .
 C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe node_modules\vite\bin\vite.js build
-```
-
-Visual verification:
-
-```text
-Started local Vite dev server with bundled Node.
-Opened http://127.0.0.1:5174/#electrical by headless Edge screenshot.
-Verified 電性分析與 I-V 近似 page renders.
-Verified scenario selector, missing-parameter warnings, result summary, parameter editor area, and risk badges are visible.
-Generated screenshots with headless Edge.
+tree src /F
+C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe node_modules\vite\bin\vite.js --host 127.0.0.1 --port 5174
+Microsoft Edge headless screenshot commands for #results
+git add ...
+git commit -m "Batch 10: Add project export and report generation"
+git commit -m "Batch 10: Final report update"
+git push origin dev
 ```
 
 ## 5. Build/lint/typecheck result
 
-```text
-npm install: not available in current shell because npm was not found in PATH.
-typecheck via local TypeScript binary: passed
-lint via local ESLint binary: passed
-build via local Vite binary: passed
-```
-
-Build still reports the known Vite chunk-size warning for the lazy-loaded 3D viewer bundle. This is not a build failure.
+- `npm install`：未執行成功，因為目前 PowerShell PATH 找不到 `npm`。沿用 Batch 9 的本機 bundled Node 與專案內已安裝套件執行檢查。
+- TypeScript：通過。
+- ESLint：通過。
+- Vite build：通過。
+- Build warning：仍有既有的 3D viewer lazy chunk 大小警告；建置成功，此警告目前可接受。
 
 ## 6. Git commit and push result
 
-- Current branch: `dev`
-- Remote URL: `https://github.com/smallweiweihsu/2d-semiconductor-visualizer.git`
-- Batch 9 commit hash: `8890577`
-- Push result: succeeded to `origin/dev`
+- Batch 10 implementation commit：`787c21c`
+- Current branch：`dev`
+- Remote URL：`https://github.com/smallweiweihsu/2d-semiconductor-visualizer.git`
+- Push result：Batch 10 implementation 與 final report update 已推送到 `origin/dev`。
 
 ## 7. Visible UI description
 
-The 「電性分析」 tab now shows a real workspace titled 「電性分析與 I-V 近似」. It includes a scientific integrity notice, electrical scenario selector, quick presets, parameter editor, layer selectors, material database load buttons, measurement-step selector, result summary, Id-Vd plot, Id-Vg plot, warning panel, and qualitative band alignment preview.
-
-When required parameters are missing, the result summary shows that quantitative I-V / Id-Vg curves cannot be generated. The model warns about missing mobility, missing dielectric constant, missing contact resistance, WSe₂ metal-contact uncertainty, Fermi-level pinning, interface states, leakage/breakdown risks, and the fact that low-temperature transport is not modeled.
-
-When mobility, dielectric constant, dielectric thickness, geometry, and contact resistance are provided, the model can generate simple Ohmic-like Id-Vd and Id-Vg trend curves. These curves are explicitly labeled as simplified model output, not measured data.
-
-Screenshots:
-
-```text
-C:\Users\User\OneDrive\文件\New project 2\screenshots\batch9-electrical-model.png
-C:\Users\User\OneDrive\文件\New project 2\screenshots\batch9-iv-curves.png
-```
+- 「結果與匯出」分頁現在顯示 real export workspace，不再只是 placeholder。
+- 上方顯示本機匯出 / 匯入狀態與科學限制聲明。
+- 左側 / 上方區域包含專案資訊表單：專案名稱、樣品名稱、研究者、單位 / 實驗室、標籤與備註。
+- 匯出動作區包含：匯出專案 JSON、匯出 Markdown 報告、匯出實驗摘要、複製 Markdown 報告，以及重新產生完整 / 摘要預覽。
+- 匯入區可選擇 JSON 檔案或貼上 JSON，按下匯入前會提示目前元件結構與製程流程將被取代。
+- 報告預覽區可在完整報告與實驗摘要之間切換，並以可捲動 Markdown 純文字顯示。
+- 匯出提醒區列出缺少文獻參數、簡化模型、JSON 相容性與 Markdown 報告用途限制。
+- 截圖已儲存：
+  - `screenshots/batch10-export-workspace.png`
+  - `screenshots/batch10-report-preview.png`
 
 ## 8. Warnings or limitations
 
-- This is a simplified capacitance / channel resistance / contact resistance approximation tool, not TCAD, NEGF, DFT, or a real 2D contact-transport solver.
-- Pd/WSe₂ or other metal/WSe₂ contacts are not assumed ideal Ohmic.
-- Work function alone does not determine real contact behavior.
-- Gate leakage, dielectric breakdown, trap states, hysteresis, low-temperature transport, Schottky transport, and measured-data fitting are not implemented.
-- Contact resistance, mobility, dielectric constants, threshold voltage, and breakdown field require experiment or literature calibration.
-- In this environment, `npm` was temporarily unavailable in PATH; checks were run through local binaries with bundled Node.
+- 目前沒有後端資料庫、雲端同步、帳號系統或 PDF 匯出。
+- 目前沒有 measured data import、CSV parser、Origin file parser 或自動 fitting。
+- 目前 JSON 匯入至少還原 deviceStructure、processFlow 與 metadata。
+- 擴散、氧化與電性模組的即時 scenario/result state 尚未完整提升到全域專案狀態，因此匯出資料與報告會標示該限制。
+- Markdown 報告是研究紀錄草稿，不是論文結果或實驗證明。
+- 所有未經文獻與實驗校準的參數不可視為定量結論。
 
 ## 9. Next recommended batch
 
-Next recommended batch: Batch 10, measured data import / comparison or export report system.
+Batch 11：measured data import / comparison for Raman、PL and electrical data。
