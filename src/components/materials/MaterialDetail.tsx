@@ -119,6 +119,7 @@ export function MaterialDetail({ material }: MaterialDetailProps) {
 
       <div className="mt-4">
         <MaterialLiteratureSection
+          materialId={material.id}
           todos={relatedTodos}
           evidence={relatedEvidence}
           conflictGroups={relatedConflictGroups}
@@ -272,11 +273,13 @@ function InfoList({ items, tone = 'default' }: InfoListProps) {
 }
 
 function MaterialLiteratureSection({
+  materialId,
   todos,
   evidence,
   conflictGroups,
   recommendations,
 }: {
+  materialId: string
   todos: typeof materialLiteratureTodos
   evidence: typeof parameterEvidence
   conflictGroups: typeof parameterConflictGroups
@@ -322,6 +325,13 @@ function MaterialLiteratureSection({
               推薦 {recommendations.length}
             </span>
           </div>
+
+          <MetalLiteratureMiniSummary
+            evidence={evidence}
+            materialId={materialId}
+            recommendations={recommendations}
+            todos={todos}
+          />
 
           <CollapsibleSection
             defaultOpen={false}
@@ -415,6 +425,68 @@ function MaterialLiteratureSection({
         </div>
       )}
     </CollapsibleSection>
+  )
+}
+
+function MetalLiteratureMiniSummary({
+  evidence,
+  materialId,
+  recommendations,
+  todos,
+}: {
+  evidence: typeof parameterEvidence
+  materialId: string
+  recommendations: typeof parameterRecommendations
+  todos: typeof materialLiteratureTodos
+}) {
+  const trackedMetals = ['pd', 'ti', 'au', 'cr', 'ni', 'pt', 'al', 'ag', 'cu', 'sc', 'in']
+
+  if (!trackedMetals.includes(materialId)) {
+    return null
+  }
+
+  const wse2ContactEvidence = evidence.filter(
+    (item) =>
+      item.materialIds.includes('wse2') &&
+      (item.parameterKey === 'contactResistance_ohm' ||
+        item.parameterKey === 'custom'),
+  ).length
+  const workFunctionItems =
+    evidence.filter((item) => item.parameterKey === 'workFunction_eV').length +
+    todos.filter((todo) => todo.parameterKey === 'workFunction_eV').length
+  const sb2o3DiffusionItems =
+    evidence.filter(
+      (item) =>
+        item.materialIds.includes('sb2o3') &&
+        (item.parameterKey === 'D0_m2s' || item.parameterKey === 'Ea_eV'),
+    ).length +
+    todos.filter(
+      (todo) => todo.parameterKey === 'D0_m2s' || todo.parameterKey === 'Ea_eV',
+    ).length
+  const unresolvedGaps = evidence.filter(
+    (item) =>
+      item.value === null &&
+      ['contactResistance_ohm', 'D0_m2s', 'Ea_eV'].includes(item.parameterKey),
+  ).length
+
+  return (
+    <div className="flex flex-wrap gap-2 rounded-md border border-slate-800 bg-slate-950/35 p-3 text-xs">
+      <span className="rounded-full border border-cyan-800 bg-cyan-950/30 px-2 py-1 text-cyan-100">
+        WSe₂ contact {wse2ContactEvidence}
+      </span>
+      <span className="rounded-full border border-slate-700 bg-slate-900 px-2 py-1 text-slate-300">
+        work function {workFunctionItems}
+      </span>
+      <span className="rounded-full border border-amber-800 bg-amber-950/25 px-2 py-1 text-amber-100">
+        Sb₂O₃ diffusion {sb2o3DiffusionItems}
+      </span>
+      <span className="rounded-full border border-violet-800 bg-violet-950/25 px-2 py-1 text-violet-100">
+        recommendations {recommendations.length}
+      </span>
+      <span className="rounded-full border border-rose-800 bg-rose-950/25 px-2 py-1 text-rose-100">
+        unresolved gaps {unresolvedGaps}
+      </span>
+    </div>
   )
 }
 

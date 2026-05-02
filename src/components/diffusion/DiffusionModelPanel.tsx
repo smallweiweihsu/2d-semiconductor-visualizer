@@ -36,7 +36,9 @@ export function DiffusionModelPanel({
   )
   const isMetalIntoSb2O3 =
     scenario.hostMaterialId === 'sb2o3' &&
-    ['pd', 'in', 'ti', 'au'].includes(scenario.diffusingSpecies.toLowerCase())
+    ['pd', 'in', 'ti', 'au', 'cr', 'ni', 'pt', 'al', 'ag', 'cu', 'sc'].includes(
+      scenario.diffusingSpecies.toLowerCase(),
+    )
 
   function updateScenario(updates: Partial<DiffusionScenario>) {
     setScenario((current) => ({ ...current, ...updates }))
@@ -79,7 +81,7 @@ export function DiffusionModelPanel({
           title="Sb₂O₃ 金屬擴散文獻缺口"
           type="missing_parameter"
         >
-          文獻資料庫目前標記 Pd/In/Ti/Au 進入 Sb₂O₃ 的 D0/Ea 仍需 verified evidence；若手動輸入 D0/Ea，請在文獻資料庫建立對應 evidence。
+          此金屬進入 Sb₂O₃ 的 D0/Ea 目前需要文獻 evidence；若手動輸入值，請在文獻資料庫建立對應 source 與 parameter evidence。
         </AcknowledgableNotice>
       ) : null}
 

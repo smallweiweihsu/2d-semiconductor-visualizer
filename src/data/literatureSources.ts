@@ -126,6 +126,75 @@ export const literatureSources: LiteratureSource[] = [
       '候選來源：用於 WSe₂ 金屬接觸、Fermi-level pinning 與 2D vdW contacts 對比。需人工確認完整作者資訊與 device 條件。',
   },
   {
+    id: 'src-allain-2015-2d-semiconductor-contacts',
+    title: 'Electrical contacts to two-dimensional semiconductors',
+    authors: ['A. Allain', 'J. Kang', 'K. Banerjee', 'A. Kis'],
+    year: 2015,
+    sourceType: 'review_article',
+    journal: 'Nature Materials',
+    doi: '10.1038/nmat4452',
+    reviewStatus: 'candidate',
+    tags_zh: ['2D semiconductor', 'contacts', 'Schottky barrier', 'Fermi-level pinning'],
+    notes_zh:
+      '候選 review source：用於二維半導體金屬接觸、Schottky barrier、pinning 與 contact engineering 的背景整理；不可直接提供特定 WSe₂/Pd 接觸電阻。',
+  },
+  {
+    id: 'src-wang-2016-wse2-metal-ohmic',
+    title: 'Does p-type Ohmic contact exist in WSe2-metal interfaces?',
+    authors: [],
+    year: 2016,
+    sourceType: 'journal_article',
+    journal: 'Nanoscale',
+    doi: '10.1039/C5NR09094H',
+    reviewStatus: 'candidate',
+    tags_zh: ['WSe2', 'metal contacts', 'Ohmic contact', 'Schottky barrier'],
+    notes_zh:
+      '候選來源：用於 WSe₂-metal interface 接觸行為與 Ohmic/Schottky 判斷限制；作者、方法、金屬種類與適用性需人工確認。',
+  },
+  {
+    id: 'src-liu-2022-wse2-au-vdw-contacts',
+    title:
+      'Interaction- and defect-free van der Waals contacts between metals and two-dimensional semiconductors',
+    authors: [],
+    year: 2022,
+    sourceType: 'journal_article',
+    journal: 'Nature Electronics',
+    doi: '10.1038/s41928-022-00746-6',
+    url: 'https://www.nature.com/articles/s41928-022-00746-6',
+    reviewStatus: 'candidate',
+    tags_zh: ['WSe2', 'Au', 'van der Waals contact', 'contact resistance'],
+    notes_zh:
+      '候選來源：網頁摘要指出 Au 與 WSe₂ 的 van der Waals contact 可避免傳統沉積造成的 interaction / defect；作者欄位需後續補齊。',
+  },
+  {
+    id: 'src-ngo-2022-oxidized-edge-flp-wse2',
+    title:
+      'Fermi level pinning mechanism in oxidized edges of van der Waals transition metal dichalcogenide transistors',
+    authors: [],
+    year: 2022,
+    sourceType: 'journal_article',
+    journal: 'Nanoscale Advances',
+    doi: '10.1039/D2NA00307H',
+    reviewStatus: 'candidate',
+    tags_zh: ['WSe2', 'Fermi-level pinning', 'oxidized edge', 'TMD contacts'],
+    notes_zh:
+      '候選來源：用於 TMD/WSe₂ oxidized edge 與 Fermi-level pinning mechanism 的條件依賴提醒；作者、材料與 device 條件需人工確認。',
+  },
+  {
+    id: 'src-di-bartolomeo-2018-wse2-contacts',
+    title:
+      'Environmental Effects on the Electrical Characteristics of Back-Gated WSe2 Field-Effect Transistors',
+    authors: [],
+    year: 2018,
+    sourceType: 'journal_article',
+    journal: 'Nanomaterials',
+    doi: '10.3390/nano8110901',
+    reviewStatus: 'candidate',
+    tags_zh: ['WSe2', 'Ni contacts', 'environment', 'electrical'],
+    notes_zh:
+      '候選來源：用於 Ni-contact WSe₂ device 與環境對電性影響的提醒；作者欄位需後續補齊，不可直接當作一般 contact resistance。',
+  },
+  {
     id: 'lit-in-sb2o3-buffer-placeholder',
     title: '待補：In / Sb₂O₃ interface buffer paper',
     sourceType: 'unknown',
@@ -205,5 +274,38 @@ export const literatureSources: LiteratureSource[] = [
     notes_zh:
       '此為待查文獻占位資料，尚未填入真實 DOI、作者或界面損傷結論。不可視為 In 或其他金屬已被證實可降低 Sb₂O₃ 損傷。',
     tags_zh: ['Sb2O3', 'metal deposition', 'interface damage', 'In buffer', '待補'],
+  },
+  {
+    id: 'src-placeholder-metal-wse2-contact-review',
+    title: '待查：metal / WSe₂ contact comparison and work-function limitations',
+    authors: [],
+    year: null,
+    sourceType: 'unknown',
+    reviewStatus: 'candidate',
+    notes_zh:
+      '此為待查文獻占位資料，用於追蹤 Pd/Ti/Au/Cr/Ni/Pt/Al/Ag/Cu/Sc/In 與 WSe₂ 接觸、Fermi-level pinning 與 contact resistance。不可視為引用。',
+    tags_zh: ['WSe2', 'metal contact', 'work function', 'Fermi-level pinning', '待補'],
+  },
+  {
+    id: 'src-placeholder-sc-wse2-contact',
+    title: '待查：Sc / WSe₂ contact engineering literature',
+    authors: [],
+    year: null,
+    sourceType: 'unknown',
+    reviewStatus: 'candidate',
+    notes_zh:
+      '此為待查文獻占位資料，用於追蹤 Sc low-work-function contact engineering 是否適用於 WSe₂。不可視為引用。',
+    tags_zh: ['Sc', 'WSe2', 'contact engineering', '待補'],
+  },
+  {
+    id: 'src-placeholder-metal-sb2o3-diffusion-lower-priority',
+    title: '待查：Ti/Au/Cr/Ni/Pt/Al/Ag/Cu/Sc diffusion into Sb₂O₃',
+    authors: [],
+    year: null,
+    sourceType: 'unknown',
+    reviewStatus: 'candidate',
+    notes_zh:
+      '此為待查文獻占位資料，用於 lower-priority metals 進入 Sb₂O₃ 的 D0/Ea、oxide interface reaction 與 annealing stability 追蹤。不可視為引用。',
+    tags_zh: ['Sb2O3', 'metal diffusion', 'D0', 'Ea', 'lower priority metals'],
   },
 ]

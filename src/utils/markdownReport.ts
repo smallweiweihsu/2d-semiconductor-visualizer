@@ -400,6 +400,19 @@ function literatureDatabaseSection(projectData: ProjectSaveData) {
       rejected: 0,
     },
   )
+  const contactBlockerCount =
+    database.recommendations?.filter(
+      (recommendation) =>
+        recommendation.parameterKey === 'contactResistance_ohm' ||
+        recommendation.rationale_zh.includes('work function') ||
+        recommendation.rationale_zh.includes('Work function'),
+    ).length ?? 0
+  const diffusionBlockerCount =
+    database.recommendations?.filter(
+      (recommendation) =>
+        recommendation.parameterKey === 'D0_m2s' ||
+        recommendation.parameterKey === 'Ea_eV',
+    ).length ?? 0
 
   return [
     `- 文獻來源數：${database.sources.length}`,
@@ -413,6 +426,8 @@ function literatureDatabaseSection(projectData: ProjectSaveData) {
     `- 已檢閱：${reviewCounts.reviewed}`,
     `- 已驗證：${reviewCounts.verified}`,
     `- 已排除：${reviewCounts.rejected}`,
+    `- 接觸 / work-function blocker draft recommendation：${contactBlockerCount}`,
+    `- 擴散 D0/Ea blocker draft recommendation：${diffusionBlockerCount}`,
     '',
     '### 參數證據材料分布',
     ...Object.entries(evidenceByMaterial).map(([materialId, count]) => {
@@ -425,7 +440,10 @@ function literatureDatabaseSection(projectData: ProjectSaveData) {
     '',
     '### 關鍵未解缺口',
     '- In/Sb₂O₃ buffer effect 尚未有 verified evidence，不可視為已證實可降低界面衝擊。',
+    '- WSe₂ contact resistance 仍需量測、TLM 或 fitting；目前不可設定通用預設值。',
     '- Pd/In/Ti/Au 等金屬進入 Sb₂O₃ 的 D0/Ea 仍缺 verified evidence，擴散模型不可定量使用。',
+    '- Ti/Au/Cr/Ni/Pt/Al/Ag/Cu/Sc 等 lower-priority metals 進入 Sb₂O₃ 的 D0/Ea 仍未解。',
+    '- Work function alone 不足以預測 WSe₂ 接觸品質或 Schottky barrier。',
     '- Sb 表面氧化速率與 Sb₂O₃ 厚度仍需 XPS / AFM 或製程校準。',
     '- Sb₂O₃ dielectric constant、leakage 與 breakdown 具有製程與缺陷條件依賴性。',
     '',

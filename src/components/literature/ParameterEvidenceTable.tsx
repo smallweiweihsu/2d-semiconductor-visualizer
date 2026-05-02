@@ -54,6 +54,16 @@ export function ParameterEvidenceTable({
               </td>
               <td className="px-3 py-3 text-slate-300">
                 {formatParameterKey(item.parameterKey)}
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {getTopicMarkers(item).map((marker) => (
+                    <span
+                      className="rounded-full border border-slate-700 bg-slate-950 px-1.5 py-0.5 text-[10px] text-slate-400"
+                      key={marker}
+                    >
+                      {marker}
+                    </span>
+                  ))}
+                </div>
               </td>
               <td className="px-3 py-3 text-slate-300">
                 {item.value === null || item.value === '' ? (
@@ -99,4 +109,26 @@ function formatConfidence(confidence: ParameterEvidence['confidence']) {
   }
 
   return labels[confidence]
+}
+
+function getTopicMarkers(item: ParameterEvidence) {
+  const markers: string[] = []
+
+  if (item.materialIds.includes('wse2') && item.parameterKey === 'contactResistance_ohm') {
+    markers.push('WSe₂ contact')
+  }
+
+  if (item.parameterKey === 'workFunction_eV') {
+    markers.push('work function context')
+  }
+
+  if (item.materialIds.includes('sb2o3') && item.value === null) {
+    markers.push('diffusion missing')
+  }
+
+  if (item.parameterKey === 'custom' && item.materialIds.includes('sb2o3')) {
+    markers.push('oxide interface risk')
+  }
+
+  return markers
 }

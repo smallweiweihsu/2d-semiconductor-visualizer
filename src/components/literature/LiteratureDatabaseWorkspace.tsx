@@ -177,6 +177,8 @@ export function LiteratureDatabaseWorkspace() {
 
       <InterfaceTopicSummaryCard evidence={evidence} />
 
+      <MetalContactSummaryCard evidence={evidence} todos={todos} />
+
       <nav className="flex gap-2 overflow-x-auto rounded-lg border border-slate-800 bg-slate-950/35 p-2">
         {sections.map((section) => (
           <button
@@ -474,6 +476,75 @@ function InterfaceTopicSummaryCard({ evidence }: { evidence: ParameterEvidence[]
           <SummaryPill label="金屬擴散" value={metalDiffusionEvidence} />
           <SummaryPill label="Sb 表面氧化" value={sbSurfaceOxidationEvidence} />
           <SummaryPill label="Sb₂O₃ dielectric" value={sb2o3DielectricEvidence} />
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function MetalContactSummaryCard({
+  evidence,
+  todos,
+}: {
+  evidence: ParameterEvidence[]
+  todos: MaterialLiteratureTodo[]
+}) {
+  const contactMetals = ['pd', 'ti', 'au', 'cr', 'ni', 'pt', 'al', 'ag', 'cu', 'sc', 'in']
+  const wse2MetalContactEvidence = evidence.filter(
+    (item) =>
+      item.materialIds.includes('wse2') &&
+      item.materialIds.some((materialId) => contactMetals.includes(materialId)) &&
+      (item.parameterKey === 'contactResistance_ohm' ||
+        item.parameterKey === 'custom'),
+  ).length
+  const wse2ContactTodos = todos.filter(
+    (todo) =>
+      contactMetals.includes(todo.materialId) &&
+      todo.reason_zh.includes('WSe₂'),
+  ).length
+  const metalDiffusionEvidence = evidence.filter(
+    (item) =>
+      item.materialIds.includes('sb2o3') &&
+      item.materialIds.some((materialId) => contactMetals.includes(materialId)) &&
+      (item.parameterKey === 'D0_m2s' || item.parameterKey === 'Ea_eV'),
+  ).length
+  const metalDiffusionTodos = todos.filter(
+    (todo) =>
+      contactMetals.includes(todo.materialId) &&
+      (todo.parameterKey === 'D0_m2s' || todo.parameterKey === 'Ea_eV'),
+  ).length
+  const unresolvedContactResistanceEntries = evidence.filter(
+    (item) =>
+      item.parameterKey === 'contactResistance_ohm' &&
+      item.materialIds.includes('wse2') &&
+      item.value === null,
+  ).length
+  const unresolvedDiffusionEntries = evidence.filter(
+    (item) =>
+      item.materialIds.includes('sb2o3') &&
+      (item.parameterKey === 'D0_m2s' || item.parameterKey === 'Ea_eV') &&
+      item.value === null,
+  ).length
+
+  return (
+    <section className="rounded-lg border border-violet-900/50 bg-violet-950/10 p-4">
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+        <div>
+          <h3 className="text-sm font-semibold text-violet-100">
+            金屬接觸與擴散重點
+          </h3>
+          <p className="mt-2 text-xs leading-5 text-violet-100/75">
+            WSe₂ 金屬接觸維持條件依賴；contact resistance 需量測、TLM 或 fitting。Work
+            function 只作背景，不作金屬排名。
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2 text-xs">
+          <SummaryPill label="WSe₂ contact evidence" value={wse2MetalContactEvidence} />
+          <SummaryPill label="WSe₂ contact TODO" value={wse2ContactTodos} />
+          <SummaryPill label="Sb₂O₃ diffusion evidence" value={metalDiffusionEvidence} />
+          <SummaryPill label="diffusion TODO" value={metalDiffusionTodos} />
+          <SummaryPill label="缺 contact R" value={unresolvedContactResistanceEntries} />
+          <SummaryPill label="缺 D0/Ea" value={unresolvedDiffusionEntries} />
         </div>
       </div>
     </section>

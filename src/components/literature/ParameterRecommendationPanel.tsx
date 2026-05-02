@@ -295,8 +295,12 @@ function isModelBlocker(recommendation: ParameterRecommendation) {
   return (
     recommendation.parameterKey === 'D0_m2s' ||
     recommendation.parameterKey === 'Ea_eV' ||
+    recommendation.parameterKey === 'contactResistance_ohm' ||
+    recommendation.rationale_zh.includes('Work function') ||
+    recommendation.rationale_zh.includes('work function') ||
     recommendation.rationale_zh.includes('不應自動給定') ||
-    recommendation.rationale_zh.includes('不可定量')
+    recommendation.rationale_zh.includes('不可定量') ||
+    recommendation.rationale_zh.includes('manual contact resistance')
   )
 }
 

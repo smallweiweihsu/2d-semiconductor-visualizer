@@ -349,9 +349,28 @@ const batch15BTodos: MaterialLiteratureTodo[] = [
   ),
 ]
 
+const contactMetals15C = [
+  'pd',
+  'ti',
+  'au',
+  'in',
+  'sc',
+  'ni',
+  'pt',
+  'cr',
+  'al',
+  'ag',
+  'cu',
+] as const
+
+const batch15CTodos: MaterialLiteratureTodo[] = contactMetals15C.flatMap(
+  (materialId) => seedMetalContactTodos(materialId),
+)
+
 export const materialLiteratureTodos: MaterialLiteratureTodo[] = [
   ...todoSeeds.flatMap(seedToTodos),
   ...batch15BTodos,
+  ...batch15CTodos,
   ...diffusionMetals.flatMap((materialId) => seedMetalDiffusionTodos(materialId)),
   ...mediumMaterials.flatMap((materialId) =>
     seedGenericTodos(materialId, 'medium'),
@@ -450,6 +469,90 @@ function seedMetalDiffusionTodos(materialId: string) {
       ],
     ),
   ]
+}
+
+function seedMetalContactTodos(materialId: string) {
+  const highPriorityMetals = ['pd', 'ti', 'au', 'in', 'sc']
+  const mediumPriorityMetals = ['ni', 'pt', 'cr', 'al', 'ag', 'cu']
+  const priority: TodoPriority = highPriorityMetals.includes(materialId)
+    ? 'high'
+    : mediumPriorityMetals.includes(materialId)
+      ? 'medium'
+      : 'low'
+  const label = materialId.toUpperCase()
+  const baseTerms = [`${label} WSe2 contact`, `${materialId} WSe2 Fermi level pinning`]
+
+  return [
+    createBatch15CTodo(
+      materialId,
+      priority,
+      'custom',
+      `${label}/WSe₂ contact behavior 需要 verified evidence；WSe2 contact 與 Fermi-level pinning 不可只靠 work function 判斷。`,
+      [...baseTerms, `${materialId} WSe2 Schottky barrier`],
+    ),
+    createBatch15CTodo(
+      materialId,
+      priority,
+      'workFunction_eV',
+      `${label} work function 可作 contact context，但受表面、晶向、污染、沉積與環境影響，不能單獨排名 WSe₂ 接觸品質。`,
+      [`${label} work function thin film`, `${materialId} metal work function surface orientation`],
+    ),
+    createBatch15CTodo(
+      materialId,
+      priority,
+      'contactResistance_ohm',
+      `${label}/WSe₂ contact resistance 若沒有 comparable device/TLM/fitting 資料，電性模型仍需手動輸入。`,
+      [`${label} WSe2 contact resistance`, `${materialId} WSe2 TLM contact resistance`],
+    ),
+    createBatch15CTodo(
+      materialId,
+      priority,
+      'custom',
+      `${label}/WSe₂ Schottky barrier、Fermi-level pinning 與 interface states 需要按接觸幾何、層數與退火條件整理。`,
+      [`${label} WSe2 Schottky barrier`, `${materialId} WSe2 interface states pinning`],
+    ),
+    createBatch15CTodo(
+      materialId,
+      priority,
+      'custom',
+      `${label} adhesion / interface layer role 可能改變 WSe₂ 或 Sb₂O₃ 界面；需與 diffusion 和 deposition damage 分開追蹤。`,
+      [`${label} adhesion layer WSe2 contact`, `${materialId} oxide interface adhesion layer`],
+    ),
+    createBatch15CTodo(
+      materialId,
+      priority,
+      'custom',
+      `${label} thermal stability during annealing 可能影響接觸電阻、擴散、Raman/PL 與界面缺陷。`,
+      [`${label} WSe2 contact annealing thermal stability`, `${materialId} thin film annealing interface diffusion`],
+    ),
+    createBatch15CTodo(
+      materialId,
+      priority,
+      'custom',
+      `${label} 可能透過缺陷、污染、界面態或金屬擴散間接改變 Raman / PL / electrical behavior，需文獻或實驗比對。`,
+      [`${label} WSe2 Raman PL contact damage`, `${materialId} metal deposition damage TMD`],
+    ),
+  ]
+}
+
+function createBatch15CTodo(
+  materialId: string,
+  priority: TodoPriority,
+  parameterKey: MaterialParameterKey,
+  reason_zh: string,
+  suggestedSearchTerms: string[],
+): MaterialLiteratureTodo {
+  return {
+    id: `todo-15c-${materialId}-${parameterKey}-${slugify(suggestedSearchTerms[0])}`,
+    materialId,
+    priority,
+    parameterKey,
+    reason_zh,
+    suggestedSearchTerms,
+    status: 'todo',
+    notes_zh:
+      'Batch 15C 新增待查項目；用於金屬/WSe₂ contact、work function、contact resistance、pinning 與金屬/Sb₂O₃ 擴散追蹤。',
+  }
 }
 
 function createBatch15BTodo(

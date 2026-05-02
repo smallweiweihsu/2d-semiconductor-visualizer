@@ -331,6 +331,23 @@ src/
 - 文獻資料庫 UI 新增 Sb₂O₃ / Sb / In interface topic summary、TODO 快速篩選、null value「需補參數」標記，以及阻擋定量模型的 draft recommendation 提示。
 - 本批沒有 automatic DOI lookup、PDF parsing、verified parameter promotion、`materials.ts` 更新、backend database 或 cloud sync。
 
+## Batch 15C：金屬接觸與金屬擴散候選追蹤
+
+本批擴充 WSe₂ 金屬接觸、Fermi-level pinning、work function 限制、contact resistance 不確定性，以及 lower-priority metals into Sb₂O₃ 的擴散/界面反應追蹤。
+
+- 擴充 Pd、Ti、Au、Cr、Ni、Pt、Al、Ag、Cu、Sc、In 的 WSe₂ contact behavior、contact resistance、Fermi-level pinning、Schottky barrier、adhesion/interface layer role、thermal stability 與 Raman/PL/electrical indirect effects 待查項目。
+- 新增 candidate sources：2D semiconductor contacts review、WSe₂-metal interface Ohmic/Schottky 議題、Au/WSe₂ van der Waals contact、oxidized-edge Fermi-level pinning、Ni-contact WSe₂ environmental/electrical study。
+- 新增 grouped placeholders：metal/WSe₂ contact comparison、Sc/WSe₂ contact engineering、lower-priority metal diffusion into Sb₂O₃、metal deposition damage on oxide interface。
+- 新增 contact evidence placeholders，明確標示 Pd/Ti/Au/Cr/Ni/Pt/Al/Ag/Cu/Sc/In 與 WSe₂ 的 contact resistance 尚未整理 verified evidence。
+- 新增 work function context evidence placeholders；work function 只作 band alignment / contact warning 背景，不用於金屬排名或 contact quality 結論。
+- 新增 Ti/Au/Cr/Ni/Pt/Al/Ag/Cu/Sc into Sb₂O₃ 的 D0/Ea placeholder evidence；lower-priority metal diffusion 仍不可定量。
+- 新增 conflict groups：WSe₂ metal contact condition-dependence、Ti/Au/Pd/In/Sc contact comparison under review、lower-priority metal diffusion into Sb₂O₃、reactive metals and oxide interface damage、noble metals not automatically harmless。
+- 新增 draft recommendations：維持所有 WSe₂ metal contact resistance 為 manual/fitted、不要依 work function alone 排名、lower-priority metal diffusion 不啟用定量、adhesion/reactive metals 作為 interface-risk variables。
+- 電性模組新增 WSe₂ 金屬接觸文獻提醒；接觸電阻應由量測、TLM 或 fitting 校準。
+- 擴散模組提醒已擴展到 Pd/In/Ti/Au/Cr/Ni/Pt/Al/Ag/Cu/Sc 進入 Sb₂O₃ 的 D0/Ea 文獻缺口。
+- Material Detail 對金屬材料顯示 WSe₂ contact、work function、Sb₂O₃ diffusion、recommendations 與 unresolved gaps 的 compact literature counts。
+- 本批沒有 automatic DOI lookup、PDF parsing、verified parameter promotion、contact fitting、TLM fitting、diffusion coefficient fitting、backend database 或 cloud sync。
+
 ## 科學準確性聲明
 
 本工具目前是「物理導向的視覺化與近似分析工具」，不是完整 TCAD、DFT 或分子動力學模擬器。所有計算結果都需要搭配實驗資料與文獻參數判讀；在未來加入任何模型或公式時，也應清楚標註假設、適用範圍與限制。

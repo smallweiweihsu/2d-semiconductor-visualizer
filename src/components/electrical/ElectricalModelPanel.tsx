@@ -27,6 +27,14 @@ export function ElectricalModelPanel({
     structuredClone(defaultElectricalScenario),
   )
   const result = useMemo(() => calculateElectricalScenario(scenario), [scenario])
+  const selectedContactMetalIds = [
+    deviceLayers.find((layer) => layer.id === scenario.sourceLayerId)?.materialId,
+    deviceLayers.find((layer) => layer.id === scenario.drainLayerId)?.materialId,
+  ].filter((materialId): materialId is string => Boolean(materialId))
+  const hasWSe2MetalContactContext =
+    scenario.channelMaterialId === 'wse2' &&
+    (selectedContactMetalIds.length === 0 ||
+      selectedContactMetalIds.some(isTrackedContactMetal))
 
   function updateScenario(updates: Partial<ElectricalScenario>) {
     setScenario((current) => ({ ...current, ...updates }))
@@ -61,6 +69,21 @@ export function ElectricalModelPanel({
         </p>
       </AcknowledgableNotice>
 
+      {hasWSe2MetalContactContext ? (
+        <AcknowledgableNotice
+          id="electrical-wse2-metal-contact-literature"
+          title="WSe₂ 金屬接觸文獻提醒"
+          type="literature"
+        >
+          <p>
+            文獻資料庫目前將 WSe₂ 金屬接觸標記為條件依賴；接觸電阻應由量測、TLM 或 fitting 校準，不應僅由金屬 work function 推論。
+          </p>
+          <p className="mt-2">
+            請確認文獻資料庫是否有對應 metal/WSe₂ contact evidence。
+          </p>
+        </AcknowledgableNotice>
+      ) : null}
+
       <div className="grid min-w-0 gap-4 2xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
         <div className="grid min-w-0 gap-4">
           <ElectricalScenarioSelector
@@ -86,6 +109,12 @@ export function ElectricalModelPanel({
         </div>
       </div>
     </section>
+  )
+}
+
+function isTrackedContactMetal(materialId: string) {
+  return ['ti', 'au', 'pd', 'in', 'sc', 'ni', 'pt', 'cr', 'al', 'ag', 'cu'].includes(
+    materialId,
   )
 }
 

@@ -4,7 +4,289 @@ const placeholderWarning = [
   '此紀錄為文獻候選占位，尚未經人工審核，不可作為正式參數。',
 ]
 
+const contactMetals15C = [
+  'pd',
+  'ti',
+  'au',
+  'cr',
+  'ni',
+  'pt',
+  'al',
+  'ag',
+  'cu',
+  'sc',
+  'in',
+]
+
+const lowerPriorityDiffusionMetals15C = [
+  'cr',
+  'ni',
+  'pt',
+  'al',
+  'ag',
+  'cu',
+  'sc',
+]
+
+const batch15CContactEvidence: ParameterEvidence[] = contactMetals15C.flatMap(
+  (metalId) => [
+    {
+      id: `evidence-${metalId}-wse2-contact-placeholder`,
+      sourceId:
+        metalId === 'sc'
+          ? 'src-placeholder-sc-wse2-contact'
+          : 'src-placeholder-metal-wse2-contact-review',
+      materialIds: ['wse2', metalId],
+      parameterKey: 'contactResistance_ohm',
+      value: null,
+      unit: 'ohm',
+      condition_zh:
+        '待查：metal/WSe₂ contact resistance；需確認金屬沉積方式、接觸幾何、層數、退火、污染與量測方法。',
+      method_zh: '待查：device electrical characterization / TLM / fitting。',
+      agreementStatus: 'unclear',
+      confidence: 'unknown',
+      quoteOrSummary_zh:
+        '待查：此金屬與 WSe₂ 接觸行為尚未整理 verified evidence。',
+      applicability_zh:
+        '後續可用於電性模型 contact warning；目前不可當作使用者元件接觸電阻。',
+      warnings_zh: [
+        'Work function alone 不足以預測 WSe₂ contact quality。',
+        'Fermi-level pinning、interface states、contamination、annealing 與 geometry 可能主導接觸。',
+      ],
+    },
+    {
+      id: `evidence-${metalId}-work-function-context-placeholder`,
+      sourceId: 'src-placeholder-metal-wse2-contact-review',
+      materialIds: [metalId, 'wse2'],
+      parameterKey: 'workFunction_eV',
+      value: null,
+      unit: 'eV',
+      condition_zh:
+        '待查：work function depends on surface, crystal orientation, contamination, deposition, and environment。',
+      method_zh: '待查：surface science / photoemission / literature compilation。',
+      agreementStatus: 'condition_dependent',
+      confidence: 'unknown',
+      quoteOrSummary_zh:
+        'Work function 可作為 contact context，但不能單獨推論 WSe₂ contact resistance 或 Schottky barrier。',
+      applicability_zh:
+        '僅用於 band alignment / contact warning 背景，不可作為金屬排名或 contact quality 結論。',
+      warnings_zh: [
+        '不要依 work function alone 排名 Pd/Ti/Au/In/Sc 或其他金屬接觸品質。',
+      ],
+    },
+  ],
+)
+
+const batch15CLowerMetalDiffusionEvidence: ParameterEvidence[] =
+  lowerPriorityDiffusionMetals15C.flatMap((metalId) => [
+    {
+      id: `evidence-${metalId}-sb2o3-d0-placeholder`,
+      sourceId: 'src-placeholder-metal-sb2o3-diffusion-lower-priority',
+      materialIds: [metalId, 'sb2o3'],
+      parameterKey: 'D0_m2s',
+      value: null,
+      unit: 'm²/s',
+      condition_zh:
+        '待查：金屬進入 Sb₂O₃ 的熱擴散參數。需確認材料相、薄膜品質、溫度範圍、退火氣氛與量測方法。',
+      method_zh: '待查文獻或實驗。',
+      agreementStatus: 'unclear',
+      confidence: 'unknown',
+      applicability_zh: '後續可用於擴散模型；目前不可定量。',
+      warnings_zh: placeholderWarning,
+    },
+    {
+      id: `evidence-${metalId}-sb2o3-ea-placeholder`,
+      sourceId: 'src-placeholder-metal-sb2o3-diffusion-lower-priority',
+      materialIds: [metalId, 'sb2o3'],
+      parameterKey: 'Ea_eV',
+      value: null,
+      unit: 'eV',
+      condition_zh:
+        '待查：金屬進入 Sb₂O₃ 的 activation energy。需確認 diffusion 與 oxide/interface reaction 是否可分離。',
+      method_zh: '待查文獻或實驗。',
+      agreementStatus: 'unclear',
+      confidence: 'unknown',
+      applicability_zh: '後續可用於擴散模型；目前不可定量。',
+      warnings_zh: placeholderWarning,
+    },
+  ])
+
 export const parameterEvidence: ParameterEvidence[] = [
+  {
+    id: 'evidence-allain-2015-2d-contact-review',
+    sourceId: 'src-allain-2015-2d-semiconductor-contacts',
+    materialIds: ['wse2'],
+    parameterKey: 'custom',
+    value: null,
+    condition_zh:
+      'General 2D semiconductor contacts review；需確認個別材料、金屬與接觸幾何。',
+    method_zh: 'Review article',
+    agreementStatus: 'supports',
+    confidence: 'medium',
+    quoteOrSummary_zh:
+      '該 review 可作為二維半導體 contacts、Schottky barrier、contact resistance 與 contact engineering 的候選背景來源。',
+    applicability_zh:
+      '適合電性模組 contact warning；不可直接給定 WSe₂/Pd/Ti/Au/In/Sc 的 contact resistance。',
+    warnings_zh: ['Work function alone 不足以預測真實 2D semiconductor contact behavior。'],
+  },
+  {
+    id: 'evidence-wang-2016-wse2-metal-ohmic-question',
+    sourceId: 'src-wang-2016-wse2-metal-ohmic',
+    materialIds: ['wse2'],
+    parameterKey: 'custom',
+    value: null,
+    condition_zh:
+      'WSe₂-metal interfaces；具體金屬、計算/實驗方法與 device relevance 需回查原文。',
+    method_zh: 'Literature source on WSe₂-metal interface contact behavior',
+    agreementStatus: 'condition_dependent',
+    confidence: 'low',
+    quoteOrSummary_zh:
+      '該文題名直接指出 WSe₂-metal interface 是否存在 p-type Ohmic contact 需要審慎判讀。',
+    applicability_zh:
+      '適合提醒：不能假設任何金屬/WSe₂ 接觸一定 Ohmic。',
+    warnings_zh: ['需人工確認金屬種類、方法與是否適用目前 Sb/Sb₂O₃/WSe₂ 結構。'],
+  },
+  {
+    id: 'evidence-liu-2022-au-wse2-vdw-contact',
+    sourceId: 'src-liu-2022-wse2-au-vdw-contacts',
+    materialIds: ['wse2', 'au'],
+    parameterKey: 'contactResistance_ohm',
+    value: null,
+    unit: 'ohm',
+    condition_zh:
+      'Au van der Waals contact to WSe₂；非傳統直接蒸鍍金屬接觸，需確認 transfer/contact process。',
+    method_zh: 'Device electrical characterization',
+    agreementStatus: 'condition_dependent',
+    confidence: 'low',
+    quoteOrSummary_zh:
+      '網頁摘要指出 van der Waals contact 可避免傳統接觸形成時的 interaction / defect，並改善 WSe₂ transistor behavior。',
+    applicability_zh:
+      '可作為 Au/WSe₂ contact engineering 的候選來源；不可直接套用到使用者金屬沉積接觸。',
+    warnings_zh: ['vdW transferred contact 與 evaporated contact 不可混為同一條件。'],
+  },
+  {
+    id: 'evidence-ngo-2022-oxidized-edge-flp-wse2',
+    sourceId: 'src-ngo-2022-oxidized-edge-flp-wse2',
+    materialIds: ['wse2'],
+    parameterKey: 'custom',
+    value: null,
+    condition_zh:
+      'Oxidized edges of vdW TMD transistors；需確認材料、氧化方式與接觸金屬。',
+    method_zh: 'Device/contact mechanism study',
+    agreementStatus: 'condition_dependent',
+    confidence: 'low',
+    quoteOrSummary_zh:
+      '該來源可用於提醒 oxidized edge / oxide-related interface 可能造成 Fermi-level pinning。',
+    applicability_zh:
+      '適合與 WSe₂ oxidation、edge damage、metal contact warning 連結；不可直接視為所有 WSe₂ contact 的機制。',
+    warnings_zh: ['氧化與接觸行為需區分 edge、surface、bulk layer 與 contact geometry。'],
+  },
+  {
+    id: 'evidence-di-bartolomeo-2018-ni-wse2-environment',
+    sourceId: 'src-di-bartolomeo-2018-wse2-contacts',
+    materialIds: ['wse2', 'ni'],
+    parameterKey: 'custom',
+    value: null,
+    condition_zh:
+      'Back-gated WSe₂ FET with Ni/Au contacts；environmental exposure affects electrical characteristics。',
+    method_zh: 'Electrical characterization under environmental conditions',
+    agreementStatus: 'condition_dependent',
+    confidence: 'low',
+    applicability_zh:
+      '適合提醒 WSe₂ contact/electrical behavior 受環境、吸附與界面條件影響；不可直接給定 contact resistance。',
+    warnings_zh: ['環境效應、Ni contact 與 device geometry 需分開比較。'],
+  },
+  {
+    id: 'evidence-ti-reactive-adhesion-risk-placeholder',
+    sourceId: 'src-placeholder-metal-deposition-damage-oxide-interface',
+    materialIds: ['ti', 'sb2o3', 'wse2'],
+    parameterKey: 'custom',
+    value: null,
+    condition_zh:
+      '待查：Ti as reactive / adhesion metal near oxide or WSe₂ interface；需確認沉積能量、厚度、退火與界面化學。',
+    method_zh: '待查文獻或實驗。',
+    agreementStatus: 'unclear',
+    confidence: 'unknown',
+    quoteOrSummary_zh:
+      'Ti 常被視為 adhesion / reactive metal candidate，但對 Sb₂O₃ 或 WSe₂ 介面的具體影響不可未經來源推論。',
+    applicability_zh: '僅作為 interface-risk placeholder。',
+    warnings_zh: placeholderWarning,
+  },
+  {
+    id: 'evidence-au-noble-not-benign-placeholder',
+    sourceId: 'src-placeholder-metal-wse2-contact-review',
+    materialIds: ['au', 'wse2', 'sb2o3'],
+    parameterKey: 'custom',
+    value: null,
+    condition_zh:
+      '待查：Au contact / oxide interface behavior；需確認接觸形成方式與污染、pinning、退火條件。',
+    method_zh: '待查文獻或實驗。',
+    agreementStatus: 'unclear',
+    confidence: 'unknown',
+    quoteOrSummary_zh:
+      'Au 較惰性不代表 automatically harmless 或 ideal contact；interface contamination 與 geometry 仍可能主導。',
+    applicability_zh: '用於避免把 noble metal 當作保證良好接觸。',
+    warnings_zh: placeholderWarning,
+  },
+  {
+    id: 'evidence-al-oxide-forming-risk-placeholder',
+    sourceId: 'src-placeholder-metal-deposition-damage-oxide-interface',
+    materialIds: ['al', 'sb2o3', 'wse2'],
+    parameterKey: 'custom',
+    value: null,
+    condition_zh:
+      '待查：Al as oxide-forming metal near Sb₂O₃/WSe₂；需確認原生氧化、界面反應與沉積條件。',
+    method_zh: '待查文獻或實驗。',
+    agreementStatus: 'unclear',
+    confidence: 'unknown',
+    applicability_zh: '用於 oxide interface risk tracking；目前不可視為結論。',
+    warnings_zh: placeholderWarning,
+  },
+  {
+    id: 'evidence-cu-ag-diffusion-concern-placeholder',
+    sourceId: 'src-placeholder-metal-sb2o3-diffusion-lower-priority',
+    materialIds: ['cu', 'ag', 'sb2o3'],
+    parameterKey: 'custom',
+    value: null,
+    condition_zh:
+      '待查：Cu/Ag diffusion concern in oxide or semiconductor interface；需確認是否適用 Sb₂O₃。',
+    method_zh: '待查文獻或實驗。',
+    agreementStatus: 'unclear',
+    confidence: 'unknown',
+    applicability_zh: '用於提醒 lower-priority metal diffusion 仍不可定量。',
+    warnings_zh: placeholderWarning,
+  },
+  {
+    id: 'evidence-pt-ni-cr-contact-interface-uncertainty-placeholder',
+    sourceId: 'src-placeholder-metal-wse2-contact-review',
+    materialIds: ['pt', 'ni', 'cr', 'wse2', 'sb2o3'],
+    parameterKey: 'custom',
+    value: null,
+    condition_zh:
+      '待查：Pt/Ni/Cr WSe₂ contact and oxide interface behavior；需分金屬、接觸幾何與退火條件整理。',
+    method_zh: '待查文獻或實驗。',
+    agreementStatus: 'unclear',
+    confidence: 'unknown',
+    applicability_zh: '用於 contact/interface uncertainty tracking。',
+    warnings_zh: placeholderWarning,
+  },
+  {
+    id: 'evidence-sc-low-work-function-contact-placeholder',
+    sourceId: 'src-placeholder-sc-wse2-contact',
+    materialIds: ['sc', 'wse2'],
+    parameterKey: 'custom',
+    value: null,
+    condition_zh:
+      '待查：Sc low-work-function contact engineering 是否適用 WSe₂；需確認 carrier type、barrier、reactivity 與 stability。',
+    method_zh: '待查文獻或實驗。',
+    agreementStatus: 'unclear',
+    confidence: 'unknown',
+    applicability_zh:
+      '低 work function 只能作背景，不可直接視為 WSe₂ contact improvement。',
+    warnings_zh: placeholderWarning,
+  },
+  ...batch15CContactEvidence,
+  ...batch15CLowerMetalDiffusionEvidence,
   {
     id: 'evidence-tonndorf-2013-wse2-pl-raman',
     sourceId: 'src-tonndorf-2013-wse2-pl-raman',

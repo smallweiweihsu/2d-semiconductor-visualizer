@@ -134,6 +134,84 @@ export function MaterialLiteratureTodoPanel({
               }))
             }
           />
+          <QuickFilterButton
+            label="WSe₂ 接觸"
+            onClick={() =>
+              setFilters((current) => ({
+                ...current,
+                materialId: 'all',
+                searchText: 'WSe2 contact',
+              }))
+            }
+          />
+          <QuickFilterButton
+            label="金屬 work function"
+            onClick={() =>
+              setFilters((current) => ({
+                ...current,
+                parameterKey: 'workFunction_eV',
+                searchText: 'work function',
+              }))
+            }
+          />
+          <QuickFilterButton
+            label="接觸電阻"
+            onClick={() =>
+              setFilters((current) => ({
+                ...current,
+                parameterKey: 'contactResistance_ohm',
+                searchText: 'contact resistance',
+              }))
+            }
+          />
+          <QuickFilterButton
+            label="Fermi-level pinning"
+            onClick={() =>
+              setFilters((current) => ({
+                ...current,
+                parameterKey: 'all',
+                searchText: 'Fermi-level pinning',
+              }))
+            }
+          />
+          <QuickFilterButton
+            label="Sb₂O₃ 擴散"
+            onClick={() =>
+              setFilters((current) => ({
+                ...current,
+                materialId: 'all',
+                searchText: 'diffusion Sb2O3',
+              }))
+            }
+          />
+          <QuickFilterButton
+            label="反應性金屬"
+            onClick={() =>
+              setFilters((current) => ({
+                ...current,
+                searchText: 'reactive adhesion interface',
+              }))
+            }
+          />
+          <QuickFilterButton
+            label="惰性金屬"
+            onClick={() =>
+              setFilters((current) => ({
+                ...current,
+                searchText: 'noble contact harmless',
+              }))
+            }
+          />
+          <QuickFilterButton
+            label="缺 contact resistance"
+            onClick={() =>
+              setFilters((current) => ({
+                ...current,
+                parameterKey: 'contactResistance_ohm',
+                candidateState: 'with_candidate',
+              }))
+            }
+          />
         </div>
         <div className="grid gap-3 md:grid-cols-6">
           <SelectField

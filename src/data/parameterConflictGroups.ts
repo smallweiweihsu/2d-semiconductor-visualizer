@@ -2,6 +2,88 @@ import type { ParameterConflictGroup } from '../types/literature'
 
 export const parameterConflictGroups: ParameterConflictGroup[] = [
   {
+    id: 'conflict-wse2-metal-contact-condition-dependent-15c',
+    materialId: 'wse2',
+    parameterKey: 'contactResistance_ohm',
+    evidenceIds: [
+      'evidence-allain-2015-2d-contact-review',
+      'evidence-wang-2016-wse2-metal-ohmic-question',
+      'evidence-wse2-vdw-contacts-2022-pd-contact',
+      'evidence-liu-2022-au-wse2-vdw-contact',
+      'evidence-di-bartolomeo-2018-ni-wse2-environment',
+    ],
+    summary_zh:
+      'WSe₂ 與金屬接觸的接觸電阻與 Schottky barrier 受金屬種類、界面態、Fermi-level pinning、污染、退火、接觸幾何與材料層數影響。Work function alone 不足以預測真實接觸。',
+    recommendedStatus: 'condition_dependent',
+    warnings_zh: ['電性模型應維持手動 contact resistance / fitting，不應自動給定預設值。'],
+  },
+  {
+    id: 'conflict-ti-au-pd-in-sc-wse2-contact-review-15c',
+    materialId: 'wse2',
+    parameterKey: 'custom',
+    evidenceIds: [
+      'evidence-pd-wse2-contact-placeholder',
+      'evidence-ti-wse2-contact-placeholder',
+      'evidence-au-wse2-contact-placeholder',
+      'evidence-in-wse2-contact-placeholder',
+      'evidence-sc-wse2-contact-placeholder',
+      'evidence-sc-low-work-function-contact-placeholder',
+    ],
+    summary_zh:
+      'Ti、Au、Pd、In、Sc 等金屬可能對 WSe₂ 接觸形成不同趨勢，但資料庫目前仍需更多 verified evidence 才能比較適用性。',
+    recommendedStatus: 'needs_review',
+    warnings_zh: ['不得依 work function 或單篇不同結構文獻直接排名金屬適用性。'],
+  },
+  {
+    id: 'conflict-lower-metal-diffusion-sb2o3-15c',
+    materialId: 'sb2o3',
+    parameterKey: 'D0_m2s',
+    evidenceIds: [
+      'evidence-ti-sb2o3-d0-placeholder',
+      'evidence-au-sb2o3-d0-placeholder',
+      'evidence-cr-sb2o3-d0-placeholder',
+      'evidence-ni-sb2o3-d0-placeholder',
+      'evidence-pt-sb2o3-d0-placeholder',
+      'evidence-al-sb2o3-d0-placeholder',
+      'evidence-ag-sb2o3-d0-placeholder',
+      'evidence-cu-sb2o3-d0-placeholder',
+      'evidence-sc-sb2o3-d0-placeholder',
+    ],
+    summary_zh:
+      'Ti/Au/Cr/Ni/Pt/Al/Ag/Cu/Sc 進入 Sb₂O₃ 的 D0/Ea 目前多為待查資料，不應用於定量擴散計算。',
+    recommendedStatus: 'needs_review',
+    warnings_zh: ['需要直接、可比較的 Sb₂O₃ diffusion source 才能啟用定量模型。'],
+  },
+  {
+    id: 'conflict-reactive-metals-oxide-interface-damage-15c',
+    materialId: 'sb2o3',
+    parameterKey: 'custom',
+    evidenceIds: [
+      'evidence-ti-reactive-adhesion-risk-placeholder',
+      'evidence-al-oxide-forming-risk-placeholder',
+      'evidence-pt-ni-cr-contact-interface-uncertainty-placeholder',
+      'evidence-metal-deposition-damage-sb2o3-placeholder',
+    ],
+    summary_zh:
+      '部分金屬可能與氧化層反應、形成界面缺陷或造成氧空缺相關問題，但需依材料、沉積能量、厚度、退火與量測方法確認。',
+    recommendedStatus: 'needs_review',
+    warnings_zh: ['reactive / adhesion metal 不能只以常識分類，需要文獻或實驗 evidence。'],
+  },
+  {
+    id: 'conflict-noble-metals-not-automatically-harmless-15c',
+    materialId: 'wse2',
+    parameterKey: 'custom',
+    evidenceIds: [
+      'evidence-au-noble-not-benign-placeholder',
+      'evidence-liu-2022-au-wse2-vdw-contact',
+      'evidence-pt-ni-cr-contact-interface-uncertainty-placeholder',
+    ],
+    summary_zh:
+      'Au/Pt 等較惰性金屬不代表一定形成理想接觸，界面污染、pinning、接觸幾何與退火仍可能主導電性。',
+    recommendedStatus: 'condition_dependent',
+    warnings_zh: ['noble metal 不等於低接觸電阻或低界面損傷。'],
+  },
+  {
     id: 'conflict-in-sb2o3-buffer-effect-15b',
     materialId: 'in',
     parameterKey: 'custom',

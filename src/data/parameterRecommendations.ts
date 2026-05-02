@@ -4,6 +4,91 @@ const createdAt = '2026-05-02T00:00:00.000Z'
 
 export const parameterRecommendations: ParameterRecommendation[] = [
   {
+    id: 'recommendation-wse2-manual-contact-resistance-15c',
+    materialId: 'wse2',
+    parameterKey: 'contactResistance_ohm',
+    recommendedValue: null,
+    status: 'draft',
+    basedOnEvidenceIds: [
+      'evidence-allain-2015-2d-contact-review',
+      'evidence-wang-2016-wse2-metal-ohmic-question',
+      'evidence-wse2-vdw-contacts-2022-pd-contact',
+      'evidence-liu-2022-au-wse2-vdw-contact',
+    ],
+    rationale_zh:
+      'WSe₂ contact behavior is condition-dependent. The electrical module should continue requiring manual contact resistance or fitting instead of assuming a default contact resistance for Pd/Ti/Au/In/Sc.',
+    limitation_zh:
+      '目前 evidence 仍為 candidate；不同金屬、製程、層數、退火與幾何不可直接比較。',
+    condition_zh: 'WSe₂ metal contact resistance remains manual/fitted。',
+    createdAt,
+    updatedAt: createdAt,
+  },
+  {
+    id: 'recommendation-wse2-no-work-function-only-ranking-15c',
+    materialId: 'wse2',
+    parameterKey: 'workFunction_eV',
+    recommendedValue: null,
+    status: 'draft',
+    basedOnEvidenceIds: [
+      'evidence-allain-2015-2d-contact-review',
+      'evidence-pd-work-function-context-placeholder',
+      'evidence-ti-work-function-context-placeholder',
+      'evidence-au-work-function-context-placeholder',
+      'evidence-in-work-function-context-placeholder',
+      'evidence-sc-work-function-context-placeholder',
+    ],
+    rationale_zh:
+      'Work function is useful context but insufficient to predict WSe₂ contact quality due to Fermi-level pinning, interface states, deposition damage, and geometry.',
+    limitation_zh:
+      '不得依金屬 work function alone 排名接觸品質或自動選 contact metal。',
+    condition_zh: 'work function as context only。',
+    createdAt,
+    updatedAt: createdAt,
+  },
+  {
+    id: 'recommendation-lower-metal-sb2o3-diffusion-blocker-15c',
+    materialId: 'sb2o3',
+    parameterKey: 'D0_m2s',
+    recommendedValue: null,
+    status: 'draft',
+    basedOnEvidenceIds: [
+      'evidence-ti-sb2o3-d0-placeholder',
+      'evidence-au-sb2o3-d0-placeholder',
+      'evidence-cr-sb2o3-d0-placeholder',
+      'evidence-ni-sb2o3-d0-placeholder',
+      'evidence-pt-sb2o3-d0-placeholder',
+      'evidence-al-sb2o3-d0-placeholder',
+      'evidence-ag-sb2o3-d0-placeholder',
+      'evidence-cu-sb2o3-d0-placeholder',
+      'evidence-sc-sb2o3-d0-placeholder',
+    ],
+    rationale_zh:
+      'Ti/Au/Cr/Ni/Pt/Al/Ag/Cu/Sc into Sb₂O₃ D0/Ea remain unverified. Diffusion module should keep missing-parameter warnings.',
+    limitation_zh:
+      '目前 lower-priority metals 的 D0/Ea 全部不可定量。',
+    condition_zh: 'lower-priority metal diffusion into Sb₂O₃ literature gap。',
+    createdAt,
+    updatedAt: createdAt,
+  },
+  {
+    id: 'recommendation-adhesion-metals-interface-risk-15c',
+    materialId: 'sb2o3',
+    parameterKey: 'custom',
+    recommendedValue: null,
+    status: 'draft',
+    basedOnEvidenceIds: [
+      'evidence-ti-reactive-adhesion-risk-placeholder',
+      'evidence-al-oxide-forming-risk-placeholder',
+      'evidence-pt-ni-cr-contact-interface-uncertainty-placeholder',
+    ],
+    rationale_zh:
+      'Adhesion/reactive metals such as Ti/Cr/Al may alter oxide interfaces, but specific effects require verified literature or experiment.',
+    limitation_zh: '目前只是 interface-risk tracking，不可視為定量或定性結論。',
+    condition_zh: 'adhesion / reactive metal interface risk。',
+    createdAt,
+    updatedAt: createdAt,
+  },
+  {
     id: 'recommendation-sb2o3-metal-diffusion-blocker-15b',
     materialId: 'sb2o3',
     parameterKey: 'D0_m2s',
