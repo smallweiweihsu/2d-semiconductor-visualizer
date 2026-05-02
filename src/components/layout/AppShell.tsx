@@ -2,6 +2,10 @@ import { useState } from 'react'
 import { defaultProcessFlow } from '../../data/defaultProcessFlow'
 import { initialDeviceStructure } from '../../data/deviceStructures'
 import { workspaceTabs, type WorkspaceTabId } from '../../data/workspaceTabs'
+import type {
+  MeasurementComparison,
+  MeasurementDataset,
+} from '../../types/measurement'
 import { BottomPanel } from './BottomPanel'
 import { RightInspector } from './RightInspector'
 import { Sidebar } from './Sidebar'
@@ -23,6 +27,12 @@ export function AppShell() {
   const [processFlow, setProcessFlow] = useState(() =>
     structuredClone(defaultProcessFlow),
   )
+  const [measurementDatasets, setMeasurementDatasets] = useState<
+    MeasurementDataset[]
+  >([])
+  const [measurementComparisons, setMeasurementComparisons] = useState<
+    MeasurementComparison[]
+  >([])
   const selectedTab =
     workspaceTabs.find((tab) => tab.id === selectedTabId) ?? workspaceTabs[0]
 
@@ -67,7 +77,11 @@ export function AppShell() {
           />
           <Workspace
             deviceStructure={deviceStructure}
+            measurementComparisons={measurementComparisons}
+            measurementDatasets={measurementDatasets}
             onChangeDeviceStructure={setDeviceStructure}
+            onChangeMeasurementComparisons={setMeasurementComparisons}
+            onChangeMeasurementDatasets={setMeasurementDatasets}
             onChangeProcessFlow={setProcessFlow}
             processFlow={processFlow}
             tab={selectedTab}

@@ -1,18 +1,29 @@
 import type { Dispatch, SetStateAction } from 'react'
 import type { WorkspaceTab } from '../../data/workspaceTabs'
 import type { DeviceStructure } from '../../types/device'
+import type {
+  MeasurementComparison,
+  MeasurementDataset,
+} from '../../types/measurement'
 import type { ProcessFlow } from '../../types/process'
 import { DeviceStructureEditor } from '../device/DeviceStructureEditor'
 import { ElectricalWorkspace } from '../electrical/ElectricalWorkspace'
 import { ProjectExportWorkspace } from '../export/ProjectExportWorkspace'
 import { MaterialDatabase } from '../materials/MaterialDatabase'
+import { MeasurementWorkspace } from '../measurements/MeasurementWorkspace'
 import { OxidationWorkspace } from '../oxidation/OxidationWorkspace'
 import { ProcessDiffusionWorkspace } from '../process/ProcessDiffusionWorkspace'
 import { ViewerPlaceholder } from '../viewer3d/ViewerPlaceholder'
 
 interface WorkspaceProps {
   deviceStructure: DeviceStructure
+  measurementComparisons: MeasurementComparison[]
+  measurementDatasets: MeasurementDataset[]
   onChangeDeviceStructure: Dispatch<SetStateAction<DeviceStructure>>
+  onChangeMeasurementComparisons: Dispatch<
+    SetStateAction<MeasurementComparison[]>
+  >
+  onChangeMeasurementDatasets: Dispatch<SetStateAction<MeasurementDataset[]>>
   onChangeProcessFlow: Dispatch<SetStateAction<ProcessFlow>>
   processFlow: ProcessFlow
   tab: WorkspaceTab
@@ -20,7 +31,11 @@ interface WorkspaceProps {
 
 export function Workspace({
   deviceStructure,
+  measurementComparisons,
+  measurementDatasets,
   onChangeDeviceStructure,
+  onChangeMeasurementComparisons,
+  onChangeMeasurementDatasets,
   onChangeProcessFlow,
   processFlow,
   tab,
@@ -66,11 +81,28 @@ export function Workspace({
     )
   }
 
+  if (tab.id === 'measurements') {
+    return (
+      <MeasurementWorkspace
+        deviceLayers={deviceStructure.layers}
+        flow={processFlow}
+        measurementComparisons={measurementComparisons}
+        measurementDatasets={measurementDatasets}
+        onChangeMeasurementComparisons={onChangeMeasurementComparisons}
+        onChangeMeasurementDatasets={onChangeMeasurementDatasets}
+      />
+    )
+  }
+
   if (tab.id === 'results') {
     return (
       <ProjectExportWorkspace
         deviceStructure={deviceStructure}
+        measurementComparisons={measurementComparisons}
+        measurementDatasets={measurementDatasets}
         onChangeDeviceStructure={onChangeDeviceStructure}
+        onChangeMeasurementComparisons={onChangeMeasurementComparisons}
+        onChangeMeasurementDatasets={onChangeMeasurementDatasets}
         onChangeProcessFlow={onChangeProcessFlow}
         processFlow={processFlow}
       />

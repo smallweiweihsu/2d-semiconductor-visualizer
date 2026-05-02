@@ -3,6 +3,7 @@ import { materials } from '../data/materials'
 import { processStepTypeLabels } from '../data/processStepTypes'
 import type { DeviceLayer } from '../types/device'
 import type { Material } from '../types/material'
+import type { MeasurementComparison, MeasurementDataset } from '../types/measurement'
 import type { ProcessStep } from '../types/process'
 import type { ProjectSaveData } from '../types/project'
 
@@ -42,10 +43,16 @@ export function generateMarkdownReport(projectData: ProjectSaveData) {
     '## 8. 電性 I-V / Id-Vg 近似',
     electricalSection(projectData),
     '',
-    '## 9. 主要警告與缺少參數',
+    '## 9. 量測資料摘要',
+    measurementSection(projectData),
+    '',
+    '## 10. 量測比較',
+    measurementComparisonSection(projectData),
+    '',
+    '## 11. 主要警告與缺少參數',
     warningSection(projectData),
     '',
-    '## 10. 後續建議',
+    '## 12. 後續建議',
     nextStepSection(),
     '',
   ].join('\n')
@@ -74,6 +81,7 @@ export function generateExperimentSummary(projectData: ProjectSaveData) {
     '- 擴散、氧化與電性結果皆為簡化模型或定性 / 半定量判讀。',
     '- 需補齊 D0 / Ea、氧化速率、介電常數、崩潰電場、接觸電阻與遷移率等校準參數。',
     '- 建議搭配 Raman mapping、低功率 Raman、AFM、XPS、PL 與電性量測交叉驗證。',
+    `- 量測資料集：${projectData.measurementDatasets?.length ?? 0} 個。`,
     '',
     '## 下一步量測建議',
     nextStepSection(),
@@ -255,9 +263,95 @@ function warningSection(projectData: ProjectSaveData) {
     ...(projectData.warnings_zh ?? []),
     ...projectData.deviceStructure.layers.flatMap((layer) => layer.warnings_zh ?? []),
     ...projectData.processFlow.steps.flatMap((step) => step.warnings_zh),
+    ...(projectData.measurementDatasets ?? []).flatMap(
+      (dataset) => dataset.warnings_zh,
+    ),
   ]
 
   return [...new Set(warnings)].map((warning) => `- ${warning}`).join('\n')
+}
+
+function measurementSection(projectData: ProjectSaveData) {
+  const datasets = projectData.measurementDatasets ?? []
+
+  if (datasets.length === 0) {
+    return '目前尚未匯入量測資料。'
+  }
+
+  return [
+    '完整量測資料已包含於 JSON 匯出中；Markdown 報告只列摘要，避免產生過大的文字檔。',
+    '',
+    '| 資料集 | 類型 | 樣品 / 條件 | 資料列 | 關聯材料層 | 關聯製程步驟 | 警告 |',
+    '| --- | --- | --- | --- | --- | --- | --- |',
+    ...datasets.map((dataset) => measurementRow(dataset, projectData)),
+  ].join('\n')
+}
+
+function measurementRow(dataset: MeasurementDataset, projectData: ProjectSaveData) {
+  const layerNames = dataset.linkedLayerIds
+    .map((layerId) => projectData.deviceStructure.layers.find((layer) => layer.id === layerId)?.name)
+    .filter(Boolean)
+    .join('、')
+  const stepNames = dataset.linkedProcessStepIds
+    .map((stepId) => projectData.processFlow.steps.find((step) => step.id === stepId)?.name_zh)
+    .filter(Boolean)
+    .join('、')
+
+  return [
+    escapeCell(dataset.name_zh),
+    escapeCell(formatMeasurementTypeForReport(dataset.measurementType)),
+    escapeCell(
+      [dataset.metadata.sampleName, dataset.metadata.conditionName]
+        .filter(Boolean)
+        .join(' / ') || '未填寫',
+    ),
+    dataset.rows.length,
+    escapeCell(layerNames || '無'),
+    escapeCell(stepNames || '無'),
+    dataset.warnings_zh.length,
+  ].join(' | ').replace(/^/, '| ').replace(/$/, ' |')
+}
+
+function measurementComparisonSection(projectData: ProjectSaveData) {
+  const comparisons = projectData.measurementComparisons ?? []
+  const datasets = projectData.measurementDatasets ?? []
+
+  if (comparisons.length === 0) {
+    return '目前尚未建立量測比較。'
+  }
+
+  return comparisons
+    .map((comparison) => measurementComparisonText(comparison, datasets))
+    .join('\n\n')
+}
+
+function measurementComparisonText(
+  comparison: MeasurementComparison,
+  datasets: MeasurementDataset[],
+) {
+  const datasetNames = comparison.datasetIds
+    .map((datasetId) => datasets.find((dataset) => dataset.id === datasetId)?.name_zh)
+    .filter(Boolean)
+    .join('、')
+
+  return [
+    `### ${comparison.name_zh}`,
+    `- 類型：${formatMeasurementTypeForReport(comparison.measurementType)}`,
+    `- 包含資料集：${datasetNames || '未找到資料集'}`,
+    `- 備註：${fallback(comparison.notes_zh)}`,
+  ].join('\n')
+}
+
+function formatMeasurementTypeForReport(type: MeasurementDataset['measurementType']) {
+  const labels: Record<MeasurementDataset['measurementType'], string> = {
+    raman: 'Raman',
+    pl: 'PL',
+    electrical_iv: '電性 I-V',
+    electrical_transfer: '電性 Id-Vg',
+    custom: '自訂',
+  }
+
+  return labels[type]
 }
 
 function nextStepSection() {

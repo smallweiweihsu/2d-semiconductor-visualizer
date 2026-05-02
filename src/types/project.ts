@@ -1,6 +1,10 @@
 import type { DeviceStructure } from './device'
 import type { DiffusionResult, DiffusionScenario } from './diffusion'
 import type { ElectricalResult, ElectricalScenario } from './electrical'
+import type {
+  MeasurementComparison,
+  MeasurementDataset,
+} from './measurement'
 import type { OxidationResult, OxidationScenario } from './oxidation'
 import type { ProcessFlow } from './process'
 
@@ -28,6 +32,8 @@ export interface ProjectSaveData {
   oxidationResult?: OxidationResult
   electricalScenario?: ElectricalScenario
   electricalResult?: ElectricalResult
+  measurementDatasets?: MeasurementDataset[]
+  measurementComparisons?: MeasurementComparison[]
   appNotes_zh?: string[]
   warnings_zh?: string[]
 }

@@ -38,6 +38,14 @@ export const workspaceTabs = [
     features: ['氧化前後結構', '氧化進度', '厚度變化', '製程條件註記'],
   },
   {
+    id: 'measurements',
+    label: '量測資料',
+    title: '量測資料匯入與比較',
+    description:
+      '匯入 Raman、PL 與電性資料，進行初步視覺化、before/after 比較，並與元件材料層與製程步驟建立關聯。',
+    features: ['CSV / TXT 匯入', '欄位對應', '資料預覽', 'before / after 比較'],
+  },
+  {
     id: 'lattice',
     label: '晶格視覺化',
     title: '晶格視覺化',

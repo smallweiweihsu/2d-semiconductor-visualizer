@@ -1,4 +1,8 @@
 import type { DeviceStructure } from '../types/device'
+import type {
+  MeasurementComparison,
+  MeasurementDataset,
+} from '../types/measurement'
 import type { ProcessFlow } from '../types/process'
 import type {
   ProjectImportResult,
@@ -11,6 +15,8 @@ export const PROJECT_EXPORT_VERSION = '1.0.0'
 export interface CreateProjectSaveDataInput {
   metadata: ProjectMetadata
   deviceStructure: DeviceStructure
+  measurementComparisons?: MeasurementComparison[]
+  measurementDatasets?: MeasurementDataset[]
   processFlow: ProcessFlow
   appNotes_zh?: string[]
   warnings_zh?: string[]
@@ -19,6 +25,8 @@ export interface CreateProjectSaveDataInput {
 export function createProjectSaveData({
   metadata,
   deviceStructure,
+  measurementComparisons = [],
+  measurementDatasets = [],
   processFlow,
   appNotes_zh = [],
   warnings_zh = [],
@@ -33,6 +41,8 @@ export function createProjectSaveData({
       createdAt: metadata.createdAt || now,
     },
     deviceStructure,
+    measurementComparisons,
+    measurementDatasets,
     processFlow,
     appNotes_zh,
     warnings_zh: [
@@ -122,6 +132,20 @@ export function validateProjectSaveData(data: unknown): ProjectImportResult {
     candidate.electricalScenario
   ) {
     warnings_zh.push('部分模組狀態目前尚未自動還原，已保留在匯入資料中。')
+  }
+
+  if (
+    candidate.measurementDatasets &&
+    !Array.isArray(candidate.measurementDatasets)
+  ) {
+    errors_zh.push('量測資料欄位格式不正確。')
+  }
+
+  if (
+    candidate.measurementComparisons &&
+    !Array.isArray(candidate.measurementComparisons)
+  ) {
+    errors_zh.push('量測比較欄位格式不正確。')
   }
 
   return {

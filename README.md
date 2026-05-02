@@ -238,6 +238,22 @@ src/
 - 目前擴散、氧化與電性模組的即時情境狀態尚未完全提升到全域專案狀態，因此 JSON / 報告會清楚標示部分即時模組狀態尚未納入匯出；後續批次可強化跨模組狀態保存與還原。
 - 自動產生的 Markdown 報告是研究紀錄草稿，不是最終科學證明；所有未經文獻與實驗校準的參數不可視為定量結論。
 
+## Batch 11：量測資料匯入與比較第一版
+
+本批新增「量測資料」分頁，用於整理 Raman、PL 與電性量測資料，並進行初步視覺化與 before/after 比較。
+
+- 新增 measured data type system，包含量測類型、欄位類型、metadata、資料列、series 與 comparison。
+- 新增 CSV / TXT / DAT 與手動貼上資料匯入，支援自動偵測逗號、Tab、空白與分號分隔。
+- 新增欄位對應器，可把原始欄位標成 Raman shift、wavelength、energy、intensity、voltage、current、temperature、time 或 custom。
+- 新增資料集清單，可選擇、複製與刪除本機量測資料集。
+- 新增 metadata 編輯器，可記錄樣品、條件、before/after 標籤、儀器、操作者、日期、雷射波長、雷射功率、積分時間、溫度與備註。
+- 新增材料層與製程步驟關聯，可把 Raman、PL 或電性資料連到目前 device layers 與 process steps。
+- 新增資料預覽表格，顯示前 20 筆資料並提醒非數值欄位與單位不明風險。
+- 新增簡單 SVG plot，可快速繪製 Raman / PL / electrical line plot，並支援同類型資料集疊圖、abs(I) 與 log10(Y) 顯示。
+- 新增 before/after comparison panel，可儲存同類型資料集比較，並顯示 Raman、PL、電性資料的判讀提醒。
+- JSON 匯出已整合量測資料集與量測比較；Markdown 報告會加入量測資料摘要與比較摘要，但不嵌入完整原始資料表。
+- 目前沒有 Origin binary parser、Excel parser、baseline correction、smoothing、peak fitting、Raman mode assignment、PL quantum yield、electrical fitting、TLM fitting、XPS fitting 或 publication-grade analysis。
+
 ## 科學準確性聲明
 
 本工具目前是「物理導向的視覺化與近似分析工具」，不是完整 TCAD、DFT 或分子動力學模擬器。所有計算結果都需要搭配實驗資料與文獻參數判讀；在未來加入任何模型或公式時，也應清楚標註假設、適用範圍與限制。

@@ -1,5 +1,9 @@
 import { useMemo, useState, type Dispatch, type SetStateAction } from 'react'
 import type { DeviceStructure } from '../../types/device'
+import type {
+  MeasurementComparison,
+  MeasurementDataset,
+} from '../../types/measurement'
 import type { ProcessFlow } from '../../types/process'
 import type { ProjectMetadata } from '../../types/project'
 import {
@@ -18,14 +22,24 @@ import { ReportPreview } from './ReportPreview'
 
 interface ProjectExportWorkspaceProps {
   deviceStructure: DeviceStructure
+  measurementComparisons: MeasurementComparison[]
+  measurementDatasets: MeasurementDataset[]
   onChangeDeviceStructure: Dispatch<SetStateAction<DeviceStructure>>
+  onChangeMeasurementComparisons: Dispatch<
+    SetStateAction<MeasurementComparison[]>
+  >
+  onChangeMeasurementDatasets: Dispatch<SetStateAction<MeasurementDataset[]>>
   processFlow: ProcessFlow
   onChangeProcessFlow: Dispatch<SetStateAction<ProcessFlow>>
 }
 
 export function ProjectExportWorkspace({
   deviceStructure,
+  measurementComparisons,
+  measurementDatasets,
   onChangeDeviceStructure,
+  onChangeMeasurementComparisons,
+  onChangeMeasurementDatasets,
   onChangeProcessFlow,
   processFlow,
 }: ProjectExportWorkspaceProps) {
@@ -40,12 +54,14 @@ export function ProjectExportWorkspace({
       createProjectSaveData({
         metadata,
         deviceStructure,
+        measurementComparisons,
+        measurementDatasets,
         processFlow,
         appNotes_zh: [
           'Batch 10 目前支援本機 JSON 匯出 / 匯入與 Markdown 報告產生。',
         ],
       }),
-    [deviceStructure, metadata, processFlow],
+    [deviceStructure, measurementComparisons, measurementDatasets, metadata, processFlow],
   )
 
   const previewContent =
@@ -100,6 +116,10 @@ export function ProjectExportWorkspace({
 
               onChangeDeviceStructure(result.data.deviceStructure)
               onChangeProcessFlow(result.data.processFlow)
+              onChangeMeasurementDatasets(result.data.measurementDatasets ?? [])
+              onChangeMeasurementComparisons(
+                result.data.measurementComparisons ?? [],
+              )
               setMetadata(result.data.metadata)
               setStatusMessage(
                 [
