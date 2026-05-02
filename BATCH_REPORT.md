@@ -2,46 +2,33 @@
 
 ## 1. Summary of what was built
 
-完成 Batch 14：建立第一版實用的文獻資料輸入、審核、比較與匯入 / 匯出工作流。
+完成 Batch 15A：加入第一批由使用者指定、具 DOI 的文獻種子資料與候選參數證據。
 
-- 新增 literature source editor，可建立/編輯候選來源、作者、年份、來源類型、DOI、URL、review status、tags 與 notes。
-- 新增 parameter evidence editor，可輸入 source、materials、parameter key、value、unit、condition、method、agreement status、confidence、summary、applicability 與 warnings。
-- 新增 conflict group editor，可整理 evidence IDs、agreement counts、summary、recommended status 與候選 recommended value。
-- 新增 recommendation workflow，可從 conflict group 建立 draft recommendation，並標示 reviewed、ready to promote 或 rejected。
-- 新增 Material Literature TODO dataset，涵蓋 WSe₂、Sb₂O₃、Sb bulk、Pd、In、WOx 與其他目標材料的高/中/低優先待查項目。
-- 文獻資料庫分頁改為 internal sections：待查清單、文獻來源、參數證據、衝突 / 共識、推薦參數、匯入 / 匯出。
-- 新增 literature database JSON 匯入 / 匯出，以及 TODO list / evidence summary Markdown 匯出。
-- Material Detail 文獻來源區升級，顯示 TODO、evidence、conflict group、recommendation counts，並分區收合。
-- Project JSON / Markdown report 可包含 literature database、todos、recommendations 摘要。
-- Export warnings、measurement warnings、process validation panel 改為可收合區塊，延續 UI decluttering。
+- 新增 WSe₂ PL / Raman、band gap / electrical properties、WSe₂ surface oxidation / WOx、Sb₂O₃ high-k / breakdown、WSe₂ contact / Fermi-level pinning 相關 candidate source records。
+- 新增 WSe₂、Sb₂O₃、Pd/WSe₂、In/Sb₂O₃ 相關 parameter evidence records，並保留 condition、method、applicability 與 warnings。
+- 新增/更新 conflict groups，明確標示 WSe₂ band gap、WSe₂ oxidation/Raman visibility、Sb₂O₃ dielectric properties、Pd/WSe₂ contact 與 In/Sb₂O₃ buffer effect 皆具條件依賴或待審核限制。
+- 新增 draft parameter recommendations；全部維持 `draft`，沒有標記 `ready_to_promote`，也沒有寫入正式 `materials.ts`。
+- 文獻資料庫 UI 新增「第一批文獻種子資料」摘要，可顯示真實來源數、placeholder 數、candidate evidence、reviewed 與 verified 數量。
+- TODO list 新增「已有候選證據」篩選，並在待查項目卡片顯示 matching candidate evidence count。
+- Evidence table 新增來源篩選：全部來源、只看真實來源、只看 placeholder。
+- Markdown report 的文獻摘要新增真實來源數、placeholder 數、review status、材料證據分布與 recommendation count。
+- README 新增 Batch 15A 說明。
 
 ## 2. Files changed
 
 ```text
 BATCH_REPORT.md
 README.md
-screenshots/batch14-literature-todo-list.png
-screenshots/batch14-parameter-evidence-editor.png
-screenshots/batch14-recommendation-panel.png
-src/components/export/ExportWarnings.tsx
-src/components/export/ProjectExportWorkspace.tsx
-src/components/literature/ConflictGroupEditor.tsx
+screenshots/batch15a-evidence-table.png
+screenshots/batch15a-literature-seed-summary.png
+screenshots/batch15a-material-literature-detail.png
 src/components/literature/LiteratureDatabaseWorkspace.tsx
-src/components/literature/LiteratureImportExportPanel.tsx
-src/components/literature/LiteratureReviewWorkflow.tsx
-src/components/literature/LiteratureSourceEditor.tsx
 src/components/literature/MaterialLiteratureTodoPanel.tsx
-src/components/literature/ParameterEvidenceEditor.tsx
-src/components/literature/ParameterRecommendationPanel.tsx
-src/components/literature/literatureFormatting.ts
-src/components/materials/MaterialDetail.tsx
-src/components/measurements/MeasurementWarnings.tsx
-src/components/process/ProcessValidationPanel.tsx
-src/data/materialLiteratureTodos.ts
+src/data/literatureSources.ts
+src/data/parameterConflictGroups.ts
+src/data/parameterEvidence.ts
 src/data/parameterRecommendations.ts
-src/types/literature.ts
 src/utils/markdownReport.ts
-src/utils/projectExport.ts
 ```
 
 ## 3. src/ file tree
@@ -49,8 +36,6 @@ src/utils/projectExport.ts
 ```text
 src/
   App.tsx
-  index.css
-  main.tsx
   components/
     common/
       AcknowledgableNotice.tsx
@@ -196,6 +181,8 @@ src/
     processStepTypes.ts
     processSteps.ts
     workspaceTabs.ts
+  index.css
+  main.tsx
   physics/
     bandAlignment.ts
     constants.ts
@@ -230,79 +217,72 @@ where.exe node
 where.exe npm
 node -v
 npm -v
+C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe -v
 C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe node_modules\typescript\bin\tsc -b
 C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe node_modules\eslint\bin\eslint.js .
 C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe node_modules\vite\bin\vite.js build
-Invoke-WebRequest http://127.0.0.1:5174/
-msedge --headless=new --no-sandbox --disable-gpu --window-size=1600,1200 --screenshot=...
-git add .
-git commit -m "Batch 14: Add literature review workflow"
+Invoke-WebRequest -UseBasicParsing http://127.0.0.1:5174/
+Chrome headless screenshots for Batch 15A UI
+git add ...
+git commit -m "Batch 15A: Add first curated literature seed pack"
 git rev-parse --short HEAD
+git push origin dev
 ```
 
 Node / npm environment:
 
-```text
-where node:
-C:\Program Files\WindowsApps\OpenAI.Codex_26.422.9565.0_x64__2p2nqsd0c76g0\app\resources\node.exe
-
-where npm:
-INFO: Could not find files for the given pattern(s).
-
-node -v:
-failed, access denied for WindowsApps Codex node.exe
-
-npm -v:
-failed, npm command not found
-
-Verification mode:
-normal npm unavailable; used bundled Node fallback with local TypeScript, ESLint, and Vite binaries.
-```
+- `where node`: `C:\Program Files\WindowsApps\OpenAI.Codex_26.422.9565.0_x64__2p2nqsd0c76g0\app\resources\node.exe`
+- `where npm`: not found
+- `node -v`: failed with access denied for the WindowsApps Codex node path
+- `npm -v`: npm not recognized
+- Fallback used: bundled Node runtime
+- Bundled Node version: `v24.14.0`
 
 ## 5. Build/lint/typecheck result
 
-- Typecheck: passed via bundled Node fallback.
-- Lint: passed via bundled Node fallback.
-- Build: passed via bundled Node fallback.
-- Build warning: Vite still reports the known lazy 3D viewer chunk-size warning; build completed successfully.
+- `npm install`: not run because npm is unavailable in the Codex shell PATH.
+- `npm run typecheck`: fallback equivalent passed via local TypeScript binary.
+- `npm run lint`: fallback equivalent passed via local ESLint binary.
+- `npm run build`: fallback equivalent passed via local Vite binary.
+- Build warning: Vite still reports the known large lazy 3D viewer chunk warning; build succeeded.
 
 ## 6. Git commit and push result
 
-- Batch 14 commit hash: `81f6d21`
+- Batch 15A implementation commit hash: `9929c7c`
 - Current branch: `dev`
 - Remote URL: `https://github.com/smallweiweihsu/2d-semiconductor-visualizer.git`
-- Push result: origin/dev push completed for Batch 14 implementation and final report update.
+- Push result: `9929c7c` successfully pushed to `origin/dev`.
+- Final report update commit: created after this implementation report update.
 
 ## 7. Visible UI description
 
-- 文獻資料庫分頁現在有內部分頁：待查清單、文獻來源、參數證據、衝突 / 共識、推薦參數、匯入 / 匯出。
-- 待查清單可依 priority、material、parameter、status 與 search text 篩選，並可標示 in progress、candidate found、reviewed、verified。
-- 待查項目可一鍵切到 parameter evidence editor，預填 material 與 parameter key。
-- Source editor 可新增/儲存候選文獻來源、複製 source ID，並以 review workflow 切換 candidate/reviewed/verified/rejected。
-- Parameter evidence editor 支援多材料、null value、qualitative claim、agreement status、confidence、condition、method、summary、applicability 與 warnings。
-- Conflict group editor 可選 evidence IDs，顯示 supports/contradicts/condition-dependent/unclear/not-applicable counts。
-- Recommendation panel 可從 conflict group 建立 draft recommendation，標記 reviewed / ready to promote / rejected，並複製推薦摘要。
-- Import/export panel 可匯出 literature database JSON、TODO Markdown、evidence summary Markdown，也可貼上 JSON 匯入。
-- Material Detail 文獻來源區顯示 TODO/evidence/conflict/recommendation counts，細節預設收合，避免重新變擁擠。
-- Project export report 的文獻摘要包含 sources/evidence/todos/recommendations/conflict group counts。
+- 「文獻資料庫」分頁頂部新增「第一批文獻種子資料」摘要，顯示真實來源、placeholder、candidate evidence、reviewed 與 verified 數量。
+- 「文獻來源」清單包含 DOI-backed candidate source records，例如 WSe₂ PL/Raman、WSe₂ oxidation、Sb₂O₃ high-k、Sb₂O₃ breakdown 與 WSe₂ contacts。
+- 「參數證據」表格可看到 WSe₂ band gap、WSe₂ oxidation / WOx、Sb₂O₃ band gap / dielectric / breakdown、Pd/WSe₂ contact 與 In/Sb₂O₃ placeholder evidence。
+- Evidence table 新增「全部來源 / 只看真實來源 / 只看 placeholder」篩選。
+- TODO list 可用「已有候選證據」篩選，並顯示每個待查項目的 candidate evidence count。
+- Conflict groups 顯示 WSe₂ band gap layer/method dependence、WSe₂ oxidation Raman visibility、Sb₂O₃ dielectric process dependence、Pd/WSe₂ contact uncertainty 與 In/Sb₂O₃ buffer unverified 等 condition-dependent summaries。
+- Recommendation panel 顯示 draft recommendations；沒有任何 recommendation 被標記為 ready to promote。
+- Material Detail 的文獻來源摘要會反映 WSe₂、Sb₂O₃、Pd、In、WOx 相關 evidence / conflict / recommendation counts，並保留「正式材料資料庫未自動更新」的界線。
+
+## 8. Warnings or limitations
+
+- 本批沒有執行 web search automation；所有新增真實 source records 都來自使用者明確提供的文獻資訊。
+- 沒有新增或修改正式 `materials.ts` 參數值。
+- 沒有將 candidate evidence 自動 promotion 到 official material database。
+- 不完整作者欄位保留為使用者提供的最小資訊，並在 notes 中標記後續需補齊。
+- In/Sb₂O₃ buffer effect 仍是 placeholder / TODO，不代表已驗證。
+- Sb₂O₃ dielectric / breakdown、WSe₂ oxidation rate、Pd/WSe₂ contact resistance 等仍需要人工審核與實驗條件比對。
+- Edge headless 與 in-app browser 截圖路徑不可用；已改用 Chrome headless 成功產生截圖。
+
+## 9. Next recommended batch
+
+Batch 15B: expand curated literature data for Sb₂O₃ / Sb / In interface and metal diffusion into Sb₂O₃.
 
 Screenshots:
 
 ```text
-screenshots/batch14-literature-todo-list.png
-screenshots/batch14-parameter-evidence-editor.png
-screenshots/batch14-recommendation-panel.png
+screenshots/batch15a-literature-seed-summary.png
+screenshots/batch15a-evidence-table.png
+screenshots/batch15a-material-literature-detail.png
 ```
-
-## 8. Warnings or limitations
-
-- 本批沒有 automatic web search、DOI lookup、PDF parsing 或 literature automation。
-- 所有 seed TODO / placeholder records 都不是正式文獻引用，也不是 verified material parameters。
-- Candidate evidence 不會自動寫入 `materials.ts`；recommendation 也只是待人工審核的候選摘要。
-- Literature workspace 的新增/編輯狀態目前是瀏覽器 session state；可用本批新增的 literature JSON 匯出保存。
-- Project export currently includes the seeded literature database snapshot;跨頁即時文獻編輯狀態尚未提升成全域 app state。
-- Normal npm 仍不可用，本批使用 bundled Node fallback 完成 typecheck、lint、build。
-
-## 9. Next recommended batch
-
-Batch 15: first real curated literature entry batch for WSe₂, Sb₂O₃, Sb, Pd, In, and WOx.
