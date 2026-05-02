@@ -1,5 +1,14 @@
+import { parameterConflictGroups } from '../../data/parameterConflictGroups'
+import { parameterEvidence } from '../../data/parameterEvidence'
 import { getMaterialCategoryDefinition } from '../../data/materialCategories'
+import { literatureSources } from '../../data/literatureSources'
 import type { Material, MaterialParameterKey } from '../../types/material'
+import { CollapsibleSection } from '../common/CollapsibleSection'
+import {
+  formatAgreementStatus,
+  formatParameterKey,
+  formatReviewStatus,
+} from '../literature/literatureFormatting'
 import { ParameterBadge } from './ParameterBadge'
 import {
   formatParameterValue,
@@ -32,6 +41,12 @@ const parameterGroups: Array<{
 export function MaterialDetail({ material }: MaterialDetailProps) {
   const category = getMaterialCategoryDefinition(material.category)
   const stats = getMaterialParameterStats(material)
+  const relatedEvidence = parameterEvidence.filter((item) =>
+    item.materialIds.includes(material.id),
+  )
+  const relatedConflictGroups = parameterConflictGroups.filter(
+    (group) => group.materialId === material.id,
+  )
 
   return (
     <section className="h-full min-h-[34rem] overflow-y-auto rounded-lg border border-slate-800/80 bg-slate-950/25 p-4 xl:min-h-0">
@@ -74,8 +89,27 @@ export function MaterialDetail({ material }: MaterialDetailProps) {
       </div>
 
       <div className="mt-4 grid gap-3 border-t border-slate-800/80 pt-4 lg:grid-cols-2">
-        <InfoList title="材料註記" items={material.notes_zh} />
-        <InfoList title="風險與限制" items={material.warnings_zh} tone="warning" />
+        <CollapsibleSection
+          defaultOpen={false}
+          summary={`${material.notes_zh.length} 項`}
+          title="材料註記"
+        >
+          <InfoList items={material.notes_zh} />
+        </CollapsibleSection>
+        <CollapsibleSection
+          defaultOpen={false}
+          summary={`${material.warnings_zh.length} 項`}
+          title="風險與限制"
+        >
+          <InfoList items={material.warnings_zh} tone="warning" />
+        </CollapsibleSection>
+      </div>
+
+      <div className="mt-4">
+        <MaterialLiteratureSection
+          evidence={relatedEvidence}
+          conflictGroups={relatedConflictGroups}
+        />
       </div>
 
       <div className="mt-4 grid gap-3">
@@ -200,17 +234,15 @@ function ParameterGroup({ groupTitle, keys, material }: ParameterGroupProps) {
 }
 
 interface InfoListProps {
-  title: string
   items: string[]
   tone?: 'default' | 'warning'
 }
 
-function InfoList({ title, items, tone = 'default' }: InfoListProps) {
+function InfoList({ items, tone = 'default' }: InfoListProps) {
   const bulletClass = tone === 'warning' ? 'bg-amber-300' : 'bg-slate-400'
 
   return (
     <section>
-      <h4 className="text-sm font-medium text-slate-200">{title}</h4>
       <ul className="mt-2 space-y-1.5 text-xs leading-5 text-slate-500">
         {items.map((item) => (
           <li className="flex gap-2" key={item}>
@@ -223,4 +255,104 @@ function InfoList({ title, items, tone = 'default' }: InfoListProps) {
       </ul>
     </section>
   )
+}
+
+function MaterialLiteratureSection({
+  evidence,
+  conflictGroups,
+}: {
+  evidence: typeof parameterEvidence
+  conflictGroups: typeof parameterConflictGroups
+}) {
+  const candidateCount = evidence.filter((item) =>
+    getSourceStatus(item.sourceId) === 'candidate',
+  ).length
+  const reviewedCount = evidence.filter((item) =>
+    getSourceStatus(item.sourceId) === 'reviewed',
+  ).length
+  const verifiedCount = evidence.filter((item) =>
+    getSourceStatus(item.sourceId) === 'verified',
+  ).length
+
+  return (
+    <CollapsibleSection
+      defaultOpen={false}
+      summary={`${evidence.length} 筆證據 · ${conflictGroups.length} 組衝突整理`}
+      title="文獻來源"
+    >
+      {evidence.length === 0 && conflictGroups.length === 0 ? (
+        <p className="text-sm text-slate-500">目前尚無文獻候選資料。</p>
+      ) : (
+        <div className="grid gap-4">
+          <div className="flex flex-wrap gap-2 text-xs">
+            <span className="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-slate-400">
+              候選 {candidateCount}
+            </span>
+            <span className="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-slate-400">
+              已檢閱 {reviewedCount}
+            </span>
+            <span className="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-slate-400">
+              已驗證 {verifiedCount}
+            </span>
+          </div>
+
+          <div>
+            <h4 className="text-sm font-medium text-slate-200">相關參數證據</h4>
+            <div className="mt-2 grid gap-2">
+              {evidence.map((item) => (
+                <div
+                  className="rounded-md border border-slate-800 bg-slate-950/35 p-3 text-xs leading-5 text-slate-400"
+                  key={item.id}
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <span className="font-medium text-slate-200">
+                      {formatParameterKey(item.parameterKey)}
+                    </span>
+                    <span>
+                      {formatReviewStatus(getSourceStatus(item.sourceId) ?? 'candidate')}
+                    </span>
+                  </div>
+                  <p className="mt-1">
+                    {item.value === null
+                      ? '數值待補'
+                      : `${item.value}${item.unit ? ` ${item.unit}` : ''}`}
+                    {' · '}
+                    {formatAgreementStatus(item.agreementStatus)}
+                    {' · '}
+                    {item.condition_zh || '條件待補'}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <h4 className="text-sm font-medium text-slate-200">衝突 / 共識整理</h4>
+            <div className="mt-2 grid gap-2">
+              {conflictGroups.length > 0 ? (
+                conflictGroups.map((group) => (
+                  <div
+                    className="rounded-md border border-slate-800 bg-slate-950/35 p-3 text-xs leading-5 text-slate-400"
+                    key={group.id}
+                  >
+                    {group.summary_zh}
+                  </div>
+                ))
+              ) : (
+                <p className="text-xs text-slate-500">目前沒有衝突整理。</p>
+              )}
+            </div>
+          </div>
+
+          <p className="text-xs leading-5 text-slate-500">
+            文獻候選資料只用於來源追蹤與人工審核，不會自動改寫材料 notes 或正式參數。
+          </p>
+        </div>
+      )}
+    </CollapsibleSection>
+  )
+}
+
+function getSourceStatus(sourceId: string) {
+  return literatureSources.find((source) => source.id === sourceId)?.reviewStatus
 }

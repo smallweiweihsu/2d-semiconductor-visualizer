@@ -5,6 +5,7 @@ import { calculateElectricalScenario } from '../../physics/electrical'
 import type { DeviceLayer } from '../../types/device'
 import type { ElectricalScenario } from '../../types/electrical'
 import type { ProcessFlow } from '../../types/process'
+import { AcknowledgableNotice } from '../common/AcknowledgableNotice'
 import { BandAlignmentPreview } from './BandAlignmentPreview'
 import { ElectricalCurvePlot } from './ElectricalCurvePlot'
 import { ElectricalParameterEditor } from './ElectricalParameterEditor'
@@ -44,7 +45,11 @@ export function ElectricalModelPanel({
 
   return (
     <section className="grid min-w-0 gap-4">
-      <aside className="rounded-lg border border-amber-900/40 bg-amber-950/20 p-4 text-sm leading-6 text-amber-100/90">
+      <AcknowledgableNotice
+        id="electrical-integrity-notice"
+        title="電性模型限制"
+        type="assumption"
+      >
         <p>
           此電性模型是基於簡化電容、通道電阻與接觸電阻的定性 / 半定量工具，不代表完整 TCAD、NEGF、DFT 或真實二維材料接觸輸運模擬。
         </p>
@@ -54,7 +59,7 @@ export function ElectricalModelPanel({
         <p className="mt-2">
           若材料參數、遷移率、介電常數、閾值電壓或接觸電阻缺失，結果只能作為趨勢參考，不能視為定量預測。
         </p>
-      </aside>
+      </AcknowledgableNotice>
 
       <div className="grid min-w-0 gap-4 2xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
         <div className="grid min-w-0 gap-4">

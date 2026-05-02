@@ -1,5 +1,8 @@
 import type { DeviceStructure } from '../types/device'
 import type {
+  LiteratureDatabase,
+} from '../types/literature'
+import type {
   MeasurementComparison,
   MeasurementDataset,
   PeakMarker,
@@ -21,6 +24,8 @@ export interface CreateProjectSaveDataInput {
   measurementDatasets?: MeasurementDataset[]
   peakMarkers?: PeakMarker[]
   processedMeasurementDatasets?: ProcessedMeasurementDataset[]
+  literatureDatabase?: LiteratureDatabase
+  acknowledgedNoticeIds?: string[]
   processFlow: ProcessFlow
   appNotes_zh?: string[]
   warnings_zh?: string[]
@@ -33,6 +38,8 @@ export function createProjectSaveData({
   measurementDatasets = [],
   peakMarkers = [],
   processedMeasurementDatasets = [],
+  literatureDatabase,
+  acknowledgedNoticeIds = [],
   processFlow,
   appNotes_zh = [],
   warnings_zh = [],
@@ -51,6 +58,8 @@ export function createProjectSaveData({
     measurementDatasets,
     peakMarkers,
     processedMeasurementDatasets,
+    literatureDatabase,
+    acknowledgedNoticeIds,
     processFlow,
     appNotes_zh,
     warnings_zh: [
@@ -165,6 +174,15 @@ export function validateProjectSaveData(data: unknown): ProjectImportResult {
 
   if (candidate.peakMarkers && !Array.isArray(candidate.peakMarkers)) {
     errors_zh.push('Peak 標記欄位格式不正確。')
+  }
+
+  if (
+    candidate.literatureDatabase &&
+    (!Array.isArray(candidate.literatureDatabase.sources) ||
+      !Array.isArray(candidate.literatureDatabase.evidence) ||
+      !Array.isArray(candidate.literatureDatabase.conflictGroups))
+  ) {
+    errors_zh.push('文獻資料庫欄位格式不正確。')
   }
 
   return {

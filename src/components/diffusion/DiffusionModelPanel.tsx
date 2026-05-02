@@ -4,6 +4,7 @@ import { calculateDiffusionScenario } from '../../physics/diffusion'
 import type { DeviceLayer } from '../../types/device'
 import type { DiffusionScenario } from '../../types/diffusion'
 import type { ProcessFlow } from '../../types/process'
+import { AcknowledgableNotice } from '../common/AcknowledgableNotice'
 import { DiffusionParameterEditor } from './DiffusionParameterEditor'
 import { DiffusionProfilePlot } from './DiffusionProfilePlot'
 import { DiffusionResultSummary } from './DiffusionResultSummary'
@@ -51,7 +52,11 @@ export function DiffusionModelPanel({
 
   return (
     <section className="grid min-w-0 gap-4">
-      <aside className="rounded-lg border border-amber-900/40 bg-amber-950/20 p-4 text-sm leading-6 text-amber-100/90">
+      <AcknowledgableNotice
+        id="diffusion-integrity-notice"
+        title="擴散模型限制"
+        type="assumption"
+      >
         <p>
           此擴散模型是基於 Arrhenius 擴散係數與 Fick 擴散近似的定性 / 半定量工具，不代表真實製程中的完整界面反應、晶界擴散、缺陷輔助擴散、沉積損傷或化學反應。
         </p>
@@ -63,7 +68,7 @@ export function DiffusionModelPanel({
             In 可作為候選緩衝金屬，但是否降低 Sb₂O₃ 介面衝擊需要文獻與實驗驗證。
           </p>
         ) : null}
-      </aside>
+      </AcknowledgableNotice>
 
       <div className="grid min-w-0 gap-4 2xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
         <div className="grid min-w-0 gap-4">

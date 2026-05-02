@@ -1,6 +1,7 @@
 import type { DeviceStructure } from './device'
 import type { DiffusionResult, DiffusionScenario } from './diffusion'
 import type { ElectricalResult, ElectricalScenario } from './electrical'
+import type { LiteratureDatabase } from './literature'
 import type {
   MeasurementComparison,
   MeasurementDataset,
@@ -38,6 +39,8 @@ export interface ProjectSaveData {
   measurementComparisons?: MeasurementComparison[]
   processedMeasurementDatasets?: ProcessedMeasurementDataset[]
   peakMarkers?: PeakMarker[]
+  literatureDatabase?: LiteratureDatabase
+  acknowledgedNoticeIds?: string[]
   appNotes_zh?: string[]
   warnings_zh?: string[]
 }

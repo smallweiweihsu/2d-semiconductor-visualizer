@@ -271,6 +271,21 @@ src/
 - 目前沒有 Lorentzian / Gaussian / Voigt fitting、正式 baseline algorithm validation、smoothing、Raman mode assignment、PL quantum yield、electrical fitting、TLM fitting、XPS fitting 或 publication-grade analysis。
 - 所有資料處理都應標示處理步驟並保留原始資料；處理後圖形不可直接視為定量結論。
 
+## Batch 13：文獻資料庫與 UI 資訊架構重整
+
+本批先整理 app 的資訊架構與文獻來源基礎，不新增新的物理分析模組。
+
+- 新增「文獻資料庫」分頁，用於管理文獻候選來源、材料/製程參數證據與衝突 / 共識整理。
+- 新增文獻型別系統，區分 review status、agreement status、source type、parameter evidence 與 conflict group。
+- 新增 placeholder 文獻來源與 qualitative conflict group，皆清楚標示為待補候選資料，不含未驗證 DOI 或可信數值。
+- 將材料 notes 與文獻來源分離；材料詳情頁新增可收合的「文獻來源」區，顯示相關證據數、候選/已檢閱/已驗證狀態與衝突整理。
+- 新增共用 collapsible / acknowledged notice 元件，讓警告、模型假設、缺少參數、文獻來源與提醒可以預設收合，並支援標示已讀。
+- 將元件結構、材料資料庫、擴散估算、氧化模擬與電性分析中的重要限制說明改為較不佔空間的可展開提醒。
+- 改善新增材料層回饋：新增後會自動選取、在材料層清單中高亮，並顯示放置方式與快速對齊動作。
+- JSON / Markdown 匯出新增文獻資料庫摘要，方便追蹤候選來源、參數證據與衝突整理數量。
+- 目前尚未實作文獻自動搜尋、DOI 查詢、PDF 解析、自動參數升級、後端資料庫或雲端同步。
+- placeholder 文獻不是正式引用；任何材料參數仍需人工審核、文獻校準與實驗驗證。
+
 ## 科學準確性聲明
 
 本工具目前是「物理導向的視覺化與近似分析工具」，不是完整 TCAD、DFT 或分子動力學模擬器。所有計算結果都需要搭配實驗資料與文獻參數判讀；在未來加入任何模型或公式時，也應清楚標註假設、適用範圍與限制。

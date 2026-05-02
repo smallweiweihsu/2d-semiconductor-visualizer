@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { deviceRoleLabels } from '../../data/deviceRoles'
 import type { DeviceLayer, DeviceValidationWarning } from '../../types/device'
 import {
@@ -16,6 +17,7 @@ interface LayerStackListProps {
   onDeleteLayer: (layerId: string) => void
   onDuplicateLayer: (layerId: string) => void
   onMoveLayer: (layerId: string, direction: 'up' | 'down') => void
+  recentLayerId?: string | null
 }
 
 export function LayerStackList({
@@ -27,8 +29,21 @@ export function LayerStackList({
   onDeleteLayer,
   onDuplicateLayer,
   onMoveLayer,
+  recentLayerId = null,
 }: LayerStackListProps) {
   const layersTopToBottom = [...layers].reverse()
+  const layerRefs = useRef<Record<string, HTMLElement | null>>({})
+
+  useEffect(() => {
+    if (!recentLayerId) {
+      return
+    }
+
+    layerRefs.current[recentLayerId]?.scrollIntoView({
+      behavior: 'smooth',
+      block: 'center',
+    })
+  }, [recentLayerId])
 
   return (
     <section className="flex min-h-0 min-w-0 flex-col rounded-lg border border-slate-800 bg-slate-950/40 p-4">
@@ -56,6 +71,7 @@ export function LayerStackList({
             const originalIndex = layers.findIndex((item) => item.id === layer.id)
             const layerWarnings = getLayerWarnings(layer.id, warnings)
             const isSelected = layer.id === selectedLayerId
+            const isRecent = layer.id === recentLayerId
             const isTop = originalIndex === layers.length - 1
             const isBottom = originalIndex === 0
             const voltage = formatVoltage(layer)
@@ -66,8 +82,11 @@ export function LayerStackList({
                   isSelected
                     ? 'border-cyan-600 bg-cyan-950/35'
                     : 'border-slate-800 bg-slate-900/55'
-                }`}
+                } ${isRecent ? 'ring-2 ring-cyan-300/60' : ''}`}
                 key={layer.id}
+                ref={(node) => {
+                  layerRefs.current[layer.id] = node
+                }}
               >
                 <button
                   className="w-full text-left"

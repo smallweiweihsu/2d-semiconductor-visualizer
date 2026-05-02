@@ -52,10 +52,13 @@ export function generateMarkdownReport(projectData: ProjectSaveData) {
     '## 11. 量測資料處理摘要',
     measurementProcessingSection(projectData),
     '',
-    '## 12. 主要警告與缺少參數',
+    '## 12. 文獻資料庫摘要',
+    literatureDatabaseSection(projectData),
+    '',
+    '## 13. 主要警告與缺少參數',
     warningSection(projectData),
     '',
-    '## 13. 後續建議',
+    '## 14. 後續建議',
     nextStepSection(),
     '',
   ].join('\n')
@@ -85,6 +88,7 @@ export function generateExperimentSummary(projectData: ProjectSaveData) {
     '- 需補齊 D0 / Ea、氧化速率、介電常數、崩潰電場、接觸電阻與遷移率等校準參數。',
     '- 建議搭配 Raman mapping、低功率 Raman、AFM、XPS、PL 與電性量測交叉驗證。',
     `- 量測資料集：${projectData.measurementDatasets?.length ?? 0} 個。`,
+    `- 文獻候選來源：${projectData.literatureDatabase?.sources.length ?? 0} 筆。`,
     '',
     '## 下一步量測建議',
     nextStepSection(),
@@ -361,6 +365,38 @@ function measurementProcessingSection(projectData: ProjectSaveData) {
           ...markers.map((marker) => peakMarkerRow(marker, projectData)),
         ].join('\n')
       : '目前沒有 peak 標記。',
+  ].join('\n')
+}
+
+function literatureDatabaseSection(projectData: ProjectSaveData) {
+  const database = projectData.literatureDatabase
+
+  if (!database) {
+    return '目前專案匯出未包含文獻資料庫狀態。'
+  }
+
+  const reviewCounts = database.sources.reduce(
+    (counts, source) => {
+      counts[source.reviewStatus] += 1
+      return counts
+    },
+    {
+      candidate: 0,
+      reviewed: 0,
+      verified: 0,
+      rejected: 0,
+    },
+  )
+
+  return [
+    `- 文獻來源數：${database.sources.length}`,
+    `- 參數證據數：${database.evidence.length}`,
+    `- 衝突 / 共識整理數：${database.conflictGroups.length}`,
+    `- 候選：${reviewCounts.candidate}`,
+    `- 已檢閱：${reviewCounts.reviewed}`,
+    `- 已驗證：${reviewCounts.verified}`,
+    `- 已排除：${reviewCounts.rejected}`,
+    '- 候選來源不是正式材料參數，必須經過人工審核與實驗條件比對後才能使用。',
   ].join('\n')
 }
 

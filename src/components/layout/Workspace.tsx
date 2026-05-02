@@ -11,6 +11,7 @@ import type { ProcessFlow } from '../../types/process'
 import { DeviceStructureEditor } from '../device/DeviceStructureEditor'
 import { ElectricalWorkspace } from '../electrical/ElectricalWorkspace'
 import { ProjectExportWorkspace } from '../export/ProjectExportWorkspace'
+import { LiteratureDatabaseWorkspace } from '../literature/LiteratureDatabaseWorkspace'
 import { MaterialDatabase } from '../materials/MaterialDatabase'
 import { MeasurementWorkspace } from '../measurements/MeasurementWorkspace'
 import { OxidationWorkspace } from '../oxidation/OxidationWorkspace'
@@ -110,6 +111,10 @@ export function Workspace({
         }
       />
     )
+  }
+
+  if (tab.id === 'literature') {
+    return <LiteratureDatabaseWorkspace />
   }
 
   if (tab.id === 'results') {

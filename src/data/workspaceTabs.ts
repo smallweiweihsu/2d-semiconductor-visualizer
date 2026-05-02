@@ -46,6 +46,14 @@ export const workspaceTabs = [
     features: ['CSV / TXT 匯入', '欄位對應', '資料預覽', 'before / after 比較'],
   },
   {
+    id: 'literature',
+    label: '文獻資料庫',
+    title: '文獻資料庫與參數來源',
+    description:
+      '管理材料參數、製程參數與模型假設的文獻候選來源，並標記不同文獻之間的支持、衝突、條件差異與適用性。',
+    features: ['候選來源', '參數證據', '衝突整理', '人工審核狀態'],
+  },
+  {
     id: 'lattice',
     label: '晶格視覺化',
     title: '晶格視覺化',

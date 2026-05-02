@@ -14,6 +14,7 @@ import {
 import { materials } from '../../data/materials'
 import type { DeviceLayer, DeviceStructure } from '../../types/device'
 import { AddLayerPanel, type AddLayerDraft } from './AddLayerPanel'
+import { AcknowledgableNotice } from '../common/AcknowledgableNotice'
 import { DeviceSummary } from './DeviceSummary'
 import { DeviceTemplateSelector } from './DeviceTemplateSelector'
 import { DeviceValidationPanel } from './DeviceValidationPanel'
@@ -21,8 +22,11 @@ import { LayerEditor } from './LayerEditor'
 import { LayerStackList } from './LayerStackList'
 import { LayerStackPreview } from './LayerStackPreview'
 import {
+  alignLayerToReference,
   createDefaultLayerFromPlacement,
+  fitLayerToReference,
   getInsertionIndex,
+  placementPresetLabels,
 } from './layerPlacement'
 import { validateDeviceStructure } from './deviceValidation'
 
@@ -49,6 +53,9 @@ export function DeviceStructureEditor({
   )
   const [visualizationMode, setVisualizationMode] = useState<'3d' | '2d'>('3d')
   const [showAddLayerPanel, setShowAddLayerPanel] = useState(false)
+  const [recentLayerId, setRecentLayerId] = useState<string | null>(null)
+  const [recentReferenceLayerId, setRecentReferenceLayerId] = useState<string | null>(null)
+  const [recentLayerMessage, setRecentLayerMessage] = useState<string | null>(null)
 
   const warnings = useMemo(
     () => validateDeviceStructure(structure),
@@ -91,6 +98,8 @@ export function DeviceStructureEditor({
       updatedAt: new Date().toISOString(),
     })
     setSelectedLayerId(getInitialSelectedLayerId(nextStructure))
+    setRecentLayerId(null)
+    setRecentLayerMessage(null)
   }
 
   function updateStructure(updates: Partial<DeviceStructure>) {
@@ -147,7 +156,52 @@ export function DeviceStructureEditor({
       ],
     }))
     setSelectedLayerId(newLayer.id)
+    setRecentLayerId(newLayer.id)
+    setRecentReferenceLayerId(referenceLayer?.id ?? null)
+    setRecentLayerMessage(
+      `已新增 ${newLayer.name}，放置方式：${placementPresetLabels[draft.placementPreset]}。`,
+    )
     setShowAddLayerPanel(false)
+  }
+
+  function applyRecentAlignment(align: 'left' | 'center' | 'right') {
+    const layerId = recentLayerId ?? selectedLayerId
+    const referenceLayer = structure.layers.find(
+      (layer) => layer.id === recentReferenceLayerId,
+    )
+
+    if (!layerId || !referenceLayer) {
+      return
+    }
+
+    setStructure((current) => ({
+      ...current,
+      updatedAt: new Date().toISOString(),
+      layers: current.layers.map((layer) =>
+        layer.id === layerId
+          ? alignLayerToReference(layer, referenceLayer, align)
+          : layer,
+      ),
+    }))
+  }
+
+  function fitRecentLayerToReference() {
+    const layerId = recentLayerId ?? selectedLayerId
+    const referenceLayer = structure.layers.find(
+      (layer) => layer.id === recentReferenceLayerId,
+    )
+
+    if (!layerId || !referenceLayer) {
+      return
+    }
+
+    setStructure((current) => ({
+      ...current,
+      updatedAt: new Date().toISOString(),
+      layers: current.layers.map((layer) =>
+        layer.id === layerId ? fitLayerToReference(layer, referenceLayer) : layer,
+      ),
+    }))
   }
 
   function deleteLayer(layerId: string) {
@@ -237,9 +291,13 @@ export function DeviceStructureEditor({
         </div>
       </header>
 
-      <aside className="rounded-lg border border-amber-900/40 bg-amber-950/20 p-4 text-sm leading-6 text-amber-100/90">
+      <AcknowledgableNotice
+        id="structure-integrity-notice"
+        title="模型範圍提醒"
+        type="assumption"
+      >
         此模板目前用於建立幾何與材料堆疊模型，尚未計算真實能帶、接觸電阻、擴散、氧化或量測響應。
-      </aside>
+      </AcknowledgableNotice>
 
       <DeviceTemplateSelector
         selectedTemplateId={selectedTemplateId}
@@ -258,11 +316,52 @@ export function DeviceStructureEditor({
             onDuplicateLayer={duplicateLayer}
             onMoveLayer={moveLayer}
             onSelectLayer={setSelectedLayerId}
+            recentLayerId={recentLayerId}
           />
           <DeviceValidationPanel warnings={warnings} />
         </div>
 
         <div className="grid min-w-0 content-start gap-4">
+          {recentLayerMessage ? (
+            <section className="rounded-lg border border-cyan-800/70 bg-cyan-950/25 p-4 text-sm text-cyan-100">
+              <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
+                <p>{recentLayerMessage}</p>
+                <div className="flex flex-wrap gap-2">
+                  <FeedbackButton
+                    disabled={!recentReferenceLayerId}
+                    label="靠左"
+                    onClick={() => applyRecentAlignment('left')}
+                  />
+                  <FeedbackButton
+                    disabled={!recentReferenceLayerId}
+                    label="置中"
+                    onClick={() => applyRecentAlignment('center')}
+                  />
+                  <FeedbackButton
+                    disabled={!recentReferenceLayerId}
+                    label="靠右"
+                    onClick={() => applyRecentAlignment('right')}
+                  />
+                  <FeedbackButton
+                    disabled={!recentReferenceLayerId}
+                    label="符合參考層"
+                    onClick={fitRecentLayerToReference}
+                  />
+                  <FeedbackButton
+                    disabled={!recentLayerId}
+                    label="移到上方"
+                    onClick={() => recentLayerId && moveLayer(recentLayerId, 'up')}
+                  />
+                  <FeedbackButton
+                    disabled={!recentLayerId}
+                    label="移到下方"
+                    onClick={() => recentLayerId && moveLayer(recentLayerId, 'down')}
+                  />
+                </div>
+              </div>
+            </section>
+          ) : null}
+
           {showAddLayerPanel ? (
             <AddLayerPanel
               layers={structure.layers}
@@ -393,6 +492,29 @@ function PreviewModeButton({ active, label, onClick }: PreviewModeButtonProps) {
           ? 'border-cyan-600 bg-cyan-950/50 text-cyan-100'
           : 'border-slate-700 bg-slate-950/50 text-slate-300 hover:border-slate-600'
       }`}
+      onClick={onClick}
+      type="button"
+    >
+      {label}
+    </button>
+  )
+}
+
+interface FeedbackButtonProps {
+  disabled?: boolean
+  label: string
+  onClick: () => void
+}
+
+function FeedbackButton({
+  disabled = false,
+  label,
+  onClick,
+}: FeedbackButtonProps) {
+  return (
+    <button
+      className="rounded-md border border-cyan-700 bg-slate-950/50 px-2.5 py-1.5 text-xs text-cyan-100 transition hover:bg-cyan-900/40 disabled:cursor-not-allowed disabled:opacity-35"
+      disabled={disabled}
       onClick={onClick}
       type="button"
     >

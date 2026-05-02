@@ -1,4 +1,7 @@
 import { useMemo, useState, type Dispatch, type SetStateAction } from 'react'
+import { parameterConflictGroups } from '../../data/parameterConflictGroups'
+import { parameterEvidence } from '../../data/parameterEvidence'
+import { literatureSources } from '../../data/literatureSources'
 import type { DeviceStructure } from '../../types/device'
 import type {
   MeasurementComparison,
@@ -70,6 +73,11 @@ export function ProjectExportWorkspace({
         measurementDatasets,
         peakMarkers,
         processedMeasurementDatasets,
+        literatureDatabase: {
+          sources: literatureSources,
+          evidence: parameterEvidence,
+          conflictGroups: parameterConflictGroups,
+        },
         processFlow,
         appNotes_zh: [
           'Batch 10 目前支援本機 JSON 匯出 / 匯入與 Markdown 報告產生。',

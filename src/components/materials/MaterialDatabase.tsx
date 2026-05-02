@@ -6,6 +6,7 @@ import { MaterialCategoryFilter } from './MaterialCategoryFilter'
 import type { MaterialCategoryFilterId } from './MaterialCategoryFilter'
 import { MaterialDetail } from './MaterialDetail'
 import { MaterialList } from './MaterialList'
+import { AcknowledgableNotice } from '../common/AcknowledgableNotice'
 
 export function MaterialDatabase() {
   const [selectedCategory, setSelectedCategory] =
@@ -90,9 +91,13 @@ export function MaterialDatabase() {
         </div>
       </header>
 
-      <aside className="rounded-md border-l-2 border-amber-500/60 bg-amber-950/15 px-3 py-2 text-xs leading-5 text-amber-100/90">
+      <AcknowledgableNotice
+        id="materials-parameter-warning"
+        title="材料參數限制"
+        type="missing_parameter"
+      >
         目前材料參數包含已知值、估計值與未知值。若參數標示為「需要文獻參數」，代表後續物理計算不能直接視為定量結果。
-      </aside>
+      </AcknowledgableNotice>
 
       <div className="grid gap-3 xl:grid-cols-[minmax(18rem,22rem)_minmax(0,1fr)] xl:items-center">
         <label className="block text-xs text-slate-400">
