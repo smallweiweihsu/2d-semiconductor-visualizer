@@ -71,6 +71,8 @@ export function LiteratureDatabaseWorkspace() {
   const [todos, setTodos] =
     useState<MaterialLiteratureTodo[]>(materialLiteratureTodos)
   const [filters, setFilters] = useState(defaultFilters)
+  const [sourceKindFilter, setSourceKindFilter] =
+    useState<'all' | 'real' | 'placeholder'>('all')
   const [selectedItem, setSelectedItem] = useState<SelectedItem>(null)
   const [evidenceSeed, setEvidenceSeed] = useState<{
     materialId?: string
@@ -95,9 +97,9 @@ export function LiteratureDatabaseWorkspace() {
   const filteredEvidence = useMemo(
     () =>
       evidence.filter((item) =>
-        matchesEvidence(item, filters, sources, sourceTitles),
+        matchesEvidence(item, filters, sources, sourceTitles, sourceKindFilter),
       ),
-    [evidence, filters, sourceTitles, sources],
+    [evidence, filters, sourceKindFilter, sourceTitles, sources],
   )
   const filteredConflictGroups = useMemo(
     () =>
@@ -168,6 +170,11 @@ export function LiteratureDatabaseWorkspace() {
         此區用於管理文獻候選資料與參數來源。候選資料不會自動寫入正式材料資料庫，必須經過人工審核。
       </InfoNotice>
 
+      <SeedSummaryCard
+        evidence={evidence}
+        sources={sources}
+      />
+
       <nav className="flex gap-2 overflow-x-auto rounded-lg border border-slate-800 bg-slate-950/35 p-2">
         {sections.map((section) => (
           <button
@@ -191,6 +198,7 @@ export function LiteratureDatabaseWorkspace() {
 
       {activeSection === 'todos' ? (
         <MaterialLiteratureTodoPanel
+          evidence={evidence}
           todos={todos}
           onChangeTodos={setTodos}
           onCreateEvidenceFromTodo={createEvidenceFromTodo}
@@ -221,14 +229,20 @@ export function LiteratureDatabaseWorkspace() {
 
       {activeSection === 'evidence' ? (
         <div className="grid gap-4 2xl:grid-cols-[minmax(0,1fr)_460px]">
-          <ParameterEvidenceTable
-            evidence={filteredEvidence}
-            selectedId={
-              selectedItem?.type === 'evidence' ? selectedItem.id : null
-            }
-            sourceTitles={sourceTitles}
-            onSelectEvidence={(id) => setSelectedItem({ type: 'evidence', id })}
-          />
+          <div className="grid min-w-0 gap-3">
+            <SourceKindFilter
+              value={sourceKindFilter}
+              onChange={setSourceKindFilter}
+            />
+            <ParameterEvidenceTable
+              evidence={filteredEvidence}
+              selectedId={
+                selectedItem?.type === 'evidence' ? selectedItem.id : null
+              }
+              sourceTitles={sourceTitles}
+              onSelectEvidence={(id) => setSelectedItem({ type: 'evidence', id })}
+            />
+          </div>
           <ParameterEvidenceEditor
             evidence={
               selectedItem?.type === 'evidence'
@@ -328,6 +342,7 @@ function matchesEvidence(
   filters: LiteratureFilterState,
   sources: LiteratureSource[],
   sourceTitles: Record<string, string>,
+  sourceKindFilter: 'all' | 'real' | 'placeholder',
 ) {
   if (filters.materialId !== 'all' && !evidence.materialIds.includes(filters.materialId)) {
     return false
@@ -345,6 +360,14 @@ function matchesEvidence(
   }
 
   const source = sources.find((item) => item.id === evidence.sourceId)
+
+  if (sourceKindFilter === 'real' && (!source || isPlaceholderSource(source))) {
+    return false
+  }
+
+  if (sourceKindFilter === 'placeholder' && source && !isPlaceholderSource(source)) {
+    return false
+  }
 
   if (filters.reviewStatus !== 'all' && source?.reviewStatus !== filters.reviewStatus) {
     return false
@@ -366,6 +389,105 @@ function matchesEvidence(
     ],
     filters.searchText,
   )
+}
+
+function SeedSummaryCard({
+  evidence,
+  sources,
+}: {
+  evidence: ParameterEvidence[]
+  sources: LiteratureSource[]
+}) {
+  const realSourceCount = sources.filter((source) => !isPlaceholderSource(source)).length
+  const placeholderSourceCount = sources.length - realSourceCount
+  const candidateEvidenceCount = evidence.filter(
+    (item) => getEvidenceSource(item, sources)?.reviewStatus === 'candidate',
+  ).length
+  const reviewedCount = sources.filter((source) => source.reviewStatus === 'reviewed').length
+  const verifiedCount = sources.filter((source) => source.reviewStatus === 'verified').length
+
+  return (
+    <section className="rounded-lg border border-cyan-900/50 bg-cyan-950/15 p-4">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+        <div>
+          <h3 className="text-sm font-semibold text-cyan-100">
+            第一批文獻種子資料
+          </h3>
+          <p className="mt-2 text-xs leading-5 text-cyan-100/75">
+            本批資料仍以 candidate 為主，尚未自動寫入正式材料資料庫。
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2 text-xs">
+          <SummaryPill label="真實來源" value={realSourceCount} />
+          <SummaryPill label="placeholder" value={placeholderSourceCount} />
+          <SummaryPill label="候選 evidence" value={candidateEvidenceCount} />
+          <SummaryPill label="reviewed" value={reviewedCount} />
+          <SummaryPill label="verified" value={verifiedCount} />
+        </div>
+      </div>
+    </section>
+  )
+}
+
+function SourceKindFilter({
+  value,
+  onChange,
+}: {
+  value: 'all' | 'real' | 'placeholder'
+  onChange: (value: 'all' | 'real' | 'placeholder') => void
+}) {
+  return (
+    <div className="flex flex-wrap gap-2 rounded-lg border border-slate-800 bg-slate-950/35 p-3 text-xs">
+      <button
+        className={filterButtonClass(value === 'all')}
+        onClick={() => onChange('all')}
+        type="button"
+      >
+        全部來源
+      </button>
+      <button
+        className={filterButtonClass(value === 'real')}
+        onClick={() => onChange('real')}
+        type="button"
+      >
+        只看真實來源
+      </button>
+      <button
+        className={filterButtonClass(value === 'placeholder')}
+        onClick={() => onChange('placeholder')}
+        type="button"
+      >
+        只看 placeholder
+      </button>
+    </div>
+  )
+}
+
+function SummaryPill({ label, value }: { label: string; value: number }) {
+  return (
+    <span className="rounded-full border border-cyan-800/70 bg-slate-950/40 px-2.5 py-1 text-cyan-100">
+      {label} {value}
+    </span>
+  )
+}
+
+function filterButtonClass(active: boolean) {
+  return `rounded-md border px-2.5 py-1.5 transition ${
+    active
+      ? 'border-cyan-700 bg-cyan-950/50 text-cyan-100'
+      : 'border-slate-700 bg-slate-950/40 text-slate-300 hover:border-slate-600'
+  }`
+}
+
+function getEvidenceSource(
+  evidence: ParameterEvidence,
+  sources: LiteratureSource[],
+) {
+  return sources.find((source) => source.id === evidence.sourceId)
+}
+
+function isPlaceholderSource(source: LiteratureSource) {
+  return source.title.startsWith('待補') || source.notes_zh?.includes('占位')
 }
 
 function matchesConflictGroup(

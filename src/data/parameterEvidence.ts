@@ -6,18 +6,134 @@ const placeholderWarning = [
 
 export const parameterEvidence: ParameterEvidence[] = [
   {
+    id: 'evidence-tonndorf-2013-wse2-pl-raman',
+    sourceId: 'src-tonndorf-2013-wse2-pl-raman',
+    materialIds: ['wse2'],
+    parameterKey: 'custom',
+    value: null,
+    condition_zh: '單層 WSe₂；Raman / PL 量測條件需回查原文。',
+    method_zh: 'Photoluminescence and Raman spectroscopy',
+    agreementStatus: 'supports',
+    confidence: 'medium',
+    quoteOrSummary_zh:
+      '該文獻提供單層 MoS₂、MoSe₂、WSe₂ 的 PL emission 與 Raman response，可作為 WSe₂ 光譜模組與 peak 標記的候選來源。',
+    applicability_zh:
+      '適合用於建立 WSe₂ Raman / PL 候選資料；實際 peak position 與 intensity 需依雷射波長、樣品層數、應變、摻雜與基板判讀。',
+    warnings_zh: [
+      '不可直接把 peak intensity 視為材料品質；需搭配儀器條件與樣品狀態。',
+    ],
+  },
+  {
+    id: 'evidence-zhou-2015-wse2-band-gap',
+    sourceId: 'src-zhou-2015-wse2-growth-electrical',
+    materialIds: ['wse2'],
+    parameterKey: 'bandGap_eV',
+    value: 'bulk ~1.2 eV indirect; monolayer ~1.65 eV direct',
+    unit: 'eV',
+    condition_zh:
+      'bulk 與 monolayer WSe₂；文獻用於大面積成長與 p-type electrical properties 背景。',
+    method_zh: 'Literature-reported optical/electrical context; confirm exact method in source.',
+    agreementStatus: 'supports',
+    confidence: 'medium',
+    applicability_zh:
+      '可作為 WSe₂ band gap 初始候選資料；實際能隙受層數、溫度、應變、基板與量測方法影響。',
+    warnings_zh: ['不要將此值直接當成所有 WSe₂ 樣品的固定能隙。'],
+  },
+  {
+    id: 'evidence-li-2016-wse2-surface-oxidation',
+    sourceId: 'src-li-2016-wse2-layer-oxidation',
+    materialIds: ['wse2', 'wox'],
+    parameterKey: 'oxidationRate_nm_per_s',
+    value: null,
+    unit: 'nm/s',
+    condition_zh:
+      'remote oxygen plasma / selective surface layer oxidation；具體 rate 需回查原文與製程條件。',
+    method_zh: 'Raman and photoluminescence before/after oxygen plasma oxidation',
+    agreementStatus: 'condition_dependent',
+    confidence: 'medium',
+    quoteOrSummary_zh:
+      '該文獻研究 WSe₂ 表面層氧化與 Raman / PL 變化，可用於解釋氧化後仍可能看到 WSe₂ 訊號的情境。',
+    applicability_zh:
+      '適合用於 WSe₂ → WOx 氧化模組與 Raman interpretation；但不可直接套用到所有 O₂ RIE 條件。',
+    warnings_zh: ['氧化速率需依 plasma 條件、功率、時間、樣品厚度與環境校準。'],
+  },
+  {
+    id: 'evidence-messalea-2021-sb2o3-band-gap',
+    sourceId: 'src-messalea-2021-sb2o3-high-k',
+    materialIds: ['sb2o3'],
+    parameterKey: 'bandGap_eV',
+    value: 'approximately 4.4',
+    unit: 'eV',
+    condition_zh: 'α-Sb₂O₃；substrate-independent/scalable process；需確認厚度、相與量測方法。',
+    method_zh: 'Optical/material characterization; confirm in source.',
+    agreementStatus: 'supports',
+    confidence: 'medium',
+    applicability_zh:
+      '可作為 Sb₂O₃ wide band gap 候選資料；實際值可能受相、缺陷、氧空缺與製程影響。',
+    warnings_zh: ['尚不可直接寫入正式材料資料庫；需人工審核。'],
+  },
+  {
+    id: 'evidence-messalea-2021-sb2o3-dielectric-constant',
+    sourceId: 'src-messalea-2021-sb2o3-high-k',
+    materialIds: ['sb2o3'],
+    parameterKey: 'dielectricConstant',
+    value: null,
+    condition_zh: '2D Sb₂O₃ high-k dielectric；具體 k 值需回查原文表格/圖。',
+    method_zh: 'Electrical dielectric characterization',
+    agreementStatus: 'supports',
+    confidence: 'medium',
+    applicability_zh:
+      '可作為 Sb₂O₃ dielectric constant 的候選來源，但需補數值與條件。',
+    warnings_zh: ['不同相、厚度與缺陷狀態可能造成 k 值差異。'],
+  },
+  {
+    id: 'evidence-sb2o3-breakdown-2024-breakdown-field',
+    sourceId: 'src-sb2o3-breakdown-2024',
+    materialIds: ['sb2o3'],
+    parameterKey: 'breakdownField_MVcm',
+    value: 'projected ~10',
+    unit: 'MV/cm',
+    condition_zh: 'High-k antimony oxide breakdown mechanism study；需確認模型假設與樣品條件。',
+    method_zh: 'Dielectric breakdown analysis',
+    agreementStatus: 'condition_dependent',
+    confidence: 'medium',
+    applicability_zh:
+      '可作為 breakdown risk 模組的候選參考，但不代表使用者實驗室 Sb₂O₃ 一定具有相同崩潰電場。',
+    warnings_zh: ['缺陷、氧空缺、厚度、沉積法與電極會強烈影響 breakdown。'],
+  },
+  {
+    id: 'evidence-wse2-vdw-contacts-2022-pd-contact',
+    sourceId: 'src-wse2-vdw-contacts-2022',
+    materialIds: ['wse2', 'pd'],
+    parameterKey: 'contactResistance_ohm',
+    value: null,
+    unit: 'ohm',
+    condition_zh:
+      'WSe₂ transistors, comparison of contact concepts; exact device/contact structure must be checked.',
+    method_zh: 'Device electrical characterization',
+    agreementStatus: 'condition_dependent',
+    confidence: 'medium',
+    quoteOrSummary_zh:
+      '該文獻可用於提醒：WSe₂ 金屬接觸不能只靠 work function 或 Schottky-Mott rule 判斷，Fermi-level pinning 與界面條件可能重要。',
+    applicability_zh:
+      '適合放入電性模組 contact warning 與 band alignment limitation；不可直接當作使用者 Pd/WSe₂ 接觸電阻。',
+    warnings_zh: ['不可假設 Pd/WSe₂ 一定是理想 ohmic contact。'],
+  },
+  {
     id: 'evidence-in-sb2o3-buffer',
     sourceId: 'lit-in-sb2o3-buffer-placeholder',
     materialIds: ['in', 'sb2o3'],
     parameterKey: 'custom',
     value: null,
-    condition_zh: '待補：In 作為緩衝層或界面層的製程條件。',
-    method_zh: '待補',
+    condition_zh: '待查：In 是否可降低金屬沉積對 Sb₂O₃ 的界面衝擊。',
+    method_zh: '待查文獻或實驗。',
     agreementStatus: 'unclear',
     confidence: 'unknown',
-    quoteOrSummary_zh: '待補：尚未輸入真實文獻摘要。',
-    applicability_zh: '僅作為未來整理 In / Sb₂O₃ interface buffer 文獻的占位資料。',
-    warnings_zh: placeholderWarning,
+    quoteOrSummary_zh:
+      '使用者提到有 paper 指出 In 可能減少金屬對 Sb₂O₃ 的衝擊；本記錄僅作為待查候選，不代表已驗證。',
+    applicability_zh:
+      '需確認該 paper 的材料系統、沉積方式、厚度、退火條件與量測方法是否適用於目前 Sb₂O₃/WSe₂/Sb 結構。',
+    warnings_zh: ['尚未填入真實文獻來源；不可視為結論。'],
   },
   {
     id: 'evidence-sb2o3-dielectric',

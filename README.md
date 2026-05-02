@@ -302,6 +302,20 @@ src/
 - 目前沒有 automatic web search、DOI lookup、PDF parsing、automatic parameter promotion、backend database 或 cloud sync。
 - seed records 都是 placeholder / candidate，必須人工審核與實驗條件比對後才可作為正式參數候選。
 
+## Batch 15A：第一批文獻種子資料與材料參數候選集
+
+本批加入第一批由使用者指定、具有 DOI 的文獻種子資料，並建立材料參數候選證據與衝突整理；所有資料仍維持 candidate / draft 狀態，不會自動寫入正式材料資料庫。
+
+- 新增 WSe₂ PL / Raman 候選來源：Tonndorf et al. 2013，用於後續 Raman / PL peak 標記與光譜解釋資料整理。
+- 新增 WSe₂ band gap / electrical properties 候選來源：Zhou 2015，作為 bulk / monolayer band gap 條件依賴的候選證據。
+- 新增 WSe₂ 表面氧化 / WOx / Raman / PL 候選來源：Li 2016，用於氧化後 Raman 仍可見的定性解釋與氧化模組校準待查。
+- 新增 Sb₂O₃ high-k / wide band gap 候選來源：Messalea 2021，以及 Sb₂O₃ breakdown 候選來源，用於 dielectric constant、band gap 與 breakdown field 的後續人工審核。
+- 新增 WSe₂ contact / Fermi-level pinning 候選來源，提醒 Pd/WSe₂ 或其他金屬接觸不可只用 work function 推論為 ideal ohmic。
+- In/Sb₂O₃ 仍維持待查 placeholder；目前只記錄「候選緩衝金屬」議題，不宣稱已證實可降低目前結構的界面衝擊。
+- 更新文獻資料庫 UI，加入「第一批文獻種子資料」摘要、真實來源 / placeholder 篩選，以及 TODO 是否已有候選證據的篩選。
+- 更新 Markdown 報告文獻摘要，列出真實來源數、placeholder 來源數、review status、材料證據分布與推薦參數數量。
+- 本批未執行 automatic web search、DOI lookup、PDF parsing，也未自動 promotion 到 `materials.ts`；所有 candidate values 仍需人工審核、條件比對與實驗校準。
+
 ## 科學準確性聲明
 
 本工具目前是「物理導向的視覺化與近似分析工具」，不是完整 TCAD、DFT 或分子動力學模擬器。所有計算結果都需要搭配實驗資料與文獻參數判讀；在未來加入任何模型或公式時，也應清楚標註假設、適用範圍與限制。

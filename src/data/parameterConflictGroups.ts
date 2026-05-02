@@ -2,6 +2,63 @@ import type { ParameterConflictGroup } from '../types/literature'
 
 export const parameterConflictGroups: ParameterConflictGroup[] = [
   {
+    id: 'conflict-wse2-band-gap-layer-method',
+    materialId: 'wse2',
+    parameterKey: 'bandGap_eV',
+    evidenceIds: ['evidence-zhou-2015-wse2-band-gap'],
+    summary_zh:
+      'WSe₂ 能隙與層數、溫度、應變、基板與量測方法有關；bulk 常被視為 indirect gap，monolayer 常被視為 direct optical transition，但不能用單一值代表所有樣品。',
+    recommendedStatus: 'condition_dependent',
+    recommendedValue: null,
+    warnings_zh: [
+      '後續正式材料資料庫應區分 bulk / few-layer / monolayer 與 optical/electronic gap。',
+    ],
+  },
+  {
+    id: 'conflict-wse2-oxidation-raman-rate',
+    materialId: 'wse2',
+    parameterKey: 'oxidationRate_nm_per_s',
+    evidenceIds: [
+      'evidence-li-2016-wse2-surface-oxidation',
+      'evidence-wse2-oxidation-rate',
+      'evidence-raman-probe-depth',
+    ],
+    summary_zh:
+      'WSe₂ 氧化速率與 Raman 可見性高度依賴 oxygen plasma / RIE / UV ozone 條件、層數與量測設定；Raman 仍看到 WSe₂ 不等於完全未氧化。',
+    recommendedStatus: 'needs_review',
+    warnings_zh: [
+      '不可把單一氧化條件下的 Raman 結果推廣到所有 O₂ RIE 或 UV ozone 條件。',
+    ],
+  },
+  {
+    id: 'conflict-sb2o3-dielectric-process-dependent',
+    materialId: 'sb2o3',
+    parameterKey: 'dielectricConstant',
+    evidenceIds: [
+      'evidence-messalea-2021-sb2o3-band-gap',
+      'evidence-messalea-2021-sb2o3-dielectric-constant',
+      'evidence-sb2o3-breakdown-2024-breakdown-field',
+      'evidence-sb2o3-dielectric',
+    ],
+    summary_zh:
+      'Sb₂O₃ 介電常數與 breakdown field 可能受相、厚度、缺陷、氧空缺與沉積方法影響，不應只用單一常數。',
+    recommendedStatus: 'needs_review',
+    warnings_zh: ['正式材料資料庫應保留製程條件與量測方法欄位。'],
+  },
+  {
+    id: 'conflict-pd-wse2-contact-not-guaranteed-ohmic',
+    materialId: 'wse2',
+    parameterKey: 'contactResistance_ohm',
+    evidenceIds: [
+      'evidence-wse2-vdw-contacts-2022-pd-contact',
+      'evidence-pd-wse2-contact',
+    ],
+    summary_zh:
+      'Pd/WSe₂ 接觸行為可能受 Fermi-level pinning、界面態、金屬誘發能隙態、污染與退火影響；work function alone 不足以判斷接觸。',
+    recommendedStatus: 'condition_dependent',
+    warnings_zh: ['電性模型應維持接觸電阻手動校準與高不確定性提醒。'],
+  },
+  {
     id: 'conflict-in-sb2o3-interface-buffer',
     materialId: 'in',
     parameterKey: 'custom',

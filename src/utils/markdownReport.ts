@@ -375,6 +375,19 @@ function literatureDatabaseSection(projectData: ProjectSaveData) {
     return '目前專案匯出未包含文獻資料庫狀態。'
   }
 
+  const realSourceCount = database.sources.filter(
+    (source) => !isPlaceholderLiteratureSource(source),
+  ).length
+  const placeholderSourceCount = database.sources.length - realSourceCount
+  const evidenceByMaterial = database.evidence.reduce<Record<string, number>>(
+    (counts, evidence) => {
+      evidence.materialIds.forEach((materialId) => {
+        counts[materialId] = (counts[materialId] ?? 0) + 1
+      })
+      return counts
+    },
+    {},
+  )
   const reviewCounts = database.sources.reduce(
     (counts, source) => {
       counts[source.reviewStatus] += 1
@@ -390,6 +403,8 @@ function literatureDatabaseSection(projectData: ProjectSaveData) {
 
   return [
     `- 文獻來源數：${database.sources.length}`,
+    `- 真實 DOI / URL 候選來源數：${realSourceCount}`,
+    `- placeholder / 待補來源數：${placeholderSourceCount}`,
     `- 參數證據數：${database.evidence.length}`,
     `- 待查項目數：${database.todos?.length ?? 0}`,
     `- 推薦參數數：${database.recommendations?.length ?? 0}`,
@@ -398,6 +413,16 @@ function literatureDatabaseSection(projectData: ProjectSaveData) {
     `- 已檢閱：${reviewCounts.reviewed}`,
     `- 已驗證：${reviewCounts.verified}`,
     `- 已排除：${reviewCounts.rejected}`,
+    '',
+    '### 參數證據材料分布',
+    ...Object.entries(evidenceByMaterial).map(([materialId, count]) => {
+      const material = getMaterial(materialId)
+      return `- ${material?.displayName ?? materialId}：${count} 筆`
+    }),
+    ...(Object.keys(evidenceByMaterial).length === 0
+      ? ['- 目前沒有參數證據。']
+      : []),
+    '',
     '- 候選來源不是正式材料參數，必須經過人工審核與實驗條件比對後才能使用。',
   ].join('\n')
 }
@@ -498,4 +523,18 @@ function formatDate(value: string) {
 
 function escapeCell(value: string) {
   return value.replaceAll('|', '\\|').replaceAll('\n', ' ')
+}
+
+function isPlaceholderLiteratureSource(
+  source: NonNullable<ProjectSaveData['literatureDatabase']>['sources'][number],
+) {
+  const title = source.title.toLowerCase()
+  const notes = source.notes_zh?.toLowerCase() ?? ''
+
+  return (
+    title.includes('待補') ||
+    title.includes('placeholder') ||
+    notes.includes('占位') ||
+    notes.includes('待補文獻占位資料')
+  )
 }

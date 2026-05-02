@@ -2,6 +2,7 @@ import { useMemo, useState, type ReactNode } from 'react'
 import { materials } from '../../data/materials'
 import type {
   MaterialLiteratureTodo,
+  ParameterEvidence,
 } from '../../types/literature'
 import { LiteratureReviewWorkflow } from './LiteratureReviewWorkflow'
 import {
@@ -12,12 +13,14 @@ import {
 
 interface MaterialLiteratureTodoPanelProps {
   todos: MaterialLiteratureTodo[]
+  evidence: ParameterEvidence[]
   onChangeTodos: (todos: MaterialLiteratureTodo[]) => void
   onCreateEvidenceFromTodo: (todo: MaterialLiteratureTodo) => void
 }
 
 export function MaterialLiteratureTodoPanel({
   todos,
+  evidence,
   onChangeTodos,
   onCreateEvidenceFromTodo,
 }: MaterialLiteratureTodoPanelProps) {
@@ -27,6 +30,7 @@ export function MaterialLiteratureTodoPanel({
     priority: 'all',
     searchText: '',
     status: 'all',
+    candidateState: 'all',
   })
   const filteredTodos = useMemo(
     () =>
@@ -43,6 +47,17 @@ export function MaterialLiteratureTodoPanel({
         if (filters.status !== 'all' && todo.status !== filters.status) {
           return false
         }
+        const hasEvidence = evidence.some(
+          (item) =>
+            item.materialIds.includes(todo.materialId) &&
+            item.parameterKey === todo.parameterKey,
+        )
+        if (filters.candidateState === 'with_candidate' && !hasEvidence) {
+          return false
+        }
+        if (filters.candidateState === 'without_candidate' && hasEvidence) {
+          return false
+        }
         const search = filters.searchText.trim().toLowerCase()
         if (!search) {
           return true
@@ -55,7 +70,7 @@ export function MaterialLiteratureTodoPanel({
           ...todo.suggestedSearchTerms,
         ].some((value) => value?.toLowerCase().includes(search))
       }),
-    [filters, todos],
+    [evidence, filters, todos],
   )
 
   function updateTodo(todoId: string, updates: Partial<MaterialLiteratureTodo>) {
@@ -67,7 +82,7 @@ export function MaterialLiteratureTodoPanel({
   return (
     <section className="grid gap-4">
       <section className="rounded-lg border border-slate-800 bg-slate-950/35 p-4">
-        <div className="grid gap-3 md:grid-cols-5">
+        <div className="grid gap-3 md:grid-cols-6">
           <SelectField
             label="優先"
             value={filters.priority}
@@ -114,6 +129,17 @@ export function MaterialLiteratureTodoPanel({
             <option value="reviewed">已檢閱</option>
             <option value="verified">已驗證</option>
           </SelectField>
+          <SelectField
+            label="候選證據"
+            value={filters.candidateState}
+            onChange={(value) =>
+              setFilters((current) => ({ ...current, candidateState: value }))
+            }
+          >
+            <option value="all">全部</option>
+            <option value="with_candidate">已有候選證據</option>
+            <option value="without_candidate">尚無候選證據</option>
+          </SelectField>
           <label className="text-xs font-medium text-slate-400">
             搜尋
             <input
@@ -133,9 +159,39 @@ export function MaterialLiteratureTodoPanel({
 
       <div className="grid gap-3">
         {filteredTodos.map((todo) => (
+          <TodoCard
+            evidence={evidence}
+            key={todo.id}
+            todo={todo}
+            onCreateEvidenceFromTodo={onCreateEvidenceFromTodo}
+            onUpdateTodo={updateTodo}
+          />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function TodoCard({
+  evidence,
+  todo,
+  onCreateEvidenceFromTodo,
+  onUpdateTodo,
+}: {
+  evidence: ParameterEvidence[]
+  todo: MaterialLiteratureTodo
+  onCreateEvidenceFromTodo: (todo: MaterialLiteratureTodo) => void
+  onUpdateTodo: (todoId: string, updates: Partial<MaterialLiteratureTodo>) => void
+}) {
+  const candidateEvidenceCount = evidence.filter(
+    (item) =>
+      item.materialIds.includes(todo.materialId) &&
+      item.parameterKey === todo.parameterKey,
+  ).length
+
+  return (
           <article
             className="rounded-lg border border-slate-800 bg-slate-950/35 p-4"
-            key={todo.id}
           >
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
               <div>
@@ -151,6 +207,9 @@ export function MaterialLiteratureTodoPanel({
                   </span>
                   <span className="rounded-full border border-cyan-800 bg-cyan-950/25 px-2.5 py-1 text-cyan-100">
                     {formatTodoStatus(todo.status)}
+                  </span>
+                  <span className="rounded-full border border-slate-700 bg-slate-900 px-2.5 py-1 text-slate-300">
+                    候選證據 {candidateEvidenceCount}
                   </span>
                 </div>
                 <p className="mt-3 text-sm leading-6 text-slate-300">
@@ -182,7 +241,7 @@ export function MaterialLiteratureTodoPanel({
                 currentStatus={todo.status}
                 mode="todo"
                 onChangeStatus={(status) =>
-                  updateTodo(todo.id, {
+                  onUpdateTodo(todo.id, {
                     status: status as MaterialLiteratureTodo['status'],
                   })
                 }
@@ -195,14 +254,11 @@ export function MaterialLiteratureTodoPanel({
                 className="field-input mt-2"
                 value={todo.notes_zh ?? ''}
                 onChange={(event) =>
-                  updateTodo(todo.id, { notes_zh: event.target.value })
+                  onUpdateTodo(todo.id, { notes_zh: event.target.value })
                 }
               />
             </label>
           </article>
-        ))}
-      </div>
-    </section>
   )
 }
 
@@ -230,6 +286,7 @@ function SelectField({
     </label>
   )
 }
+
 
 function uniqueParameterKeys(todos: MaterialLiteratureTodo[]) {
   return [...new Set(todos.map((todo) => todo.parameterKey))]
