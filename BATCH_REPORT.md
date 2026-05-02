@@ -184,6 +184,13 @@ git push origin dev
 ## 5. Build/lint/typecheck result
 
 - `npm install`：未執行成功，因為目前 PowerShell PATH 找不到 `npm`。沿用 Batch 9 的本機 bundled Node 與專案內已安裝套件執行檢查。
+- Batch 11 前環境確認：
+  - `where node`：`C:\Program Files\WindowsApps\OpenAI.Codex_26.422.9565.0_x64__2p2nqsd0c76g0\app\resources\node.exe`
+  - `where npm`：找不到符合項目。
+  - `node -v`：系統 PATH 目前解析到 Codex app 內的 WindowsApps `node.exe`，但執行時出現「存取被拒」。
+  - `npm -v`：`npm` 仍不在 PowerShell PATH。
+  - bundled Node fallback：`v24.14.0`。
+  - fallback command：使用 `C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe` 直接執行 `node_modules\typescript\bin\tsc -b`、`node_modules\eslint\bin\eslint.js .` 與 `node_modules\vite\bin\vite.js build`。
 - TypeScript：通過。
 - ESLint：通過。
 - Vite build：通過。
