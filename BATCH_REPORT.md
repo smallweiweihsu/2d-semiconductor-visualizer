@@ -2,43 +2,53 @@
 
 ## 1. Summary of what was built
 
-完成 Batch 12：新增第一版量測資料基本處理工具，支援非破壞式 processing pipeline、處理後資料集、peak markers、raw vs processed 視覺化，以及 JSON / Markdown 匯出整合。
+完成 Batch 13：新增文獻候選資料庫基礎、材料參數來源追蹤、文獻衝突 / 共識整理，以及第一版 UI 資訊架構重整。
 
-- 新增 measurement processing 型別：`ProcessingOperation`、`ProcessedMeasurementDataset`、`PeakMarker`、`MeasurementProcessingState`。
-- 新增純函式處理工具：`abs(Y)`、`Y 取負號`、最大值正規化、Min-Max 正規化、面積正規化、常數 baseline、線性 baseline、local maximum peak suggestion。
-- 新增資料處理面板，可選 source dataset、x/y 欄位、加入 operation、調整 operation 參數、啟用 / 停用 / 移除 / 排序 operation。
-- 新增電性 abs(I) helper 與光譜正規化 helper，並顯示資料處理的科學限制。
-- 新增處理後資料預覽，不覆蓋原始資料。
-- 新增手動 peak marker 與自動 peak suggestion panel。
-- 更新 SVG plot，可疊加原始資料與處理後資料，並以垂直標線顯示 peak markers。
-- 更新量測比較提醒，說明不同處理流程不可直接比較。
-- JSON 匯出整合 raw datasets、processed datasets、peak markers 與 comparisons。
-- Markdown 報告新增「量測資料處理摘要」，列出 source dataset、處理步驟、警告與 peak marker table。
+- 新增「文獻資料庫」分頁，集中管理候選文獻來源、參數證據與 conflict groups。
+- 新增 literature type system，包含 review status、agreement status、source type、material parameter key、parameter evidence 與 conflict group。
+- 新增 placeholder / seed 文獻候選資料，全部標示為 `candidate`，不包含未驗證 DOI 或可信材料參數。
+- Material Detail 新增可收合「文獻來源」區，顯示該材料相關 evidence、candidate/reviewed/verified counts 與 conflict summaries。
+- 新增共用 `InfoIcon`、`InfoNotice`、`CollapsibleSection`、`AcknowledgableNotice` 元件。
+- 將元件結構、材料資料庫、擴散估算、氧化模擬與電性分析中的重要限制說明改為較精簡、可展開、可標示已讀的 notice。
+- 改善新增材料層後的回饋：自動選取新 layer、在 layer stack list 高亮、顯示放置方式與快速對齊 / 移動動作。
+- JSON / Markdown 匯出整合 literature database summary。
 
 ## 2. Files changed
 
 ```text
 BATCH_REPORT.md
 README.md
-screenshots/batch12-electrical-abs-current.png
-screenshots/batch12-measurement-processing.png
-screenshots/batch12-peak-markers.png
+screenshots/batch13-add-layer-feedback.png
+screenshots/batch13-decluttered-materials.png
+screenshots/batch13-literature-database.png
+src/components/common/AcknowledgableNotice.tsx
+src/components/common/CollapsibleSection.tsx
+src/components/common/InfoIcon.tsx
+src/components/common/InfoNotice.tsx
+src/components/device/DeviceStructureEditor.tsx
+src/components/device/LayerStackList.tsx
+src/components/diffusion/DiffusionModelPanel.tsx
+src/components/electrical/ElectricalModelPanel.tsx
 src/components/export/ProjectExportWorkspace.tsx
-src/components/layout/AppShell.tsx
 src/components/layout/Workspace.tsx
-src/components/measurements/MeasurementComparisonPanel.tsx
-src/components/measurements/MeasurementPlot.tsx
-src/components/measurements/MeasurementProcessingControls.tsx
-src/components/measurements/MeasurementProcessingOperationList.tsx
-src/components/measurements/MeasurementProcessingPanel.tsx
-src/components/measurements/MeasurementWorkspace.tsx
-src/components/measurements/PeakMarkerList.tsx
-src/components/measurements/PeakMarkerPanel.tsx
-src/components/measurements/ProcessedDataPreview.tsx
-src/types/measurement.ts
+src/components/literature/ConflictGroupPanel.tsx
+src/components/literature/LiteratureDatabaseWorkspace.tsx
+src/components/literature/LiteratureDetailDrawer.tsx
+src/components/literature/LiteratureFilters.tsx
+src/components/literature/LiteratureSourceList.tsx
+src/components/literature/LiteratureStatusBadge.tsx
+src/components/literature/ParameterEvidenceTable.tsx
+src/components/literature/literatureFormatting.ts
+src/components/materials/MaterialDatabase.tsx
+src/components/materials/MaterialDetail.tsx
+src/components/oxidation/OxidationModelPanel.tsx
+src/data/literatureSources.ts
+src/data/parameterConflictGroups.ts
+src/data/parameterEvidence.ts
+src/data/workspaceTabs.ts
+src/types/literature.ts
 src/types/project.ts
 src/utils/markdownReport.ts
-src/utils/measurementProcessing.ts
 src/utils/projectExport.ts
 ```
 
@@ -50,6 +60,11 @@ src/
   index.css
   main.tsx
   components/
+    common/
+      AcknowledgableNotice.tsx
+      CollapsibleSection.tsx
+      InfoIcon.tsx
+      InfoNotice.tsx
     controls/
       DeviceControlsPlaceholder.tsx
     dashboard/
@@ -100,6 +115,15 @@ src/
       TabNavigation.tsx
       TopBar.tsx
       Workspace.tsx
+    literature/
+      ConflictGroupPanel.tsx
+      LiteratureDatabaseWorkspace.tsx
+      LiteratureDetailDrawer.tsx
+      LiteratureFilters.tsx
+      LiteratureSourceList.tsx
+      LiteratureStatusBadge.tsx
+      ParameterEvidenceTable.tsx
+      literatureFormatting.ts
     materials/
       MaterialCategoryFilter.tsx
       MaterialDatabase.tsx
@@ -162,11 +186,14 @@ src/
     deviceStructures.ts
     diffusionPresets.ts
     electricalPresets.ts
+    literatureSources.ts
     materialCategories.ts
     materials.ts
     oxidationPresets.ts
-    processSteps.ts
+    parameterConflictGroups.ts
+    parameterEvidence.ts
     processStepTypes.ts
+    processSteps.ts
     workspaceTabs.ts
   physics/
     bandAlignment.ts
@@ -178,6 +205,7 @@ src/
     device.ts
     diffusion.ts
     electrical.ts
+    literature.ts
     material.ts
     measurement.ts
     oxidation.ts
@@ -204,62 +232,74 @@ npm -v
 C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe node_modules\typescript\bin\tsc -b
 C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe node_modules\eslint\bin\eslint.js .
 C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe node_modules\vite\bin\vite.js build
-tree src /F
-Microsoft Edge headless screenshots for #measurements
-git add ...
-git commit -m "Batch 12: Add measurement data processing tools"
-git commit -m "Batch 12: Final report update"
-git push origin dev
+Invoke-WebRequest http://127.0.0.1:5174/
+msedge --headless=new --disable-gpu --window-size=1600,1200 --screenshot=...
+git add .
+git commit -m "Batch 13: Add literature database and declutter UI"
+git rev-parse --short HEAD
+```
+
+Node / npm environment:
+
+```text
+where node:
+C:\Program Files\WindowsApps\OpenAI.Codex_26.422.9565.0_x64__2p2nqsd0c76g0\app\resources\node.exe
+
+where npm:
+INFO: Could not find files for the given pattern(s).
+
+node -v:
+failed, access denied for WindowsApps Codex node.exe
+
+npm -v:
+failed, npm command not found
+
+Verification mode:
+normal npm unavailable; used bundled Node fallback with local TypeScript, ESLint, and Vite binaries.
 ```
 
 ## 5. Build/lint/typecheck result
 
-- `where node`：`C:\Program Files\WindowsApps\OpenAI.Codex_26.422.9565.0_x64__2p2nqsd0c76g0\app\resources\node.exe`
-- `where npm`：找不到符合項目。
-- `node -v`：失敗，系統 PATH 指向 Codex app / WindowsApps 內的 `node.exe`，執行時出現「存取被拒」。
-- `npm -v`：失敗，`npm` 仍不在 PowerShell PATH。
-- Normal npm：未使用，因為 npm 無法存取。
-- Fallback used：使用 `C:\Users\User\.cache\codex-runtimes\codex-primary-runtime\dependencies\node\bin\node.exe` 直接執行 local project binaries。
-- Fallback Node version：`v24.14.0`。
-- TypeScript：通過。
-- ESLint：通過。
-- Vite build：通過。
-- Build warning：仍有既有的 3D viewer lazy chunk 大小警告；建置成功，此警告目前可接受。
+- Typecheck: passed via bundled Node fallback.
+- Lint: passed via bundled Node fallback.
+- Build: passed via bundled Node fallback.
+- Build warning: Vite still reports the known lazy 3D viewer chunk-size warning; build completed successfully.
 
 ## 6. Git commit and push result
 
-- Batch 12 commit hash：`af58b8b`
-- Current branch：`dev`
-- Remote URL：`https://github.com/smallweiweihsu/2d-semiconductor-visualizer.git`
-- Push result：Batch 12 implementation 與 final report update 已推送到 `origin/dev`。
+- Batch 13 implementation commit hash: `4665655`
+- Current branch: `dev`
+- Remote URL: `https://github.com/smallweiweihsu/2d-semiconductor-visualizer.git`
+- Push result: origin/dev push completed for Batch 13 implementation and final report update.
 
 ## 7. Visible UI description
 
-- 「量測資料」分頁新增內部分區：匯入資料、資料處理、視覺化 / 比較、Metadata / 關聯。
-- 資料處理面板可選擇 source dataset、X column 與 Y column。
-- Operation controls 可新增 abs(Y)、Y 取負號、最大值正規化、Min-Max 正規化、面積正規化、扣除常數 baseline、扣除線性 baseline。
-- Operation list 支援 enabled/disabled、移除、上移、下移與 baseline 參數編輯。
-- 電性資料會顯示「電流正負號處理」helper，提醒 abs(I) 需確認接線方向與掃描方向。
-- Raman / PL 資料會顯示「光譜正規化」helper，提醒正規化會改變強度判讀。
-- 可按「產生處理後資料」建立 processed dataset，並在 processed data preview 查看前 20 筆。
-- Peak marker panel 支援手動輸入 x 值、label、assignment，也支援 local maximum auto suggestion。
-- Peak marker list 可編輯 label / assignment 並刪除 marker。
-- Plot 可疊加 raw 與 processed data，並顯示 peak markers 的垂直 dashed lines。
-- Markdown 報告會新增處理摘要；JSON 匯出會包含原始資料、處理後資料、peak markers 與 comparisons。
-- 截圖已儲存：
-  - `screenshots/batch12-measurement-processing.png`
-  - `screenshots/batch12-peak-markers.png`
-  - `screenshots/batch12-electrical-abs-current.png`
+- 新增「文獻資料庫」分頁，包含 compact intro notice、filters、文獻來源、參數證據與衝突 / 共識整理。
+- 文獻來源列表顯示 title、year、source type、review status 與 tags。
+- 參數證據表格顯示 material、parameter、value、condition、method、source、agreement status 與 confidence。
+- 衝突整理 panel 顯示 material、parameter、summary、evidence count、supports / contradicts / condition-dependent counts 與 recommendation status。
+- 點選 source / evidence / conflict 後，右側 detail area 顯示詳細資訊。
+- Material Detail 新增 collapsed「文獻來源」區，顯示 related evidence、candidate / reviewed / verified counts 與 conflict summaries。
+- 元件結構、材料資料庫、擴散、氧化、電性分析的主要限制提醒改為較精簡的可展開 notice，並可標示已讀。
+- 新增材料層後，layer stack list 會高亮新 layer，中間會顯示新增成功訊息與快速動作：靠左、置中、靠右、符合參考層、移到上方、移到下方。
+
+Screenshots:
+
+```text
+screenshots/batch13-literature-database.png
+screenshots/batch13-decluttered-materials.png
+screenshots/batch13-add-layer-feedback.png
+```
 
 ## 8. Warnings or limitations
 
-- Browser Use / Node REPL browser automation 仍因 Codex WindowsApps node 存取權限問題無法啟動，因此使用 Edge headless 截圖作為 fallback。
-- 目前資料處理是初步視覺化與整理工具，不是 publication-grade analysis。
-- baseline correction 尚未做物理或統計驗證。
-- auto peak suggestion 只是 local maximum 規則，不是 fitting、Raman mode assignment 或材料相鑑定。
-- abs(I) 不一定適合所有電性資料，仍需確認接線方向、掃描方向與物理問題。
-- 尚未實作 Lorentzian / Gaussian / Voigt fitting、smoothing、TLM fitting、XPS fitting、AFM image import、Origin binary parser 或 Excel parser。
+- 本批只建立 literature candidate database foundation，沒有自動 web search、DOI lookup、PDF parsing 或 literature automation。
+- 目前 seed records 都是 placeholder / candidate，不可視為真實引用或正式材料參數。
+- 沒有自動 parameter promotion；材料資料庫正式參數仍需人工審核。
+- Acknowledged notice state 使用 localStorage，尚未納入全域同步或後端保存。
+- Add-layer feedback 可以高亮與提供 quick actions；更完整的互動式幾何編輯仍留待後續批次。
+- Normal npm 仍不可用，本批使用 bundled Node fallback 完成 typecheck、lint、build。
 
 ## 9. Next recommended batch
 
-Batch 13：Raman / PL peak analysis and before-after interpretation helpers。
+Batch 14: verified literature data entry workflow and first curated material parameter set.
