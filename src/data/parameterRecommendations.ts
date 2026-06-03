@@ -4,6 +4,106 @@ const createdAt = '2026-05-02T00:00:00.000Z'
 
 export const parameterRecommendations: ParameterRecommendation[] = [
   {
+    id: 'recommendation-no-universal-dielectric-constant-15d',
+    materialId: 'wse2',
+    parameterKey: 'dielectricConstant',
+    recommendedValue: null,
+    status: 'draft',
+    basedOnEvidenceIds: [
+      'evidence-15d-hfo2-dielectric-constant',
+      'evidence-15d-al2o3-dielectric-constant',
+      'evidence-15d-sio2-dielectric-constant',
+      'evidence-15d-hbn-dielectric-constant',
+      'evidence-15d-sb2o3-dielectric-constant',
+    ],
+    rationale_zh:
+      'HfO₂、Al₂O₃、SiO₂、hBN、Sb₂O₃ 的介電常數與 breakdown field 皆具製程與厚度依賴性，電性模型應允許使用者手動輸入或從 reviewed evidence 帶入。',
+    limitation_zh:
+      '目前多數 evidence 仍是 candidate 或 placeholder；不可建立 universal dielectric constant。',
+    condition_zh: 'dielectric parameters remain process- and thickness-dependent。',
+    createdAt,
+    updatedAt: createdAt,
+  },
+  {
+    id: 'recommendation-dielectric-breakdown-manual-calibrated-15d',
+    materialId: 'wse2',
+    parameterKey: 'breakdownField_MVcm',
+    recommendedValue: null,
+    status: 'draft',
+    basedOnEvidenceIds: [
+      'evidence-15d-hfo2-breakdown-field',
+      'evidence-15d-al2o3-breakdown-field',
+      'evidence-15d-sio2-breakdown-field',
+      'evidence-15d-hbn-breakdown-field',
+      'evidence-15d-sb2o3-breakdown-field',
+    ],
+    rationale_zh:
+      'Breakdown risk 需依介電層厚度、缺陷、電極、漏電與量測條件校準，不應使用單一全域崩潰電場。',
+    limitation_zh:
+      'breakdown field candidate values 不能直接套用到使用者 device geometry。',
+    condition_zh: 'manual/calibrated dielectric breakdown risk。',
+    createdAt,
+    updatedAt: createdAt,
+  },
+  {
+    id: 'recommendation-hbn-clean-reference-not-perfect-15d',
+    materialId: 'hbn',
+    parameterKey: 'custom',
+    recommendedValue: null,
+    status: 'draft',
+    basedOnEvidenceIds: [
+      'evidence-laturia-2018-hbn-dielectric-reference',
+      'evidence-15d-hbn-wse2-band-offset',
+    ],
+    rationale_zh:
+      'hBN 可作為較乾淨的 vdW dielectric/encapsulation reference，但轉移污染與厚度仍會影響界面品質。',
+    limitation_zh:
+      'hBN reference 不等於 automatic ideal interface；需要記錄 transfer method 與 contamination。',
+    condition_zh: 'hBN as clean reference but not perfect。',
+    createdAt,
+    updatedAt: createdAt,
+  },
+  {
+    id: 'recommendation-high-k-interface-warning-15d',
+    materialId: 'hfo2',
+    parameterKey: 'custom',
+    recommendedValue: null,
+    status: 'draft',
+    basedOnEvidenceIds: [
+      'evidence-lau-2023-high-k-interface-review',
+      'evidence-oliva-2019-wse2-high-k-hysteresis',
+      'evidence-15d-remote-phonon-high-k-placeholder',
+      'evidence-park-2016-al2o3-wse2-ald-interface',
+    ],
+    rationale_zh:
+      'HfO₂ / Al₂O₃ 等 high-k 可改善 gate capacitance，但模型應提醒 interface traps、remote phonon scattering、ALD damage 與 leakage 風險。',
+    limitation_zh:
+      'high-k benefit 和 interface penalty 需要按製程與 device data 比較，不能自動判斷。',
+    condition_zh: 'high-k dielectric interface-risk warning。',
+    createdAt,
+    updatedAt: createdAt,
+  },
+  {
+    id: 'recommendation-sb2o3-compare-conventional-dielectrics-15d',
+    materialId: 'sb2o3',
+    parameterKey: 'custom',
+    recommendedValue: null,
+    status: 'draft',
+    basedOnEvidenceIds: [
+      'evidence-15d-sb2o3-dielectric-constant',
+      'evidence-15d-sb2o3-breakdown-field',
+      'evidence-messalea-2021-sb2o3-dielectric-constant',
+      'evidence-lau-2023-high-k-interface-review',
+    ],
+    rationale_zh:
+      'Sb₂O₃ 應與 HfO₂、Al₂O₃、SiO₂、hBN 以 k、band gap、breakdown、leakage、interface quality 做條件化比較。',
+    limitation_zh:
+      'Sb₂O₃ candidate evidence 仍需人工審核，不可直接取代 conventional dielectric recommendations。',
+    condition_zh: 'Sb₂O₃ comparison against conventional dielectrics。',
+    createdAt,
+    updatedAt: createdAt,
+  },
+  {
     id: 'recommendation-wse2-manual-contact-resistance-15c',
     materialId: 'wse2',
     parameterKey: 'contactResistance_ohm',

@@ -2,6 +2,107 @@ import type { ParameterConflictGroup } from '../types/literature'
 
 export const parameterConflictGroups: ParameterConflictGroup[] = [
   {
+    id: 'conflict-hfo2-dielectric-process-dependent-15d',
+    materialId: 'hfo2',
+    parameterKey: 'dielectricConstant',
+    evidenceIds: [
+      'evidence-15d-hfo2-dielectric-constant',
+      'evidence-15d-hfo2-breakdown-field',
+      'evidence-lau-2023-high-k-interface-review',
+    ],
+    summary_zh:
+      'HfO₂ 的介電常數受相、厚度、沉積方法、退火、缺陷與頻率影響，不應使用單一值代表所有 top-gate 結構。',
+    recommendedStatus: 'condition_dependent',
+    warnings_zh: ['HfO₂ k 與 breakdown 需按製程和 device stack 建立 evidence。'],
+  },
+  {
+    id: 'conflict-al2o3-interface-traps-15d',
+    materialId: 'al2o3',
+    parameterKey: 'custom',
+    evidenceIds: [
+      'evidence-park-2016-al2o3-wse2-ald-interface',
+      'evidence-park-2017-al2o3-ald-coverage-2d',
+      'evidence-15d-al2o3-dielectric-constant',
+    ],
+    summary_zh:
+      'Al₂O₃ 常用於 2D FET dielectric，但 ALD nucleation、界面缺陷、charge traps 與 hysteresis 可能影響 WSe₂ 元件。',
+    recommendedStatus: 'needs_review',
+    warnings_zh: ['Al₂O₃/WSe₂ 條件需分 direct ALD、seed/functionalization 與後續退火。'],
+  },
+  {
+    id: 'conflict-sio2-substrate-traps-15d',
+    materialId: 'sio2',
+    parameterKey: 'custom',
+    evidenceIds: [
+      'evidence-15d-sio2-wse2-band-offset',
+      'evidence-15d-sio2-wse2-substrate-traps-placeholder',
+    ],
+    summary_zh:
+      'SiO₂ 是常見基板/介電層，但 charged impurities、traps、hysteresis 與表面粗糙度可能影響 2D 半導體電性。',
+    recommendedStatus: 'condition_dependent',
+    warnings_zh: ['SiO₂ 作為 reference substrate 也需標示 surface preparation 與環境條件。'],
+  },
+  {
+    id: 'conflict-hbn-clean-dielectric-reference-15d',
+    materialId: 'hbn',
+    parameterKey: 'custom',
+    evidenceIds: [
+      'evidence-laturia-2018-hbn-dielectric-reference',
+      'evidence-15d-hbn-dielectric-constant',
+      'evidence-park-2017-al2o3-ald-coverage-2d',
+    ],
+    summary_zh:
+      'hBN 常被視為較乾淨的 van der Waals dielectric / encapsulation reference，但實際介面品質仍與轉移、污染、厚度與製程有關。',
+    recommendedStatus: 'condition_dependent',
+    warnings_zh: ['hBN 不是自動 ideal interface；轉移殘膠與厚度仍需記錄。'],
+  },
+  {
+    id: 'conflict-wse2-dielectric-band-offset-not-universal-15d',
+    materialId: 'wse2',
+    parameterKey: 'bandOffset_eV',
+    evidenceIds: [
+      'evidence-15d-hfo2-wse2-band-offset',
+      'evidence-15d-al2o3-wse2-band-offset',
+      'evidence-15d-sio2-wse2-band-offset',
+      'evidence-15d-hbn-wse2-band-offset',
+      'evidence-15d-sb2o3-wse2-band-offset',
+    ],
+    summary_zh:
+      'WSe₂ 與 HfO₂/Al₂O₃/SiO₂/hBN/Sb₂O₃ 的 band offset 受介面化學、缺陷、電荷、dipole 與製程影響，不能只用 bulk electron affinity 判斷。',
+    recommendedStatus: 'needs_review',
+    warnings_zh: ['Band offset 應以 interface-specific evidence 管理，不可做全域值。'],
+  },
+  {
+    id: 'conflict-high-k-benefit-interface-risk-15d',
+    materialId: 'wse2',
+    parameterKey: 'custom',
+    evidenceIds: [
+      'evidence-lau-2023-high-k-interface-review',
+      'evidence-oliva-2019-wse2-high-k-hysteresis',
+      'evidence-15d-remote-phonon-high-k-placeholder',
+    ],
+    summary_zh:
+      'High-k dielectric 可增加 gate capacitance，但也可能帶來 remote phonon scattering、interface traps、leakage 或 deposition damage。',
+    recommendedStatus: 'condition_dependent',
+    warnings_zh: ['High-k 不應被自動視為提升元件性能；需與 mobility、hysteresis、leakage 一起比較。'],
+  },
+  {
+    id: 'conflict-sb2o3-conventional-dielectric-comparison-15d',
+    materialId: 'sb2o3',
+    parameterKey: 'dielectricConstant',
+    evidenceIds: [
+      'evidence-15d-sb2o3-dielectric-constant',
+      'evidence-15d-sb2o3-breakdown-field',
+      'evidence-messalea-2021-sb2o3-dielectric-constant',
+      'evidence-sb2o3-breakdown-2024-breakdown-field',
+      'evidence-lau-2023-high-k-interface-review',
+    ],
+    summary_zh:
+      'Sb₂O₃ 作為新型 2D/high-k dielectric 時，需和 HfO₂、Al₂O₃、SiO₂、hBN 分別比較 k、band gap、breakdown、leakage 與界面品質。',
+    recommendedStatus: 'needs_review',
+    warnings_zh: ['Sb₂O₃ 不應在未分類製程條件前取代 conventional dielectric evidence。'],
+  },
+  {
     id: 'conflict-wse2-metal-contact-condition-dependent-15c',
     materialId: 'wse2',
     parameterKey: 'contactResistance_ohm',

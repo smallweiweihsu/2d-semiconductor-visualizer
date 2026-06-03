@@ -179,6 +179,8 @@ export function LiteratureDatabaseWorkspace() {
 
       <MetalContactSummaryCard evidence={evidence} todos={todos} />
 
+      <DielectricSummaryCard evidence={evidence} todos={todos} />
+
       <nav className="flex gap-2 overflow-x-auto rounded-lg border border-slate-800 bg-slate-950/35 p-2">
         {sections.map((section) => (
           <button
@@ -551,6 +553,84 @@ function MetalContactSummaryCard({
   )
 }
 
+function DielectricSummaryCard({
+  evidence,
+  todos,
+}: {
+  evidence: ParameterEvidence[]
+  todos: MaterialLiteratureTodo[]
+}) {
+  const dielectrics = ['hfo2', 'al2o3', 'sio2', 'hbn', 'sb2o3']
+  const dielectricConstantEvidence = evidence.filter(
+    (item) =>
+      dielectrics.some((materialId) => item.materialIds.includes(materialId)) &&
+      item.parameterKey === 'dielectricConstant',
+  ).length
+  const breakdownEvidence = evidence.filter(
+    (item) =>
+      dielectrics.some((materialId) => item.materialIds.includes(materialId)) &&
+      item.parameterKey === 'breakdownField_MVcm',
+  ).length
+  const bandOffsetEvidence = evidence.filter(
+    (item) =>
+      item.materialIds.includes('wse2') &&
+      dielectrics.some((materialId) => item.materialIds.includes(materialId)) &&
+      item.parameterKey === 'bandOffset_eV',
+  ).length
+  const leakageTrapEvidence = evidence.filter(
+    (item) =>
+      dielectrics.some((materialId) => item.materialIds.includes(materialId)) &&
+      item.parameterKey === 'custom' &&
+      matchesAnyText(item, ['leakage', 'trap', 'hysteresis', '漏電', '缺陷']),
+  ).length
+  const aldInterfaceEvidence = evidence.filter(
+    (item) =>
+      item.parameterKey === 'custom' &&
+      matchesAnyText(item, ['ALD', 'interface', 'nucleation', 'deposition', '界面']),
+  ).length
+  const unresolvedDielectricParameters = evidence.filter(
+    (item) =>
+      dielectrics.some((materialId) => item.materialIds.includes(materialId)) &&
+      ['dielectricConstant', 'breakdownField_MVcm'].includes(item.parameterKey) &&
+      item.value === null,
+  ).length
+  const unresolvedBandOffsetEntries = evidence.filter(
+    (item) =>
+      item.parameterKey === 'bandOffset_eV' &&
+      item.materialIds.includes('wse2') &&
+      item.value === null,
+  ).length
+  const dielectricTodos = todos.filter((todo) =>
+    dielectrics.includes(todo.materialId),
+  ).length
+
+  return (
+    <section className="rounded-lg border border-emerald-900/50 bg-emerald-950/10 p-4">
+      <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
+        <div>
+          <h3 className="text-sm font-semibold text-emerald-100">
+            介電層與 band offset 重點
+          </h3>
+          <p className="mt-2 text-xs leading-5 text-emerald-100/75">
+            HfO₂、Al₂O₃、SiO₂、hBN 與 Sb₂O₃ 的 k、breakdown、band offset、
+            leakage 與 interface traps 都維持製程依賴；候選資料不會寫入正式材料參數。
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2 text-xs">
+          <SummaryPill label="k evidence" value={dielectricConstantEvidence} />
+          <SummaryPill label="breakdown" value={breakdownEvidence} />
+          <SummaryPill label="band offset" value={bandOffsetEvidence} />
+          <SummaryPill label="leakage/traps" value={leakageTrapEvidence} />
+          <SummaryPill label="ALD/interface" value={aldInterfaceEvidence} />
+          <SummaryPill label="dielectric TODO" value={dielectricTodos} />
+          <SummaryPill label="缺 k/breakdown" value={unresolvedDielectricParameters} />
+          <SummaryPill label="缺 band offset" value={unresolvedBandOffsetEntries} />
+        </div>
+      </div>
+    </section>
+  )
+}
+
 function SourceKindFilter({
   value,
   onChange,
@@ -638,6 +718,21 @@ function matchesSearch(values: Array<string | undefined>, searchText: string) {
   }
 
   return values.some((value) => value?.toLowerCase().includes(normalizedSearch))
+}
+
+function matchesAnyText(item: ParameterEvidence, patterns: string[]) {
+  const text = [
+    item.parameterKey,
+    item.condition_zh,
+    item.method_zh,
+    item.quoteOrSummary_zh,
+    item.applicability_zh,
+    ...(item.warnings_zh ?? []),
+  ]
+    .join(' ')
+    .toLowerCase()
+
+  return patterns.some((pattern) => text.includes(pattern.toLowerCase()))
 }
 
 function getMaterialName(materialId: string) {

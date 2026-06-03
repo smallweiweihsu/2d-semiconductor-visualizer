@@ -111,7 +111,253 @@ const batch15CLowerMetalDiffusionEvidence: ParameterEvidence[] =
     },
   ])
 
+const dielectricMaterials15D = ['hfo2', 'al2o3', 'sio2', 'hbn', 'sb2o3']
+
+const dielectricSourceByMaterial15D: Record<string, string> = {
+  hfo2: 'src-placeholder-hfo2-wse2-dielectric-interface',
+  al2o3: 'src-park-2016-al2o3-wse2-tiopc-ald',
+  sio2: 'src-wse2-sio2-band-alignment-2022',
+  hbn: 'src-laturia-2018-hbn-tmd-dielectric',
+  sb2o3: 'src-messalea-2021-sb2o3-high-k',
+}
+
+const dielectricLabelByMaterial15D: Record<string, string> = {
+  hfo2: 'HfO₂',
+  al2o3: 'Al₂O₃',
+  sio2: 'SiO₂',
+  hbn: 'hBN',
+  sb2o3: 'Sb₂O₃',
+}
+
+const batch15DDielectricPropertyEvidence: ParameterEvidence[] =
+  dielectricMaterials15D.flatMap((materialId) => {
+    const label = dielectricLabelByMaterial15D[materialId]
+    const sourceId = dielectricSourceByMaterial15D[materialId]
+
+    return [
+      {
+        id: `evidence-15d-${materialId}-dielectric-constant`,
+        sourceId,
+        materialIds: [materialId, 'wse2'],
+        parameterKey: 'dielectricConstant',
+        value: null,
+        condition_zh:
+          `${label}/WSe₂ gate dielectric context；k 需指定相、厚度、沉積方法、頻率、漏電與量測結構。`,
+        method_zh: 'Capacitance / dielectric characterization or literature review; exact method needs source review.',
+        agreementStatus: 'condition_dependent',
+        confidence: materialId === 'hfo2' ? 'unknown' : 'low',
+        applicability_zh:
+          `可作為 ${label} dielectric tracking；目前不可寫入正式材料資料庫或當作 universal k。`,
+        warnings_zh: [
+          '介電常數受製程、厚度、缺陷、頻率與漏電影響。',
+          '若手動輸入 k，應在文獻資料庫建立對應 source 與 evidence。',
+        ],
+      },
+      {
+        id: `evidence-15d-${materialId}-breakdown-field`,
+        sourceId,
+        materialIds: [materialId, 'wse2'],
+        parameterKey: 'breakdownField_MVcm',
+        value: null,
+        unit: 'MV/cm',
+        condition_zh:
+          `${label}/WSe₂ 或相關 thin-film dielectric stack；breakdown criterion、device area、electrode 與 defect density 需確認。`,
+        method_zh: 'Dielectric breakdown / leakage characterization; exact method needs source review.',
+        agreementStatus: 'condition_dependent',
+        confidence: 'unknown',
+        applicability_zh:
+          '可作為 electrical breakdown warning 的 candidate evidence；目前不可定量。',
+        warnings_zh: [
+          'breakdown field 受厚度、pinholes、缺陷、電極、漏電與處理條件影響。',
+        ],
+      },
+      {
+        id: `evidence-15d-${materialId}-band-gap`,
+        sourceId,
+        materialIds: [materialId],
+        parameterKey: 'bandGap_eV',
+        value: null,
+        unit: 'eV',
+        condition_zh:
+          `${label} dielectric band gap；需確認 bulk/thin-film、相、缺陷與光學或電子量測方法。`,
+        method_zh: 'Optical/electronic characterization or literature review.',
+        agreementStatus: 'condition_dependent',
+        confidence: 'unknown',
+        applicability_zh:
+          '可作為 gate leakage / dielectric barrier 背景；不可直接代表實際 interface barrier。',
+        warnings_zh: ['band gap 不等於實際 WSe₂ interface band offset。'],
+      },
+      {
+        id: `evidence-15d-${materialId}-electron-affinity`,
+        sourceId: 'src-placeholder-dielectric-band-offset-wse2',
+        materialIds: [materialId, 'wse2'],
+        parameterKey: 'electronAffinity_eV',
+        value: null,
+        unit: 'eV',
+        condition_zh:
+          `${label}/WSe₂ band alignment context；electron affinity 需與 interface dipole、defects、charges 分開判讀。`,
+        method_zh: '待查：photoemission / literature compilation / band alignment analysis。',
+        agreementStatus: 'unclear',
+        confidence: 'unknown',
+        applicability_zh:
+          '僅作 band alignment context，不可單獨決定 band offset 或 leakage barrier。',
+        warnings_zh: [
+          'electron affinity alone 不代表真實 band alignment。',
+          'interface dipoles、defects 與 trapped charges 可能主導。',
+        ],
+      },
+      {
+        id: `evidence-15d-${materialId}-wse2-band-offset`,
+        sourceId:
+          materialId === 'sio2'
+            ? 'src-wse2-sio2-band-alignment-2022'
+            : 'src-placeholder-dielectric-band-offset-wse2',
+        materialIds: [materialId, 'wse2'],
+        parameterKey: 'bandOffset_eV',
+        value: null,
+        unit: 'eV',
+        condition_zh:
+          `${label}/WSe₂ interface；需指定製程、厚度、表面處理、defect / dipole 狀態與量測方法。`,
+        method_zh:
+          materialId === 'sio2'
+            ? 'XPS / valence band photoemission candidate source; exact values need source review.'
+            : '待查：XPS / UPS / electrical extraction / literature review。',
+        agreementStatus: 'condition_dependent',
+        confidence: materialId === 'sio2' ? 'low' : 'unknown',
+        applicability_zh:
+          '可用於 band offset tracking；不可用 bulk material values 直接推論。',
+        warnings_zh: [
+          'band offset 是 interface-specific，不是 universal material parameter。',
+        ],
+      },
+    ]
+  })
+
+const batch15DInterfaceEvidence: ParameterEvidence[] = [
+  {
+    id: 'evidence-lau-2023-high-k-interface-review',
+    sourceId: 'src-lau-2023-tmd-dielectrics-review',
+    materialIds: ['wse2', 'hfo2', 'al2o3', 'sio2', 'hbn', 'sb2o3'],
+    parameterKey: 'custom',
+    value: null,
+    condition_zh:
+      '2D TMD dielectric applications review；需依材料、製程、界面與 device geometry 分類。',
+    method_zh: 'Review article',
+    agreementStatus: 'supports',
+    confidence: 'medium',
+    quoteOrSummary_zh:
+      '該 review 可作為 high-k / conventional dielectric integration、interface quality、leakage 與 traps 的候選背景來源。',
+    applicability_zh:
+      '適合用於 dielectric module warnings；不可直接給定 HfO₂/Al₂O₃/SiO₂/hBN/Sb₂O₃ 的 universal k、breakdown 或 band offset。',
+    warnings_zh: [
+      'High-k 可提高 Cox，但 interface traps、remote phonon scattering、leakage 與 deposition damage 可能抵消效益。',
+    ],
+  },
+  {
+    id: 'evidence-laturia-2018-hbn-dielectric-reference',
+    sourceId: 'src-laturia-2018-hbn-tmd-dielectric',
+    materialIds: ['hbn', 'wse2'],
+    parameterKey: 'custom',
+    value: null,
+    condition_zh:
+      'hBN and TMD dielectric properties from monolayer to bulk；具體 dielectric tensor / layer dependence 需回查原文。',
+    method_zh: 'First-principles / dielectric property analysis',
+    agreementStatus: 'supports',
+    confidence: 'medium',
+    quoteOrSummary_zh:
+      '該文獻可作為 hBN dielectric reference 與 layer-dependent dielectric properties 的候選來源。',
+    applicability_zh:
+      '適合將 hBN 作為 vdW dielectric reference；仍需確認轉移污染、厚度與界面品質。',
+    warnings_zh: ['hBN cleaner reference 不代表所有 hBN stack 都是 ideal interface。'],
+  },
+  {
+    id: 'evidence-park-2016-al2o3-wse2-ald-interface',
+    sourceId: 'src-park-2016-al2o3-wse2-tiopc-ald',
+    materialIds: ['al2o3', 'wse2'],
+    parameterKey: 'custom',
+    value: null,
+    condition_zh:
+      'Al₂O₃ ALD on WSe₂ with titanyl phthalocyanine functionalization；需確認 seed layer、溫度、厚度與 leakage measurement。',
+    method_zh: 'Atomic layer deposition and dielectric/interface characterization',
+    agreementStatus: 'condition_dependent',
+    confidence: 'medium',
+    quoteOrSummary_zh:
+      '該文獻可作為 Al₂O₃/WSe₂ ALD nucleation 與 dielectric deposition compatibility 的候選來源。',
+    applicability_zh:
+      '適合提醒 ALD dielectric 不一定保留 pristine WSe₂ interface；需依 functionalization 與製程判斷。',
+    warnings_zh: ['functionalized ALD 與 direct ALD 不可混為同一條件。'],
+  },
+  {
+    id: 'evidence-park-2017-al2o3-ald-coverage-2d',
+    sourceId: 'src-park-2017-al2o3-ald-2d-crystals',
+    materialIds: ['al2o3', 'wse2', 'hbn'],
+    parameterKey: 'custom',
+    value: null,
+    condition_zh:
+      'Al₂O₃ ALD on MoS₂/WS₂/WSe₂/hBN；surface coverage 與 adsorption energy 需依 2D crystal surface condition 判讀。',
+    method_zh: 'ALD surface coverage / adsorption energy study',
+    agreementStatus: 'condition_dependent',
+    confidence: 'medium',
+    quoteOrSummary_zh:
+      '該來源可用於追蹤 ALD 在 WSe₂ 與 hBN 表面 nucleation/coverage 不一定相同。',
+    applicability_zh:
+      '適合用於 ALD compatibility warning；不可直接給定 leakage、trap density 或 k。',
+    warnings_zh: ['surface coverage 不等於完整 device dielectric quality。'],
+  },
+  {
+    id: 'evidence-oliva-2019-wse2-high-k-hysteresis',
+    sourceId: 'src-oliva-2019-wse2-high-k-hysteresis',
+    materialIds: ['wse2', 'hfo2', 'al2o3'],
+    parameterKey: 'custom',
+    value: null,
+    condition_zh:
+      'Double-gated n-type WSe₂ FETs with high-k top gate dielectric；需確認 dielectric material, stack, sweep protocol 與 trap model。',
+    method_zh: 'Electrical hysteresis dynamics characterization',
+    agreementStatus: 'condition_dependent',
+    confidence: 'low',
+    quoteOrSummary_zh:
+      '該來源可作為 high-k top gate dielectric 可能引入 hysteresis / trap dynamics 的候選提醒。',
+    applicability_zh:
+      '適合用於 electrical module warning；不可直接推論所有 high-k/WSe₂ device hysteresis。',
+    warnings_zh: ['hysteresis 需搭配掃描方向、速度、溫度、環境與 device history 判讀。'],
+  },
+  {
+    id: 'evidence-15d-remote-phonon-high-k-placeholder',
+    sourceId: 'src-placeholder-remote-phonon-scattering-2d-dielectric',
+    materialIds: ['wse2', 'hfo2', 'al2o3', 'sb2o3'],
+    parameterKey: 'custom',
+    value: null,
+    condition_zh:
+      '待查：high-k dielectric near WSe₂ may affect mobility through remote phonon scattering or interface disorder。',
+    method_zh: '待查文獻或實驗。',
+    agreementStatus: 'unclear',
+    confidence: 'unknown',
+    quoteOrSummary_zh:
+      'High-k 增加 Cox 不代表一定提升 device performance；remote phonon、traps、leakage 與 deposition damage 需分開追蹤。',
+    applicability_zh:
+      '用於 high-k risk warning；目前不可量化 mobility degradation。',
+    warnings_zh: placeholderWarning,
+  },
+  {
+    id: 'evidence-15d-sio2-wse2-substrate-traps-placeholder',
+    sourceId: 'src-wse2-sio2-band-alignment-2022',
+    materialIds: ['sio2', 'wse2'],
+    parameterKey: 'custom',
+    value: null,
+    condition_zh:
+      'WSe₂/SiO₂ interface and substrate context；charged impurities、traps、roughness 與 adsorbates 需另行整理。',
+    method_zh: 'Band alignment source plus substrate trap TODO tracking',
+    agreementStatus: 'condition_dependent',
+    confidence: 'low',
+    applicability_zh:
+      '適合提醒 SiO₂ common substrate 不等於 harmless interface。',
+    warnings_zh: ['SiO₂ substrate traps/hysteresis 需與 band alignment 分開建立 evidence。'],
+  },
+]
+
 export const parameterEvidence: ParameterEvidence[] = [
+  ...batch15DDielectricPropertyEvidence,
+  ...batch15DInterfaceEvidence,
   {
     id: 'evidence-allain-2015-2d-contact-review',
     sourceId: 'src-allain-2015-2d-semiconductor-contacts',

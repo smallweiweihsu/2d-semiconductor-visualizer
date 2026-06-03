@@ -367,10 +367,17 @@ const batch15CTodos: MaterialLiteratureTodo[] = contactMetals15C.flatMap(
   (materialId) => seedMetalContactTodos(materialId),
 )
 
+const dielectricMaterials15D = ['hfo2', 'al2o3', 'sio2', 'hbn', 'sb2o3'] as const
+
+const batch15DTodos: MaterialLiteratureTodo[] = dielectricMaterials15D.flatMap(
+  (materialId) => seedDielectricTodos(materialId),
+)
+
 export const materialLiteratureTodos: MaterialLiteratureTodo[] = [
   ...todoSeeds.flatMap(seedToTodos),
   ...batch15BTodos,
   ...batch15CTodos,
+  ...batch15DTodos,
   ...diffusionMetals.flatMap((materialId) => seedMetalDiffusionTodos(materialId)),
   ...mediumMaterials.flatMap((materialId) =>
     seedGenericTodos(materialId, 'medium'),
@@ -533,6 +540,133 @@ function seedMetalContactTodos(materialId: string) {
       [`${label} WSe2 Raman PL contact damage`, `${materialId} metal deposition damage TMD`],
     ),
   ]
+}
+
+function seedDielectricTodos(materialId: string) {
+  const highPriority = ['sb2o3', 'hfo2', 'al2o3', 'hbn']
+  const priority: TodoPriority = highPriority.includes(materialId) ? 'high' : 'medium'
+  const labelMap: Record<string, string> = {
+    hfo2: 'HfO2',
+    al2o3: 'Al2O3',
+    sio2: 'SiO2',
+    hbn: 'hBN',
+    sb2o3: 'Sb2O3',
+  }
+  const label = labelMap[materialId] ?? materialId
+
+  return [
+    createBatch15DTodo(
+      materialId,
+      priority,
+      'dielectricConstant',
+      `${label} dielectric constant 需要按相、厚度、沉積方法、頻率與漏電條件整理；不可用單一 k 代表所有結構。`,
+      [`${label} dielectric constant thin film`, `${label} dielectric constant WSe2 top gate`],
+    ),
+    createBatch15DTodo(
+      materialId,
+      priority,
+      'bandGap_eV',
+      `${label} band gap 會影響 gate leakage 與 dielectric barrier，但需確認材料相與量測方法。`,
+      [`${label} band gap dielectric`, `${label} optical band gap thin film`],
+    ),
+    createBatch15DTodo(
+      materialId,
+      priority,
+      'electronAffinity_eV',
+      `${label} electron affinity 只能作 band alignment context，不能單獨決定 WSe₂ interface band offset。`,
+      [`${label} electron affinity`, `${label} band alignment WSe2 electron affinity`],
+    ),
+    createBatch15DTodo(
+      materialId,
+      priority,
+      'breakdownField_MVcm',
+      `${label} breakdown field 受厚度、pinholes、缺陷、電極、漏電與製程影響，需要 device-specific evidence。`,
+      [`${label} breakdown field thin film`, `${label} dielectric breakdown WSe2 gate`],
+    ),
+    createBatch15DTodo(
+      materialId,
+      priority,
+      'resistivity_ohm_m',
+      `${label} resistivity / insulation quality 需要與 leakage current、缺陷與測試幾何一起整理。`,
+      [`${label} resistivity dielectric leakage`, `${label} insulation resistivity thin film`],
+    ),
+    createBatch15DTodo(
+      materialId,
+      priority,
+      'custom',
+      `${label} leakage behavior 需建立文獻 evidence，避免把 breakdown 或 leakage risk 視為固定材料常數。`,
+      [`${label} leakage current 2D semiconductor dielectric`, `${label} gate leakage traps WSe2`],
+    ),
+    createBatch15DTodo(
+      materialId,
+      priority,
+      'custom',
+      `${label} interface traps / hysteresis 可能影響 WSe₂ top gate 或 substrate device，需要獨立追蹤。`,
+      [`${label} WSe2 interface traps hysteresis`, `${label} charge traps 2D FET`],
+    ),
+    createBatch15DTodo(
+      materialId,
+      priority,
+      'bandOffset_eV',
+      `${label}/WSe₂ band offset 需指定 interface、製程、厚度與量測方法，不可由 bulk electron affinity 直接推論。`,
+      [`${label} WSe2 band offset`, `${label} WSe2 band alignment XPS`],
+    ),
+    createBatch15DTodo(
+      materialId,
+      priority,
+      'custom',
+      `${label} deposition / ALD compatibility with WSe₂ 需要追蹤 nucleation、seed layer、damage 與殘留污染。`,
+      [`${label} WSe2 ALD compatibility`, `${label} deposition WSe2 interface damage`],
+    ),
+    createBatch15DTodo(
+      materialId,
+      priority,
+      'custom',
+      `${label} remote phonon scattering / mobility degradation 可能影響 high-k gate 的實際效益。`,
+      [`${label} remote phonon scattering 2D material`, `high-k dielectric remote phonon WSe2`],
+    ),
+    createBatch15DTodo(
+      materialId,
+      priority,
+      'custom',
+      `${label} hysteresis / charge trap impact 需要與掃描方向、測試環境與退火歷史一起記錄。`,
+      [`${label} WSe2 hysteresis charge trap`, `${label} 2D FET hysteresis dielectric`],
+    ),
+    createBatch15DTodo(
+      materialId,
+      priority,
+      'custom',
+      `${label} suitability for top gate dielectric 需按 Cox、leakage、interface traps、deposition damage 與 breakdown 綜合比較。`,
+      [`${label} WSe2 top gate dielectric`, `${label} 2D semiconductor top gate high-k`],
+    ),
+    createBatch15DTodo(
+      materialId,
+      materialId === 'sio2' ? 'medium' : priority,
+      'custom',
+      `${label} suitability for substrate / encapsulation 需區分 substrate traps、vdW encapsulation、轉移污染與表面粗糙度。`,
+      [`${label} WSe2 substrate encapsulation`, `${label} 2D semiconductor substrate traps encapsulation`],
+    ),
+  ]
+}
+
+function createBatch15DTodo(
+  materialId: string,
+  priority: TodoPriority,
+  parameterKey: MaterialParameterKey,
+  reason_zh: string,
+  suggestedSearchTerms: string[],
+): MaterialLiteratureTodo {
+  return {
+    id: `todo-15d-${materialId}-${parameterKey}-${slugify(suggestedSearchTerms[0])}`,
+    materialId,
+    priority,
+    parameterKey,
+    reason_zh,
+    suggestedSearchTerms,
+    status: 'todo',
+    notes_zh:
+      'Batch 15D 新增待查項目；用於介電常數、band offset、leakage、interface traps、ALD compatibility、remote phonon、top gate 與 encapsulation 追蹤。',
+  }
 }
 
 function createBatch15CTodo(
