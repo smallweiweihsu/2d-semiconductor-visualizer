@@ -19,7 +19,7 @@ export function OxidationWorkspace({
             氧化模擬與 Raman 解釋
           </h2>
           <p className="mt-2 max-w-4xl text-sm leading-6 text-slate-400">
-            整理 WSe₂ → WOx、Sb → Sb₂O₃ 等氧化條件，並用簡化模型輔助判斷殘留材料、氧化不均勻與 Raman 可見性的可能原因。
+            整理 Sb → Sb₂O₃ 等氧化條件，並用簡化模型輔助判斷殘留材料、氧化不均勻與 Raman 可見性的可能原因。
           </p>
         </div>
         <div className="rounded-md border border-slate-800 bg-slate-950/50 px-3 py-2 text-xs text-slate-500">

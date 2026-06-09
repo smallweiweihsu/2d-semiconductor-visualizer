@@ -52,9 +52,9 @@ export const literatureSources: LiteratureSource[] = [
     journal: 'ACS Nano',
     doi: '10.1021/acsnano.6b02488',
     reviewStatus: 'candidate',
-    tags_zh: ['WSe2', 'oxidation', 'WOx', 'Raman', 'PL', 'oxygen plasma'],
+    tags_zh: ['WSe2', 'oxidation', 'Raman', 'PL', 'oxygen plasma'],
     notes_zh:
-      '候選來源：用於 WSe₂ 表面層氧化、Raman/PL 變化與 WOx 相關解釋。作者欄位可後續補齊。',
+      '候選來源：用於 WSe₂ 表面層氧化、Raman/PL 變化相關解釋。作者欄位可後續補齊。',
   },
   {
     id: 'src-messalea-2021-sb2o3-high-k',
@@ -381,14 +381,7 @@ export const literatureSources: LiteratureSource[] = [
     notes_zh: placeholderNote,
     tags_zh: ['Pd', 'WSe₂', 'contact', 'pinning', '待補'],
   },
-  {
-    id: 'lit-wse2-wox-oxidation-placeholder',
-    title: '待補：WSe₂ oxidation to WOx source',
-    sourceType: 'unknown',
-    reviewStatus: 'candidate',
-    notes_zh: placeholderNote,
-    tags_zh: ['WSe₂', 'WOx', '氧化', '待補'],
-  },
+
   {
     id: 'lit-raman-visible-oxidation-placeholder',
     title: '待補：Raman visibility after oxidation source',

@@ -320,22 +320,7 @@ export const materials: Material[] = [
     notes_zh: ['可作為保護層或介電層，占位參數需依薄膜製程更新。'],
     warnings_zh: ['氫含量、應力與陷阱態可能影響二維元件。'],
   },
-  {
-    id: 'wox',
-    name: 'WOx',
-    displayName: 'WOx',
-    category: 'oxide',
-    description_zh: '鎢氧化物占位材料，供後續 WSe₂ 氧化與 WOx 模組使用。',
-    color: '#f97316',
-    parameters: createParameters({
-      bandGap_eV: unknown('eV', '需要文獻參數；化學計量與相態相依'),
-      dielectricConstant: unknown(undefined, '需要文獻參數；WOx 組成不固定'),
-      defaultThickness_nm: unknown('nm', '由氧化模擬或使用者設定決定'),
-    }),
-    diffusion: createDiffusion(),
-    notes_zh: ['供 WSe₂ 氧化 / WOx 相關模組後續使用。', '化學計量可能變動，參數需標記為組成相依。'],
-    warnings_zh: ['WOx 不是單一固定材料；不可在未指定 x 與相態時做定量計算。'],
-  },
+
   {
     id: 'native-oxide',
     name: 'native oxide',

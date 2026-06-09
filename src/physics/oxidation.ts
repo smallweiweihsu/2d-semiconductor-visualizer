@@ -171,8 +171,8 @@ export function generateRamanExplanationRanking(
     '氧化不完全，仍有殘留 WSe₂。',
     '氧化不均勻，局部區域仍保留 WSe₂。',
     'Raman 雷射仍可探測到下層 WSe₂。',
-    'WOx Raman 訊號較弱或峰位不明顯。',
-    'WSe₂ / WOx / 基板訊號可能重疊。',
+    '氧化產物 Raman 訊號較弱或峰位不明顯。',
+    'WSe₂ / 氧化產物 / 基板訊號可能重疊。',
     '材料層數或厚度不均造成局部 Raman 差異。',
     'RIE 可能造成缺陷而非單純完全氧化。',
   ]
@@ -192,7 +192,7 @@ export function generateRamanExplanationRanking(
     result.estimatedRemainingThickness_nm === 0 ||
     result.remainingFraction === 0
   ) {
-    explanations.push('Raman 看不到 WSe₂ 也不代表已完整轉化為單一 WOx 化學計量。')
+    explanations.push('Raman 看不到 WSe₂ 也不代表已完整轉化為單一化學計量氧化物。')
   }
 
   return [...new Set(explanations)]
@@ -300,10 +300,6 @@ export function calculateOxidationScenario(
     ...validation.warnings_zh,
     ...validation.info_zh,
   ]
-
-  if (scenario.productMaterialId === 'wox') {
-    warnings_zh.push('WOx 組成可能不是固定化學計量，需由 XPS 或其他量測確認。')
-  }
 
   if (scenario.targetMaterialId === 'sb-bulk' || scenario.productMaterialId === 'sb2o3') {
     warnings_zh.push('Sb 表面氧化層厚度與化學態需 AFM/XPS 或製程校準確認。')

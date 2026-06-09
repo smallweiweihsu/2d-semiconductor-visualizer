@@ -570,7 +570,7 @@ export const parameterEvidence: ParameterEvidence[] = [
   {
     id: 'evidence-li-2016-wse2-surface-oxidation',
     sourceId: 'src-li-2016-wse2-layer-oxidation',
-    materialIds: ['wse2', 'wox'],
+    materialIds: ['wse2'],
     parameterKey: 'oxidationRate_nm_per_s',
     value: null,
     unit: 'nm/s',
@@ -582,7 +582,7 @@ export const parameterEvidence: ParameterEvidence[] = [
     quoteOrSummary_zh:
       '該文獻研究 WSe₂ 表面層氧化與 Raman / PL 變化，可用於解釋氧化後仍可能看到 WSe₂ 訊號的情境。',
     applicability_zh:
-      '適合用於 WSe₂ → WOx 氧化模組與 Raman interpretation；但不可直接套用到所有 O₂ RIE 條件。',
+      '適合用於 WSe₂ 氧化模組與 Raman interpretation；但不可直接套用到所有 O₂ RIE 條件。',
     warnings_zh: ['氧化速率需依 plasma 條件、功率、時間、樣品厚度與環境校準。'],
   },
   {
@@ -932,8 +932,8 @@ export const parameterEvidence: ParameterEvidence[] = [
   },
   {
     id: 'evidence-wse2-oxidation-rate',
-    sourceId: 'lit-wse2-wox-oxidation-placeholder',
-    materialIds: ['wse2', 'wox'],
+    sourceId: 'lit-raman-visible-oxidation-placeholder',
+    materialIds: ['wse2'],
     parameterKey: 'oxidationRate_nm_per_s',
     value: null,
     unit: 'nm/s',
@@ -947,7 +947,7 @@ export const parameterEvidence: ParameterEvidence[] = [
   {
     id: 'evidence-raman-probe-depth',
     sourceId: 'lit-raman-visible-oxidation-placeholder',
-    materialIds: ['wse2', 'wox'],
+    materialIds: ['wse2'],
     parameterKey: 'ramanProbeDepth_nm',
     value: null,
     unit: 'nm',

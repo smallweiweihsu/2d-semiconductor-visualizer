@@ -15,7 +15,6 @@ export type OxidationTargetMaterial =
   | 'custom'
 
 export type OxidationProduct =
-  | 'wox'
   | 'sb2o3'
   | 'moo3'
   | 'wo3'

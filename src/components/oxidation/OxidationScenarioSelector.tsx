@@ -8,11 +8,9 @@ interface OxidationScenarioSelectorProps {
 }
 
 const quickPresetIds = [
-  'wse2_to_wox_o2_rie',
-  'wse2_to_wox_uv_ozone',
-  'wse2_to_wox_thermal',
   'sb_to_sb2o3_ambient',
   'sb_to_sb2o3_thermal',
+  'generic_2d_plasma_oxidation',
 ]
 
 export function OxidationScenarioSelector({
@@ -25,7 +23,7 @@ export function OxidationScenarioSelector({
       <div>
         <h3 className="text-sm font-semibold text-slate-100">氧化情境</h3>
         <p className="mt-1 text-xs leading-5 text-slate-500">
-          選擇 WSe₂ → WOx、Sb → Sb₂O₃ 或通用氧化情境；氧化速率未填入時只提供定性判讀。
+          選擇 Sb → Sb₂O₃ 或通用氧化情境；氧化速率未填入時只提供定性判讀。
         </p>
       </div>
 

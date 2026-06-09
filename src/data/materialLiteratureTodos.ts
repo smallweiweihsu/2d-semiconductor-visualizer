@@ -47,13 +47,13 @@ const todoSeeds: TodoSeed[] = [
       },
       {
         key: 'oxidationRate_nm_per_s',
-        reason_zh: '氧化模組需要 WSe₂ 轉 WOx 的速率或製程校準資料。',
-        terms: ['WSe2 oxidation WOx rate O2 RIE', 'WSe2 UV ozone oxidation WOx'],
+        reason_zh: '氧化模組需要 WSe₂ 的氧化速率或製程校準資料。',
+        terms: ['WSe2 oxidation rate O2 RIE', 'WSe2 UV ozone oxidation'],
       },
       {
         key: 'ramanProbeDepth_nm',
         reason_zh: 'Raman 仍可見性的判讀需要探測深度或吸收相關資料。',
-        terms: ['WSe2 Raman penetration depth oxidation', 'Raman visibility WSe2 WOx'],
+        terms: ['WSe2 Raman penetration depth oxidation', 'Raman visibility WSe2 oxidation'],
       },
       {
         key: 'custom',
@@ -186,32 +186,7 @@ const todoSeeds: TodoSeed[] = [
       },
     ],
   },
-  {
-    materialId: 'wox',
-    priority: 'high',
-    parameters: [
-      {
-        key: 'bandGap_eV',
-        reason_zh: 'WOx band gap 受 stoichiometry 影響，需分條件整理。',
-        terms: ['WOx band gap stoichiometry', 'tungsten oxide band gap oxygen vacancy'],
-      },
-      {
-        key: 'resistivity_ohm_m',
-        reason_zh: 'WOx 導電性與氧缺陷可能影響氧化後電性判讀。',
-        terms: ['WOx resistivity oxygen vacancy', 'tungsten oxide electrical resistivity'],
-      },
-      {
-        key: 'custom',
-        reason_zh: 'WOx Raman features 需要整理，但不應自動判定固定化學計量。',
-        terms: ['WOx Raman peaks tungsten oxide', 'WO3 Raman spectrum WSe2 oxidation'],
-      },
-      {
-        key: 'custom',
-        reason_zh: 'WOx composition dependence 是氧化/Raman 解釋的重要限制。',
-        terms: ['WOx composition dependence WSe2 oxidation', 'substoichiometric tungsten oxide WOx'],
-      },
-    ],
-  },
+
 ]
 
 const mediumMaterials = [
@@ -337,16 +312,7 @@ const batch15BTodos: MaterialLiteratureTodo[] = [
       'palladium antimony oxide interface mixing',
     ],
   ),
-  createBatch15BTodo(
-    'wox',
-    'high',
-    'custom',
-    'WSe₂ oxidation product may be non-stoichiometric WOx；Raman signatures 與 electrical resistivity 需按 composition 追蹤。',
-    [
-      'WSe2 oxidation WOx composition Raman signature',
-      'tungsten oxide WOx resistivity oxygen vacancy Raman',
-    ],
-  ),
+
 ]
 
 const contactMetals15C = [

@@ -342,7 +342,7 @@ export const parameterConflictGroups: ParameterConflictGroup[] = [
     parameterKey: 'ramanProbeDepth_nm',
     evidenceIds: ['evidence-raman-probe-depth', 'evidence-wse2-oxidation-rate'],
     summary_zh:
-      'WSe₂ 氧化後 Raman 仍可見可能來自表面只氧化、氧化不均、下層殘留或 WOx 訊號較弱等多種原因。',
+      'WSe₂ 氧化後 Raman 仍可見可能來自表面只氧化、氧化不均、下層殘留或氧化產物訊號較弱等多種原因。',
     recommendedStatus: 'no_recommendation',
     warnings_zh: ['Raman 仍可見不代表完全沒有氧化，Raman 消失也不代表完全氧化。'],
   },

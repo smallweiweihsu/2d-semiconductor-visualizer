@@ -31,13 +31,6 @@ export const workspaceTabs = [
     features: ['流程時間線', '製程樣板', '參數編輯', '材料層關聯'],
   },
   {
-    id: 'oxidation',
-    label: '氧化模擬',
-    title: '氧化模擬',
-    description: '規劃 WOx 與 Sb₂O₃ 等氧化層形成過程的視覺化設定。',
-    features: ['氧化前後結構', '氧化進度', '厚度變化', '製程條件註記'],
-  },
-  {
     id: 'measurements',
     label: '量測資料',
     title: '量測資料匯入與比較',

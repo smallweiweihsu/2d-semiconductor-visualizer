@@ -17,10 +17,6 @@ export function OxidationWarnings({
     '若氧化不均勻，單點 Raman 可能不代表整片樣品。',
   ]
 
-  if (scenario.productMaterialId === 'wox') {
-    warnings.push('WOx 組成可能不是固定化學計量。')
-  }
-
   if (scenario.productMaterialId === 'sb2o3') {
     warnings.push('Sb 表面可能在空氣中形成氧化層，但厚度與化學態需 AFM/XPS 確認。')
   }
