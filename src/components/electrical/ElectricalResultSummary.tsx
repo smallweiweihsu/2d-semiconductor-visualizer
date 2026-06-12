@@ -27,6 +27,39 @@ export function ElectricalResultSummary({
     ['總電阻', formatResistance(result.totalResistance_ohm)],
     ['介電層電場', `${formatNumber(result.dielectricField_MV_per_cm, 3)} MV/cm`],
   ]
+
+  if (result.subthresholdSwing_mV_per_dec !== null) {
+    facts.push([
+      '次臨界擺幅 SS',
+      `${formatNumber(result.subthresholdSwing_mV_per_dec, 1)} mV/dec`,
+    ])
+  }
+
+  if (result.saturationVoltage_V !== null) {
+    facts.push([
+      '夾止飽和電壓 Vd,sat',
+      `${formatNumber(result.saturationVoltage_V, 2)} V`,
+    ])
+  }
+
+  if (result.quantumCapacitance_F_per_m2 !== null) {
+    facts.push([
+      '量子電容 Cq',
+      `${formatNumber(result.quantumCapacitance_F_per_m2 * 100, 3)} µF/cm²`,
+    ])
+    facts.push([
+      '有效閘極電容 Ceff',
+      `${formatNumber((result.effectiveGateCapacitance_F_per_m2 ?? 0) * 100, 3)} µF/cm²`,
+    ])
+  }
+
+  if (result.thermionicSaturationCurrent_A !== null) {
+    facts.push([
+      '熱離子發射飽和電流 Is',
+      `${formatNumber(result.thermionicSaturationCurrent_A, 3)} A`,
+    ])
+  }
+
   const missingCurveInputs =
     result.idVdCurve.points.length === 0 ||
     result.idVgCurve.points.length === 0 ||

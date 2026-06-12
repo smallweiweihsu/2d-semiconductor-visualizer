@@ -22,7 +22,16 @@ export interface DiffusionScenario {
   initialMixingDepth_nm: number
   confidence: DiffusionConfidence
   notes_zh?: string
+  /**
+   * 擴散源模型（Fick 第二定律解析解，Crank 1975）：
+   * - 'instantaneous'：瞬時有限源 → 高斯剖面 exp(−x²/4Dt)（舊版預設）。
+   * - 'constant_source'：定濃度表面源 → erfc 剖面 erfc(x/2√(Dt))，
+   *   適合長時間供給不斷的退火擴散（如金屬層持續供應）。
+   */
+  sourceModel?: DiffusionSourceModel
 }
+
+export type DiffusionSourceModel = 'instantaneous' | 'constant_source'
 
 export interface DiffusionProfilePoint {
   depth_nm: number

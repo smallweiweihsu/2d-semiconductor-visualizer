@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { CollapsibleSection } from '../common/CollapsibleSection'
 import { deviceRoleLabels } from '../../data/deviceRoles'
 import { materials } from '../../data/materials'
 import type { DeviceLayer } from '../../types/device'
@@ -6,6 +7,7 @@ import type {
   CarrierType,
   ElectricalConfidence,
   ElectricalContactModel,
+  ElectricalOutputModel,
   ElectricalScenario,
 } from '../../types/electrical'
 import type { ProcessFlow, ProcessStep } from '../../types/process'
@@ -317,6 +319,103 @@ export function ElectricalParameterEditor({
           value={scenario.drainContactResistance_ohm}
         />
       </EditorBlock>
+
+      <div className="mt-4">
+        <CollapsibleSection
+          summary="輸出模型（square-law / 線性電阻）、次臨界區、Schottky 熱離子發射、量子電容。預設值即可運作，點擊展開調整。"
+          title="進階物理機制"
+        >
+          <div className="grid gap-4 xl:grid-cols-2">
+            <label className="block text-xs text-slate-400">
+              通道輸出模型
+              <select
+                className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-600"
+                onChange={(event) =>
+                  onUpdateScenario({
+                    outputModel: event.target.value as ElectricalOutputModel,
+                  })
+                }
+                value={scenario.outputModel ?? 'square_law'}
+              >
+                <option value="square_law">
+                  漸變通道近似（線性 + 飽和區，Sze &amp; Ng 2007）
+                </option>
+                <option value="linear_resistor">線性電阻趨勢（舊版）</option>
+              </select>
+            </label>
+            <label className="flex items-center gap-2 text-xs text-slate-400">
+              <input
+                checked={scenario.includeSubthreshold !== false}
+                onChange={(event) =>
+                  onUpdateScenario({ includeSubthreshold: event.target.checked })
+                }
+                type="checkbox"
+              />
+              啟用次臨界區（SS = n·kT/q·ln10）
+            </label>
+            <NumberField
+              label="次臨界理想因子 n"
+              onChange={(value) =>
+                onUpdateScenario({ subthresholdIdealityFactor: value })
+              }
+              unit="–"
+              value={scenario.subthresholdIdealityFactor ?? null}
+            />
+            <NumberField
+              label="Schottky 障礙高度 φB"
+              onChange={(value) =>
+                onUpdateScenario({ schottkyBarrierHeight_eV: value })
+              }
+              unit="eV"
+              value={scenario.schottkyBarrierHeight_eV ?? null}
+            />
+            <NumberField
+              label="Schottky 理想因子"
+              onChange={(value) =>
+                onUpdateScenario({ schottkyIdealityFactor: value })
+              }
+              unit="–"
+              value={scenario.schottkyIdealityFactor ?? null}
+            />
+            <NumberField
+              label="單側接觸面積"
+              onChange={(value) => onUpdateScenario({ contactArea_um2: value })}
+              unit="µm²"
+              value={scenario.contactArea_um2 ?? null}
+            />
+            <label className="flex items-center gap-2 text-xs text-slate-400">
+              <input
+                checked={scenario.includeQuantumCapacitance === true}
+                onChange={(event) =>
+                  onUpdateScenario({
+                    includeQuantumCapacitance: event.target.checked,
+                  })
+                }
+                type="checkbox"
+              />
+              啟用量子電容串聯（Luryi 1988；Ma &amp; Jena 2015）
+            </label>
+            <NumberField
+              label="載子有效質量 m*"
+              onChange={(value) => onUpdateScenario({ effectiveMass_m0: value })}
+              unit="m₀"
+              value={scenario.effectiveMass_m0 ?? null}
+            />
+            <NumberField
+              label="簡併因子 g（自旋×谷）"
+              onChange={(value) =>
+                onUpdateScenario({ quantumDegeneracyFactor: value })
+              }
+              unit="–"
+              value={scenario.quantumDegeneracyFactor ?? null}
+            />
+          </div>
+          <p className="mt-3 rounded-md border border-slate-800 bg-slate-950/50 px-3 py-2 text-[11px] leading-4 text-slate-500">
+            Schottky 欄位只在接觸模型為「Schottky-like」時參與計算（熱離子發射上限
+            J = A*T²exp(−qφB/kT)）。φB 建議由 band alignment 預覽或實測 Arrhenius 萃取取得。
+          </p>
+        </CollapsibleSection>
+      </div>
 
       <EditorBlock title="掃描設定">
         <NumberField

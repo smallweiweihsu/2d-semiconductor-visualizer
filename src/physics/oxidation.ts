@@ -14,24 +14,133 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max)
 }
 
-// This is a qualitative thickness estimate. The nonuniformity factor is a
-// user-facing interpretation multiplier, not a chemically rigorous rate law.
-export function calculateOxidizedThickness(
-  scenario: OxidationScenario,
+// ---------------------------------------------------------------------------
+// 氧化成長律
+//
+// 1. 線性律：x = rate · t。適用反應限制的初期氧化或缺乏動力學資料時的趨勢估算。
+// 2. Deal-Grove 線性-拋物線律：x² + A·x = B·(t+τ)
+//    解析解：x(t) = (A/2)·[√(1 + 4B(t+τ)/A²) − 1]
+//    短時間 → 線性（B/A 速率），長時間 → 拋物線（擴散限制）。
+//    參考：B. E. Deal & A. S. Grove, "General Relationship for the Thermal
+//    Oxidation of Silicon", J. Appl. Phys. 36, 3770–3778 (1965),
+//    DOI: 10.1063/1.1713945。
+// 3. Cabrera-Mott 反對數律（低溫薄膜、自限性）：1/x = a − b·ln(t/t₀)
+//    適用金屬（如 Sb）常溫自然氧化形成的數 nm 自限氧化層。
+//    參考：N. Cabrera & N. F. Mott, "Theory of the oxidation of metals",
+//    Rep. Prog. Phys. 12, 163–184 (1949), DOI: 10.1088/0034-4885/12/1/308。
+//
+// nonuniformityFactor 仍為使用者判讀用修正因子，不屬於任何嚴格速率律。
+// ---------------------------------------------------------------------------
+
+/** Deal-Grove 線性-拋物線律厚度 (nm)。 */
+export function calculateDealGroveThickness(
+  A_nm: number | null,
+  B_nm2_per_s: number | null,
+  time_s: number | null,
+  tau_s: number | null,
 ): number | null {
-  const oxidationRate = scenario.oxidationRate_nm_per_s
-  const processTime = scenario.processTime_s
-  const nonuniformityFactor = scenario.nonuniformityFactor
+  const tau = tau_s ?? 0
 
   if (
-    !isPositiveNumber(oxidationRate) ||
-    !isPositiveNumber(processTime) ||
-    !isPositiveNumber(nonuniformityFactor)
+    !isPositiveNumber(A_nm) ||
+    !isPositiveNumber(B_nm2_per_s) ||
+    !isPositiveNumber(time_s) ||
+    !Number.isFinite(tau) ||
+    tau < 0
   ) {
     return null
   }
 
-  return oxidationRate * processTime * nonuniformityFactor
+  return (
+    (A_nm / 2) *
+    (Math.sqrt(1 + (4 * B_nm2_per_s * (time_s + tau)) / (A_nm * A_nm)) - 1)
+  )
+}
+
+/** Cabrera-Mott 反對數律厚度 (nm)：1/x = a − b·ln(t/t₀)，並套用自限厚度上限。 */
+export function calculateCabreraMottThickness(
+  a_inv_nm: number | null,
+  b_inv_nm: number | null,
+  time_s: number | null,
+  t0_s: number | null,
+  limitThickness_nm: number | null,
+): number | null {
+  const t0 = t0_s ?? 1
+
+  if (
+    !isPositiveNumber(a_inv_nm) ||
+    !isPositiveNumber(b_inv_nm) ||
+    !isPositiveNumber(time_s) ||
+    !isPositiveNumber(t0)
+  ) {
+    return null
+  }
+
+  const inverseThickness = a_inv_nm - b_inv_nm * Math.log(time_s / t0)
+
+  let thickness_nm: number
+
+  if (inverseThickness <= 0) {
+    // 反對數律已超出適用範圍，取自限厚度（若有），否則無法估算。
+    if (!isPositiveNumber(limitThickness_nm)) {
+      return null
+    }
+
+    thickness_nm = limitThickness_nm
+  } else {
+    thickness_nm = 1 / inverseThickness
+  }
+
+  if (isPositiveNumber(limitThickness_nm)) {
+    return Math.min(thickness_nm, limitThickness_nm)
+  }
+
+  return thickness_nm
+}
+
+export function calculateOxidizedThickness(
+  scenario: OxidationScenario,
+): number | null {
+  const nonuniformityFactor = scenario.nonuniformityFactor
+  const processTime = scenario.processTime_s
+  const growthLaw = scenario.growthLaw ?? 'linear'
+
+  if (!isPositiveNumber(nonuniformityFactor)) {
+    return null
+  }
+
+  let baseThickness: number | null
+
+  if (growthLaw === 'deal_grove') {
+    baseThickness = calculateDealGroveThickness(
+      scenario.dealGroveA_nm ?? null,
+      scenario.dealGroveB_nm2_per_s ?? null,
+      processTime,
+      scenario.dealGroveTau_s ?? null,
+    )
+  } else if (growthLaw === 'cabrera_mott') {
+    baseThickness = calculateCabreraMottThickness(
+      scenario.cabreraMottA_inv_nm ?? null,
+      scenario.cabreraMottB_inv_nm ?? null,
+      processTime,
+      scenario.cabreraMottT0_s ?? null,
+      scenario.cabreraMottLimitThickness_nm ?? null,
+    )
+  } else {
+    const oxidationRate = scenario.oxidationRate_nm_per_s
+
+    if (!isPositiveNumber(oxidationRate) || !isPositiveNumber(processTime)) {
+      return null
+    }
+
+    baseThickness = oxidationRate * processTime
+  }
+
+  if (baseThickness === null) {
+    return null
+  }
+
+  return baseThickness * nonuniformityFactor
 }
 
 export function calculateRemainingThickness(
@@ -238,8 +347,42 @@ export function validateOxidationScenario(
     }
   })
 
-  if (scenario.oxidationRate_nm_per_s === null) {
+  const growthLaw = scenario.growthLaw ?? 'linear'
+
+  if (growthLaw === 'linear' && scenario.oxidationRate_nm_per_s === null) {
     warnings_zh.push('缺少氧化速率，無法定量估算氧化厚度。')
+  }
+
+  if (
+    growthLaw === 'deal_grove' &&
+    (!isPositiveNumber(scenario.dealGroveA_nm ?? null) ||
+      !isPositiveNumber(scenario.dealGroveB_nm2_per_s ?? null))
+  ) {
+    warnings_zh.push(
+      'Deal-Grove 模型缺少 A 或 B 常數，無法估算厚度；A、B 需由該材料系統的氧化實驗擬合（Deal & Grove 1965 為 Si/SiO₂ 系統）。',
+    )
+  }
+
+  if (
+    growthLaw === 'cabrera_mott' &&
+    (!isPositiveNumber(scenario.cabreraMottA_inv_nm ?? null) ||
+      !isPositiveNumber(scenario.cabreraMottB_inv_nm ?? null))
+  ) {
+    warnings_zh.push(
+      'Cabrera-Mott 反對數律缺少 a 或 b 參數，無法估算厚度；參數需由薄氧化層厚度-時間實驗擬合（Cabrera & Mott 1949）。',
+    )
+  }
+
+  if (growthLaw === 'deal_grove') {
+    info_zh.push(
+      'Deal-Grove 律假設氧化劑經氧化層擴散後在界面反應；二維材料逐層氧化與金屬薄膜氧化可能偏離此假設，僅作趨勢判讀。',
+    )
+  }
+
+  if (growthLaw === 'cabrera_mott') {
+    info_zh.push(
+      'Cabrera-Mott 律適用低溫薄膜（數 nm）自限性氧化，常用於金屬（如 Sb）常溫自然氧化；長時間或高溫不適用。',
+    )
   }
 
   if (scenario.ramanProbeDepth_nm === null) {
@@ -320,7 +463,11 @@ export function calculateOxidationScenario(
     }),
     warnings_zh: [...new Set(warnings_zh)],
     assumptions_zh: [
-      '氧化厚度以氧化速率、時間與 nonuniformity factor 做簡化估算。',
+      (scenario.growthLaw ?? 'linear') === 'deal_grove'
+        ? '氧化厚度使用 Deal-Grove 線性-拋物線律 x²+Ax=B(t+τ)（Deal & Grove 1965, J. Appl. Phys. 36, 3770），A、B 需由實驗擬合。'
+        : (scenario.growthLaw ?? 'linear') === 'cabrera_mott'
+          ? '氧化厚度使用 Cabrera-Mott 反對數律 1/x = a − b·ln(t/t₀)（Cabrera & Mott 1949, Rep. Prog. Phys. 12, 163），適用低溫自限性薄氧化層。'
+          : '氧化厚度以線性律（氧化速率 × 時間）做簡化估算。',
       'nonuniformity factor 是定性修正因子，不是嚴格反應動力學。',
       'Raman 可見性是基於殘留厚度與探測深度的簡化判斷，不代表 Raman 強度。',
       '此模型尚未處理真實化學計量、缺陷態、蝕刻、表面粗糙度或界面反應。',

@@ -14,6 +14,7 @@ import { ProjectExportWorkspace } from '../export/ProjectExportWorkspace'
 import { LiteratureDatabaseWorkspace } from '../literature/LiteratureDatabaseWorkspace'
 import { MaterialDatabase } from '../materials/MaterialDatabase'
 import { MeasurementWorkspace } from '../measurements/MeasurementWorkspace'
+import { OxidationWorkspace } from '../oxidation/OxidationWorkspace'
 import { ProcessDiffusionWorkspace } from '../process/ProcessDiffusionWorkspace'
 import { ViewerPlaceholder } from '../viewer3d/ViewerPlaceholder'
 
@@ -80,6 +81,15 @@ export function Workspace({
         deviceLayers={deviceStructure.layers}
         flow={processFlow}
         onChangeFlow={onChangeProcessFlow}
+      />
+    )
+  }
+
+  if (tab.id === 'oxidation') {
+    return (
+      <OxidationWorkspace
+        deviceLayers={deviceStructure.layers}
+        flow={processFlow}
       />
     )
   }

@@ -179,3 +179,12 @@ npm run typecheck
 - 不要用 work function alone 排名 contact metal。
 - 不要把 high-k dielectric 視為一定提升元件性能。
 - 不要實作 automatic DOI lookup、PDF parsing、backend database、cloud sync，除非新批次明確要求。
+
+## 9. Batch 16 更新（2026-06-12）
+
+- 修復氧化模組未路由（無法進入）的問題、加入 Workspace ErrorBoundary、`base: './'`、hashchange 分頁導覽。
+- 補齊物理機制：square-law / subthreshold / Schottky 熱離子發射上限 / 量子電容 / Schottky–Mott + pinning band alignment / Deal-Grove / Cabrera-Mott / erfc 擴散剖面。
+- 上述機制的文獻（Sze & Ng 2007、Deal & Grove 1965、Cabrera & Mott 1949、Luryi 1988、Ma & Jena 2015、Allain et al. 2015、Das et al. 2013、Kim et al. 2017、Crank 1975）已加入 `src/data/literatureSources.ts`，DOI 已人工核對，狀態為 candidate。
+- 版面：左右側欄與底部面板預設收合；進階物理參數收納於可展開區塊。
+- 新增 `npm run test`（Vitest：physics.test.ts、app-integration.test.tsx）。
+- 注意：scenario 介面新增欄位皆為 optional，舊 preset 與既有流程不受影響；電性預設輸出模型改為 square_law（可在進階區塊切回線性電阻趨勢）。

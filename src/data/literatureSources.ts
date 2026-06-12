@@ -464,4 +464,139 @@ export const literatureSources: LiteratureSource[] = [
       '此為待查文獻占位資料，用於 lower-priority metals 進入 Sb₂O₃ 的 D0/Ea、oxide interface reaction 與 annealing stability 追蹤。不可視為引用。',
     tags_zh: ['Sb2O3', 'metal diffusion', 'D0', 'Ea', 'lower priority metals'],
   },
+
+  // -------------------------------------------------------------------------
+  // 物理機制模型來源（Batch 16：square-law / subthreshold / Schottky 熱離子發射 /
+  // 量子電容 / Deal-Grove / Cabrera-Mott / erfc 擴散剖面 / band alignment）。
+  // 以下皆為已人工核對 DOI 與書目的真實文獻，狀態仍標 candidate 待人工複審。
+  // -------------------------------------------------------------------------
+  {
+    id: 'src-sze-ng-2007-physics-of-semiconductor-devices',
+    title: 'Physics of Semiconductor Devices, 3rd Edition',
+    authors: ['S. M. Sze', 'K. K. Ng'],
+    year: 2007,
+    sourceType: 'book',
+    journal: 'Wiley-Interscience',
+    doi: '10.1002/0470068329',
+    reviewStatus: 'candidate',
+    tags_zh: ['教科書', 'MOSFET', 'Schottky', 'subthreshold', 'thermionic emission'],
+    notes_zh:
+      '電性模組的主要教科書依據：漸變通道近似（square-law，Ch. 6）、次臨界擺幅 SS = n(kT/q)ln10（Ch. 6）、Schottky–Mott 規則與熱離子發射 J = A*T²exp(−qφB/kT)（Ch. 3）、Richardson 常數 120 A·cm⁻²·K⁻²。',
+  },
+  {
+    id: 'src-deal-grove-1965-thermal-oxidation',
+    title: 'General Relationship for the Thermal Oxidation of Silicon',
+    authors: ['B. E. Deal', 'A. S. Grove'],
+    year: 1965,
+    sourceType: 'journal_article',
+    journal: 'Journal of Applied Physics',
+    doi: '10.1063/1.1713945',
+    reviewStatus: 'candidate',
+    tags_zh: ['oxidation', 'Deal-Grove', '線性-拋物線律', '製程模型'],
+    notes_zh:
+      '氧化模組 Deal-Grove 成長律 x²+Ax=B(t+τ) 的原始文獻（J. Appl. Phys. 36, 3770–3778）。原文為 Si/SiO₂ 系統；套用到 Sb 或二維材料時 A、B 必須由該材料系統實驗重新擬合，僅作趨勢判讀。',
+  },
+  {
+    id: 'src-cabrera-mott-1949-oxidation-of-metals',
+    title: 'Theory of the oxidation of metals',
+    authors: ['N. Cabrera', 'N. F. Mott'],
+    year: 1949,
+    sourceType: 'journal_article',
+    journal: 'Reports on Progress in Physics',
+    doi: '10.1088/0034-4885/12/1/308',
+    reviewStatus: 'candidate',
+    tags_zh: ['oxidation', 'Cabrera-Mott', '自限性氧化', '薄膜', 'Sb'],
+    notes_zh:
+      '氧化模組 Cabrera-Mott 低溫薄膜反對數成長律的原始文獻（Rep. Prog. Phys. 12, 163–184）。適用金屬常溫自然氧化形成數 nm 自限氧化層（如 Sb 表面氧化）；參數需由厚度-時間實驗擬合。',
+  },
+  {
+    id: 'src-luryi-1988-quantum-capacitance',
+    title: 'Quantum capacitance devices',
+    authors: ['S. Luryi'],
+    year: 1988,
+    sourceType: 'journal_article',
+    journal: 'Applied Physics Letters',
+    doi: '10.1063/1.99649',
+    reviewStatus: 'candidate',
+    tags_zh: ['quantum capacitance', '2DEG', '閘極電容'],
+    notes_zh:
+      '量子電容概念的原始文獻（Appl. Phys. Lett. 52, 501）：2D 電子系統 Cq = m e²/πħ² 與 Cox 串聯。電性模組的 Cq 選項以此為依據（簡併極限常數值）。',
+  },
+  {
+    id: 'src-ma-jena-2015-quantum-capacitance-2d-fet',
+    title:
+      'Carrier statistics and quantum capacitance effects on mobility extraction in two-dimensional crystal semiconductor field-effect transistors',
+    authors: ['N. Ma', 'D. Jena'],
+    year: 2015,
+    sourceType: 'journal_article',
+    journal: '2D Materials',
+    doi: '10.1088/2053-1583/2/1/015003',
+    reviewStatus: 'candidate',
+    tags_zh: ['quantum capacitance', 'TMD', 'mobility extraction', '載子統計'],
+    notes_zh:
+      '2D Mater. 2, 015003。說明 TMD FET 中量子電容與載子統計對 Cox(Vg−Vth) 近似與遷移率萃取的影響；支持電性模組「Cq 串聯修正」與「萃取參數需謹慎」的警告。',
+  },
+  {
+    id: 'src-allain-2015-contacts-2d-semiconductors',
+    title: 'Electrical contacts to two-dimensional semiconductors',
+    authors: ['A. Allain', 'J. Kang', 'K. Banerjee', 'A. Kis'],
+    year: 2015,
+    sourceType: 'review_article',
+    journal: 'Nature Materials',
+    doi: '10.1038/nmat4452',
+    reviewStatus: 'candidate',
+    tags_zh: ['metal contact', '2D semiconductor', 'Schottky barrier', 'Fermi-level pinning'],
+    notes_zh:
+      'Nat. Mater. 14, 1195–1205 綜述。二維半導體金屬接觸的 Schottky 障礙、pinning、穿隧與接觸電阻機制；支持電性模組 schottky_like 熱離子發射上限與「功函數不能單獨決定接觸」警告。',
+  },
+  {
+    id: 'src-das-2013-mos2-scandium-contacts',
+    title: 'High Performance Multilayer MoS2 Transistors with Scandium Contacts',
+    authors: ['S. Das', 'H.-Y. Chen', 'A. V. Penumatcha', 'J. Appenzeller'],
+    year: 2013,
+    sourceType: 'journal_article',
+    journal: 'Nano Letters',
+    doi: '10.1021/nl303583v',
+    reviewStatus: 'candidate',
+    tags_zh: ['MoS2', 'Sc contact', 'Schottky barrier', 'Fermi-level pinning'],
+    notes_zh:
+      'Nano Lett. 13, 100–105。實測金屬/MoS₂ 接觸障礙與 pinning 行為，證明障礙高度與金屬功函數偏離理想 Schottky–Mott 關係；band alignment 模組 pinning 模型的實驗依據之一。',
+  },
+  {
+    id: 'src-kim-2017-fermi-level-pinning-monolayer-mox2',
+    title:
+      'Fermi Level Pinning at Electrical Metal Contacts of Monolayer Molybdenum Dichalcogenides',
+    authors: [
+      'C. Kim',
+      'I. Moon',
+      'D. Lee',
+      'M. S. Choi',
+      'F. Ahmed',
+      'S. Nam',
+      'Y. Cho',
+      'H.-J. Shin',
+      'S. Park',
+      'W. J. Yoo',
+    ],
+    year: 2017,
+    sourceType: 'journal_article',
+    journal: 'ACS Nano',
+    doi: '10.1021/acsnano.6b07159',
+    reviewStatus: 'candidate',
+    tags_zh: ['Fermi-level pinning', 'pinning factor', 'MoS2', 'MoTe2', 'monolayer'],
+    notes_zh:
+      'ACS Nano 11, 1588–1596。實測單層 MoS₂ / MoTe₂ 的 pinning factor 約 0.11 / −0.07。band alignment 模組 pinning factor 線性內插模型的實驗依據；提醒 pinning 參數必須逐材料系統實測。',
+  },
+  {
+    id: 'src-crank-1975-mathematics-of-diffusion',
+    title: 'The Mathematics of Diffusion, 2nd Edition',
+    authors: ['J. Crank'],
+    year: 1975,
+    sourceType: 'book',
+    journal: 'Oxford University Press',
+    reviewStatus: 'candidate',
+    tags_zh: ['diffusion', 'Fick', 'erfc', '解析解', '教科書'],
+    notes_zh:
+      '擴散模組剖面解析解的教科書依據（Ch. 2）：瞬時有限源高斯解 exp(−x²/4Dt) 與定濃度表面源 erfc(x/2√Dt) 解。兩種邊界條件的適用情境不同，需依實驗條件選擇。',
+  },
 ]

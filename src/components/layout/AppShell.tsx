@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { defaultProcessFlow } from '../../data/defaultProcessFlow'
 import { initialDeviceStructure } from '../../data/deviceStructures'
 import { workspaceTabs, type WorkspaceTabId } from '../../data/workspaceTabs'
@@ -8,6 +8,7 @@ import type {
   PeakMarker,
   ProcessedMeasurementDataset,
 } from '../../types/measurement'
+import { ErrorBoundary } from '../common/ErrorBoundary'
 import { BottomPanel } from './BottomPanel'
 import { RightInspector } from './RightInspector'
 import { Sidebar } from './Sidebar'
@@ -40,6 +41,22 @@ export function AppShell() {
   const [peakMarkers, setPeakMarkers] = useState<PeakMarker[]>([])
   const selectedTab =
     workspaceTabs.find((tab) => tab.id === selectedTabId) ?? workspaceTabs[0]
+
+  // 支援瀏覽器上一頁 / 下一頁與手動修改網址 hash 切換分頁。
+  useEffect(() => {
+    function handleHashChange() {
+      const hashTabId = window.location.hash.replace('#', '')
+      const matchingTab = workspaceTabs.find((tab) => tab.id === hashTabId)
+
+      if (matchingTab) {
+        setSelectedTabId(matchingTab.id)
+      }
+    }
+
+    window.addEventListener('hashchange', handleHashChange)
+
+    return () => window.removeEventListener('hashchange', handleHashChange)
+  }, [])
 
   function handleSelectTab(tabId: WorkspaceTabId) {
     setSelectedTabId(tabId)
@@ -80,8 +97,9 @@ export function AppShell() {
             isCollapsed={isLeftSidebarCollapsed}
             onToggleCollapsed={handleToggleLeftSidebar}
           />
-          <Workspace
-            deviceStructure={deviceStructure}
+          <ErrorBoundary resetKey={selectedTabId}>
+            <Workspace
+              deviceStructure={deviceStructure}
             measurementComparisons={measurementComparisons}
             measurementDatasets={measurementDatasets}
             peakMarkers={peakMarkers}
@@ -94,9 +112,10 @@ export function AppShell() {
             onChangeProcessedMeasurementDatasets={
               setProcessedMeasurementDatasets
             }
-            processFlow={processFlow}
-            tab={selectedTab}
-          />
+              processFlow={processFlow}
+              tab={selectedTab}
+            />
+          </ErrorBoundary>
           <RightInspector
             activeTabId={selectedTabId}
             isCollapsed={isRightInspectorCollapsed}
@@ -130,7 +149,11 @@ function getMainGridClass(
 }
 
 function getInitialCollapsedState(storageKey: string) {
-  return window.localStorage.getItem(storageKey) === 'true'
+  // 預設收合：左右側欄目前以提示與占位資訊為主，
+  // 預設隱藏以降低頁面複雜度；使用者展開後會記住偏好。
+  const stored = window.localStorage.getItem(storageKey)
+
+  return stored === null ? true : stored === 'true'
 }
 
 function getInitialTabId(): WorkspaceTabId {

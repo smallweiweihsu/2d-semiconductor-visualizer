@@ -4,6 +4,7 @@ import { materials } from '../../data/materials'
 import type { DeviceLayer } from '../../types/device'
 import type {
   OxidationConfidence,
+  OxidationGrowthLaw,
   OxidationMethod,
   OxidationScenario,
 } from '../../types/oxidation'
@@ -278,14 +279,90 @@ export function OxidationParameterEditor({
           unit="層"
           value={scenario.initialLayerCount}
         />
-        <NumberField
-          label="氧化速率"
-          onChange={(value) =>
-            onUpdateScenario({ oxidationRate_nm_per_s: value })
-          }
-          unit="nm/s"
-          value={scenario.oxidationRate_nm_per_s}
-        />
+        <label className="block text-xs text-slate-400">
+          氧化成長律
+          <select
+            className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-600"
+            onChange={(event) =>
+              onUpdateScenario({
+                growthLaw: event.target.value as OxidationGrowthLaw,
+              })
+            }
+            value={scenario.growthLaw ?? 'linear'}
+          >
+            <option value="linear">線性律（速率 × 時間）</option>
+            <option value="deal_grove">Deal-Grove 線性-拋物線律（1965）</option>
+            <option value="cabrera_mott">Cabrera-Mott 反對數律（1949，自限薄膜）</option>
+          </select>
+        </label>
+        {(scenario.growthLaw ?? 'linear') === 'linear' ? (
+          <NumberField
+            label="氧化速率"
+            onChange={(value) =>
+              onUpdateScenario({ oxidationRate_nm_per_s: value })
+            }
+            unit="nm/s"
+            value={scenario.oxidationRate_nm_per_s}
+          />
+        ) : null}
+        {(scenario.growthLaw ?? 'linear') === 'deal_grove' ? (
+          <>
+            <NumberField
+              label="Deal-Grove A"
+              onChange={(value) => onUpdateScenario({ dealGroveA_nm: value })}
+              unit="nm"
+              value={scenario.dealGroveA_nm ?? null}
+            />
+            <NumberField
+              label="Deal-Grove B"
+              onChange={(value) =>
+                onUpdateScenario({ dealGroveB_nm2_per_s: value })
+              }
+              unit="nm²/s"
+              value={scenario.dealGroveB_nm2_per_s ?? null}
+            />
+            <NumberField
+              label="Deal-Grove τ（初始厚度等效時間）"
+              onChange={(value) => onUpdateScenario({ dealGroveTau_s: value })}
+              unit="s"
+              value={scenario.dealGroveTau_s ?? null}
+            />
+          </>
+        ) : null}
+        {(scenario.growthLaw ?? 'linear') === 'cabrera_mott' ? (
+          <>
+            <NumberField
+              label="Cabrera-Mott a（截距）"
+              onChange={(value) =>
+                onUpdateScenario({ cabreraMottA_inv_nm: value })
+              }
+              unit="1/nm"
+              value={scenario.cabreraMottA_inv_nm ?? null}
+            />
+            <NumberField
+              label="Cabrera-Mott b（斜率）"
+              onChange={(value) =>
+                onUpdateScenario({ cabreraMottB_inv_nm: value })
+              }
+              unit="1/nm"
+              value={scenario.cabreraMottB_inv_nm ?? null}
+            />
+            <NumberField
+              label="參考時間 t₀"
+              onChange={(value) => onUpdateScenario({ cabreraMottT0_s: value })}
+              unit="s"
+              value={scenario.cabreraMottT0_s ?? null}
+            />
+            <NumberField
+              label="自限厚度上限"
+              onChange={(value) =>
+                onUpdateScenario({ cabreraMottLimitThickness_nm: value })
+              }
+              unit="nm"
+              value={scenario.cabreraMottLimitThickness_nm ?? null}
+            />
+          </>
+        ) : null}
         <NumberField
           label="氧化不均勻因子"
           onChange={(value) => onUpdateScenario({ nonuniformityFactor: value ?? 1 })}

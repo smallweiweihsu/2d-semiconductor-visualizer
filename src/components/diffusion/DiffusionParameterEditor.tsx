@@ -6,6 +6,7 @@ import type {
   DiffusionConfidence,
   DiffusionDimensionality,
   DiffusionScenario,
+  DiffusionSourceModel,
 } from '../../types/diffusion'
 import type { ProcessFlow, ProcessStep } from '../../types/process'
 import { formatThickness, getMaterialDisplayName } from '../device/deviceFormatting'
@@ -219,6 +220,24 @@ export function DiffusionParameterEditor({
               ),
             )}
           </select>
+        </label>
+        <label className="block text-xs text-slate-400">
+          擴散源模型（剖面邊界條件）
+          <select
+            className="mt-1 w-full rounded-md border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 outline-none focus:border-cyan-600"
+            onChange={(event) =>
+              onUpdateScenario({
+                sourceModel: event.target.value as DiffusionSourceModel,
+              })
+            }
+            value={scenario.sourceModel ?? 'instantaneous'}
+          >
+            <option value="instantaneous">瞬時有限源（高斯剖面）</option>
+            <option value="constant_source">定濃度表面源（erfc 剖面）</option>
+          </select>
+          <span className="mt-1 block text-[11px] leading-4 text-slate-600">
+            Fick 第二定律解析解（Crank 1975）：金屬層持續供應時建議用 erfc。
+          </span>
         </label>
         <NumberField
           label="界面障礙因子"

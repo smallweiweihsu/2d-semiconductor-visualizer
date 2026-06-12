@@ -31,6 +31,14 @@ export const workspaceTabs = [
     features: ['流程時間線', '製程樣板', '參數編輯', '材料層關聯'],
   },
   {
+    id: 'oxidation',
+    label: '氧化模擬',
+    title: '氧化模擬與 Raman 解釋',
+    description:
+      '以線性、Deal-Grove 或 Cabrera-Mott 成長律近似估算氧化厚度，並輔助判讀殘留材料與 Raman 可見性。',
+    features: ['成長律選擇', '氧化厚度估算', '殘留厚度與比例', 'Raman 可見性判讀'],
+  },
+  {
     id: 'measurements',
     label: '量測資料',
     title: '量測資料匯入與比較',

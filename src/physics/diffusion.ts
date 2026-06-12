@@ -123,6 +123,66 @@ export function generateGaussianProfile(
   })
 }
 
+/**
+ * 互補誤差函數 erfc(x) 的數值近似（Abramowitz & Stegun 7.1.26，誤差 < 1.5e-7）。
+ */
+export function erfc(x: number): number {
+  if (!Number.isFinite(x)) {
+    return x > 0 ? 0 : 2
+  }
+
+  const z = Math.abs(x)
+  const t = 1 / (1 + 0.3275911 * z)
+  const polynomial =
+    t *
+    (0.254829592 +
+      t *
+        (-0.284496736 +
+          t * (1.421413741 + t * (-1.453152027 + t * 1.061405429))))
+  const erfcAbs = polynomial * Math.exp(-z * z)
+
+  return x >= 0 ? erfcAbs : 2 - erfcAbs
+}
+
+/**
+ * 定濃度表面源剖面：C(x,t)/Cs = erfc(x / (2√(Dt)))。
+ * Fick 第二定律在半無限域、表面濃度固定邊界條件下的解析解。
+ * 參考：J. Crank, The Mathematics of Diffusion, 2nd ed., Oxford (1975), Ch. 2。
+ */
+export function generateErfcProfile(
+  effectiveD_m2s: number | null,
+  time_s: number | null,
+  maxDepth_nm: number,
+  pointCount: number,
+) {
+  if (
+    effectiveD_m2s === null ||
+    time_s === null ||
+    !Number.isFinite(effectiveD_m2s) ||
+    !Number.isFinite(time_s) ||
+    !Number.isFinite(maxDepth_nm) ||
+    effectiveD_m2s <= 0 ||
+    time_s <= 0 ||
+    maxDepth_nm <= 0 ||
+    pointCount < 2
+  ) {
+    return []
+  }
+
+  const maxDepth_m = maxDepth_nm * 1e-9
+  const diffusionDenominator = 2 * Math.sqrt(effectiveD_m2s * time_s)
+
+  return Array.from({ length: pointCount }, (_, index) => {
+    const fraction = index / (pointCount - 1)
+    const depth_m = maxDepth_m * fraction
+
+    return {
+      depth_nm: maxDepth_nm * fraction,
+      normalizedConcentration: erfc(depth_m / diffusionDenominator),
+    }
+  })
+}
+
 export function calculateRiskLevel(
   affectedDepth_nm: number | null,
   targetLayerThickness_nm?: number | null,
@@ -268,10 +328,16 @@ export function calculateDiffusionScenario(
     affectedDepth_nm,
     affectedDepthToLayerThicknessRatio,
     riskLevel,
-    profile: generateGaussianProfile(effectiveD_m2s, scenario.time_s, maxDepth_nm, 80),
+    profile:
+      (scenario.sourceModel ?? 'instantaneous') === 'constant_source'
+        ? generateErfcProfile(effectiveD_m2s, scenario.time_s, maxDepth_nm, 80)
+        : generateGaussianProfile(effectiveD_m2s, scenario.time_s, maxDepth_nm, 80),
     warnings_zh: [...validation.errors_zh, ...validation.warnings_zh, ...validation.info_zh],
     assumptions_zh: [
       '使用 Arrhenius 擴散係數 D(T) = D0 exp(-Ea / kBT)。',
+      (scenario.sourceModel ?? 'instantaneous') === 'constant_source'
+        ? '剖面使用定濃度表面源解析解 C/Cs = erfc(x/2√Dt)（Crank 1975, Ch. 2），假設表面供給源不耗盡。'
+        : '剖面使用瞬時有限源高斯解 exp(−x²/4Dt)（Crank 1975, Ch. 2），假設初始源集中於表面後不再供給。',
       '使用 Fick-like 特徵長度估算擴散距離，未套用完整邊界條件。',
       '界面障礙因子 > 1 會降低有效擴散；晶界與缺陷倍率 > 1 會提高有效擴散。',
       '初始混入深度用於近似沉積造成的界面混合，需與熱擴散分開解讀。',
