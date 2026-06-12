@@ -11,16 +11,16 @@ const previewUrl = `http://127.0.0.1:${previewPort}`
 const storageKey = 'semiviz-project-v2'
 const legacyStorageKey = 'semiviz-project-v1'
 const routes = [
-  ['Dashboard', '/'],
-  ['Device Builder', '/device-builder'],
-  ['Process Flow', '/process-flow'],
-  ['I–V Simulator', '/iv-simulator'],
-  ['Band Diagram', '/band-diagram'],
-  ['Materials', '/materials'],
-  ['References', '/references'],
-  ['Measurements', '/measurements'],
-  ['Comparison Lab', '/comparison-lab'],
-  ['Research Notes', '/research-notes'],
+  ['Dashboard', '/', 'dashboard'],
+  ['Device Builder', '/device-builder', 'device-builder'],
+  ['Process Flow', '/process-flow', 'process-flow'],
+  ['I–V Simulator', '/iv-simulator', 'iv-simulator'],
+  ['Band Diagram', '/band-diagram', 'band-diagram'],
+  ['Materials', '/materials', 'materials'],
+  ['References', '/references', 'references'],
+  ['Measurements', '/measurements', 'measurements'],
+  ['Comparison Lab', '/comparison-lab', 'comparison-lab'],
+  ['Research Notes', '/research-notes', 'research-notes'],
 ]
 
 let server
@@ -44,10 +44,31 @@ try {
   await page.goto(baseUrl, { waitUntil: 'networkidle' })
   await expectVisible(page.getByRole('heading', { name: '2D Semiconductor Device Visualizer' }), 'dashboard renders')
 
-  for (const [label, route] of routes) {
+  for (const [label, route, slug] of routes) {
     await page.getByRole('link', { name: label, exact: true }).click()
     await page.waitForURL(`${baseUrl}${route}`)
     await assertCanScroll(page, `route ${route} can scroll`)
+    await expectVisible(page.locator('.manus-page').first(), `${route} has Manus-style root class`)
+    await page.screenshot({ path: path.join(artifactDir, `current-${slug}.png`), fullPage: true })
+
+    if (route === '/references' || route === '/measurements' || route === '/research-notes') {
+      await expectVisible(page.locator('.manus-split-detail').first(), `${route} uses split-detail layout`)
+    }
+    if (route === '/comparison-lab') {
+      await expectVisible(page.locator('.manus-chip-selector'), 'comparison lab has material chips')
+      await expectVisible(page.locator('[data-testid="comparison-table"]'), 'comparison lab has comparison table')
+    }
+    if (route === '/materials') {
+      await expectVisible(page.locator('.material-detail-panel'), 'materials has material detail panel')
+      await expectVisible(page.locator('.material-parameter-card').first(), 'materials has parameter rows')
+    }
+    if (route === '/band-diagram') {
+      await expectVisible(page.locator('[data-testid="band-diagram-preview"]'), 'band diagram has diagram preview')
+    }
+    if (route === '/process-flow') {
+      await expectVisible(page.locator('.process-timeline'), 'process flow has timeline list')
+      await expectVisible(page.locator('.process-detail'), 'process flow has selected step detail')
+    }
   }
 
   await page.goto(`${baseUrl}/research-notes`, { waitUntil: 'networkidle' })
@@ -179,7 +200,8 @@ try {
   await page.getByRole('button', { name: 'Save measurement' }).click()
   await page.waitForFunction(() => window.localStorage.getItem('semiviz-project-v2')?.includes('transfer.csv'))
   await page.reload({ waitUntil: 'networkidle' })
-  await expectVisible(page.getByText('transfer'), 'imported measurement persists after refresh')
+  await page.waitForFunction(() => window.localStorage.getItem('semiviz-project-v2')?.includes('transfer.csv'))
+  await expectVisible(page.locator('.measurements-workspace').getByText('transfer').first(), 'imported measurement persists after refresh')
   await expectVisible(page.locator('svg.recharts-surface').first(), 'measurement chart renders')
   await page.goto(`${baseUrl}/iv-simulator`, { waitUntil: 'networkidle' })
   await page.getByLabel('Measurement overlay').selectOption({ label: 'transfer' })
@@ -193,7 +215,7 @@ try {
   await page.waitForFunction(() => window.localStorage.getItem('semiviz-project-v2')?.includes('Smoke Mobility Source'))
 
   await page.goto(`${baseUrl}/materials`, { waitUntil: 'networkidle' })
-  await page.getByRole('button', { name: 'WSe₂二維過渡金屬硫族化物，常用於場效電晶體' }).click()
+  await page.locator('.materials-workspace .manus-list-row', { hasText: 'WSe₂' }).first().click()
   await page.getByLabel('mobility_cm2Vs confidence').selectOption('estimated')
   await page.getByRole('spinbutton', { name: 'Value', exact: true }).fill('88')
   await page.getByLabel('mobility_cm2Vs source reference').selectOption({ label: 'Smoke Mobility Source' })
@@ -206,7 +228,7 @@ try {
   await expectVisible(page.locator('.parameter-table', { hasText: 'estimated' }), 'I-V simulator shows mobility confidence')
 
   await page.goto(`${baseUrl}/materials`, { waitUntil: 'networkidle' })
-  await page.getByRole('button', { name: 'WSe₂二維過渡金屬硫族化物，常用於場效電晶體' }).click()
+  await page.locator('.materials-workspace .manus-list-row', { hasText: 'WSe₂' }).first().click()
   await page.getByLabel('mobility_cm2Vs confidence').selectOption('unknown')
   await page.waitForFunction(() => window.localStorage.getItem('semiviz-project-v2')?.includes('"confidence":"unknown"'))
   await page.goto(`${baseUrl}/iv-simulator`, { waitUntil: 'networkidle' })

@@ -4,7 +4,6 @@ import {
   AlertTriangle,
   BarChart3,
   BookOpen,
-  Box,
   Clock,
   Database,
   FlaskConical,
@@ -26,6 +25,17 @@ import {
   YAxis,
 } from 'recharts'
 import { DevicePreview } from '../../components/semiviz/DevicePreview'
+import {
+  ManusCallout,
+  ManusChipSelector,
+  ManusDetailHeader,
+  ManusListRow,
+  ManusMetadataGrid,
+  ManusPreviewCard,
+  ManusScoreDots,
+  ManusSplitDetail,
+  ManusStatusBadge,
+} from '../../components/semiviz/ManusPrimitives'
 import { LayerPropertyEditor } from './LayerPropertyEditor'
 import { LayerStackPanel } from './LayerStackPanel'
 import { findMaterial } from './materialUtils'
@@ -346,25 +356,48 @@ export function ProcessFlowPage() {
 
   return (
     <WorkspacePage title="製程流程" icon={<GitBranch size={18} />}>
-      <div className="flow-grid">
-        <Card title="製程步驟">
+      <div className="flow-grid process-workspace">
+        <Card title="製程步驟" className="process-timeline">
           {flow.steps.map((step) => (
-            <button className={step.order === selected.order ? 'process-row active' : 'process-row'} key={step.id} onClick={() => setSelectedOrder(step.order)}>
-              <span>{step.order}</span>
-              <div><strong>{processLabels[step.type]}</strong><small>{step.notes}</small></div>
-            </button>
+            <ManusListRow
+              active={step.order === selected.order}
+              color={step.order === selected.order ? 'oklch(0.78 0.15 195)' : 'oklch(0.58 0.04 250)'}
+              key={step.id}
+              title={`${step.order}. ${processLabels[step.type]}`}
+              subtitle={step.notes}
+              meta={[step.tool, step.temperature, step.time].filter(Boolean).join(' · ')}
+              badge={step.risk ? <ManusStatusBadge tone="warning">risk</ManusStatusBadge> : null}
+              onClick={() => setSelectedOrder(step.order)}
+            />
           ))}
         </Card>
-        <Card title={flow.name}>
+        <Card title={flow.name} className="process-detail">
           <div className="timeline-row">
             {flow.steps.map((step) => (
               <button className={step.order === selected.order ? 'active' : ''} key={step.id} onClick={() => setSelectedOrder(step.order)}>{step.order}</button>
             ))}
           </div>
-          <div className="detail-callout">
-            <h2>{processLabels[selected.type]}</h2>
-            <p>{selected.expectedResult ?? selected.notes}</p>
-          </div>
+          <ManusDetailHeader
+            title={processLabels[selected.type]}
+            subtitle={selected.notes}
+            badge={<ManusStatusBadge tone={selected.risk ? 'warning' : 'primary'}>{selected.risk ? 'review risk' : 'planned'}</ManusStatusBadge>}
+          />
+          <ManusMetadataGrid items={[
+            { label: 'tool', value: selected.tool ?? 'not specified' },
+            { label: 'time', value: selected.time ?? 'not specified' },
+            { label: 'temperature', value: selected.temperature ?? 'room temp' },
+            { label: 'material', value: selected.materialId ?? 'process dependent' },
+          ]} />
+          <ManusCallout tone="primary">
+            <strong>Expected result</strong>
+            <p>{selected.expectedResult ?? selected.notes ?? flow.description}</p>
+          </ManusCallout>
+          {selected.risk ? (
+            <ManusCallout tone="warning">
+              <strong>Risk</strong>
+              <p>{selected.risk}</p>
+            </ManusCallout>
+          ) : null}
         </Card>
       </div>
     </WorkspacePage>
@@ -573,9 +606,104 @@ export function IVSimulatorPage() {
 }
 
 export function BandDiagramPage() {
+  const { project } = useProjectStore()
+  const metals = ['pd', 'ti', 'in'].map((id) => findMaterial(project.materials, id))
+  const semiconductors = ['wse2', 'mos2'].map((id) => findMaterial(project.materials, id))
+  const [metalId, setMetalId] = useState('pd')
+  const [semiconductorId, setSemiconductorId] = useState('wse2')
+  const [mode, setMode] = useState<'after' | 'before'>('after')
+  const metal = findMaterial(project.materials, metalId)
+  const semiconductor = findMaterial(project.materials, semiconductorId)
+  const metalPhi = resolveParameterNumber(metal.workFunction_eV)
+  const affinity = resolveParameterNumber(semiconductor.electronAffinity_eV)
+  const bandGap = resolveParameterNumber(semiconductor.bandGap_eV)
+  const nBarrier = metalPhi !== undefined && affinity !== undefined ? Math.max(0, metalPhi - affinity) : undefined
+  const pBarrier = bandGap !== undefined && nBarrier !== undefined ? Math.max(0, bandGap - nBarrier) : undefined
+
   return (
     <WorkspacePage title="Band Diagram" icon={<BarChart3 size={18} />}>
-      <PlaceholderGrid items={['Pd φ=5.3 eV', 'Ti φ=4.33 eV', 'In φ=4.12 eV', 'WSe₂ χ=3.9 Eg=1.4']} />
+      <div className="band-diagram-workspace">
+        <aside className="band-selector-panel">
+          <h2>材料選擇</h2>
+          <section>
+            <h3>接觸金屬</h3>
+            {metals.map((entry) => (
+              <ManusListRow
+                active={entry.id === metalId}
+                color={entry.color}
+                key={entry.id}
+                title={entry.displayName}
+                meta={`φ=${formatParameterValue(resolveParameterNumber(entry.workFunction_eV) ?? 'unknown')} eV`}
+                onClick={() => setMetalId(entry.id)}
+              />
+            ))}
+          </section>
+          <section>
+            <h3>半導體</h3>
+            {semiconductors.map((entry) => (
+              <ManusListRow
+                active={entry.id === semiconductorId}
+                color={entry.color}
+                key={entry.id}
+                title={entry.displayName}
+                subtitle={`χ=${formatParameterValue(resolveParameterNumber(entry.electronAffinity_eV) ?? 'unknown')} eV`}
+                meta={`Eg=${formatParameterValue(resolveParameterNumber(entry.bandGap_eV) ?? 'unknown')} eV`}
+                onClick={() => setSemiconductorId(entry.id)}
+              />
+            ))}
+          </section>
+          <section>
+            <h3>顯示模式</h3>
+            <div className="segmented-vertical">
+              <button className={mode === 'after' ? 'active' : ''} type="button" onClick={() => setMode('after')}>After Contact (Band Bending)</button>
+              <button className={mode === 'before' ? 'active' : ''} type="button" onClick={() => setMode('before')}>Before Contact (Flat Band)</button>
+            </div>
+          </section>
+        </aside>
+        <ManusPreviewCard>
+          <div className="band-diagram-preview" data-testid="band-diagram-preview">
+            <header>
+              <strong>Energy Band Diagram: {metal.displayName} / {semiconductor.displayName}</strong>
+              <ManusStatusBadge tone="primary">{mode === 'after' ? 'after contact' : 'before contact'}</ManusStatusBadge>
+            </header>
+            <svg viewBox="0 0 680 640" role="img" aria-label="energy band diagram">
+              <defs>
+                <linearGradient id="bandGrid" x1="0" x2="0" y1="0" y2="1">
+                  <stop offset="0" stopColor="oklch(0.18 0.035 250)" />
+                  <stop offset="1" stopColor="oklch(0.10 0.02 250)" />
+                </linearGradient>
+              </defs>
+              <rect x="52" y="44" width="560" height="520" rx="8" fill="url(#bandGrid)" stroke="oklch(0.28 0.045 250)" strokeDasharray="4 6" />
+              {Array.from({ length: 11 }).map((_, index) => <line x1={72 + index * 52} x2={72 + index * 52} y1="48" y2="560" stroke="oklch(0.34 0.07 245 / 0.34)" strokeDasharray="4 6" key={`v${index}`} />)}
+              {Array.from({ length: 5 }).map((_, index) => <line x1="52" x2="612" y1={108 + index * 104} y2={108 + index * 104} stroke="oklch(0.34 0.07 245 / 0.34)" strokeDasharray="4 6" key={`h${index}`} />)}
+              <line x1="92" x2="284" y1="296" y2="296" stroke="oklch(0.78 0.15 195)" strokeWidth="4" />
+              <line x1="284" x2="284" y1="296" y2={mode === 'after' ? 156 : 296} stroke="oklch(0.78 0.15 195)" strokeWidth="4" />
+              <path d={mode === 'after' ? 'M284 156 C360 72 480 70 588 64' : 'M284 296 C380 296 480 296 588 296'} fill="none" stroke="oklch(0.78 0.15 195)" strokeWidth="4" />
+              <line x1="92" x2="284" y1="378" y2="378" stroke="oklch(0.72 0.16 290)" strokeWidth="4" />
+              <line x1="284" x2="284" y1="378" y2={mode === 'after' ? 526 : 378} stroke="oklch(0.72 0.16 290)" strokeWidth="4" />
+              <path d={mode === 'after' ? 'M284 526 C366 430 482 404 588 392' : 'M284 378 C380 378 480 378 588 378'} fill="none" stroke="oklch(0.72 0.16 290)" strokeWidth="4" />
+              <line x1="284" x2="588" y1="322" y2="322" stroke="#facc15" strokeWidth="3" strokeDasharray="6 7" />
+              <text x="44" y="590" fill="oklch(0.58 0.04 250)" fontSize="13">Position (a.u.)</text>
+              <text x="14" y="326" fill="oklch(0.58 0.04 250)" fontSize="13" transform="rotate(-90 14 326)">Energy (eV)</text>
+            </svg>
+          </div>
+        </ManusPreviewCard>
+        <aside className="band-parameter-panel">
+          <Card title="能帶參數">
+            <ParameterTable rows={[
+              { label: 'φ_Bn (n-type)', value: nBarrier, unit: 'eV', source: confidenceLabel(metal.workFunction_eV.confidence) },
+              { label: 'φ_Bp (p-type)', value: pBarrier, unit: 'eV', source: confidenceLabel(semiconductor.bandGap_eV.confidence) },
+              { label: `Metal: ${metal.displayName}`, value: metalPhi, unit: 'eV', source: confidenceLabel(metal.workFunction_eV.confidence), sourceIds: metal.workFunction_eV.sourceIds },
+              { label: `Semiconductor: ${semiconductor.displayName} χ`, value: affinity, unit: 'eV', source: confidenceLabel(semiconductor.electronAffinity_eV.confidence), sourceIds: semiconductor.electronAffinity_eV.sourceIds },
+              { label: `Semiconductor: ${semiconductor.displayName} Eg`, value: bandGap, unit: 'eV', source: confidenceLabel(semiconductor.bandGap_eV.confidence), sourceIds: semiconductor.bandGap_eV.sourceIds },
+            ]} references={project.references} />
+          </Card>
+          <ManusCallout tone="warning">
+            <strong>注意</strong>
+            <p>此為簡化能帶圖，未考慮 Fermi-level pinning、MIGS 效應與介面態密度。</p>
+          </ManusCallout>
+        </aside>
+      </div>
     </WorkspacePage>
   )
 }
@@ -594,45 +722,85 @@ export function MaterialsPage() {
 
   return (
     <WorkspacePage title="Materials" icon={<Database size={18} />}>
-      <div className="library-grid">
-        <Card title="材料資料庫">
+      <ManusSplitDetail
+        className="materials-workspace"
+        list={(
+          <>
+            <div className="split-panel-heading">
+              <h2>材料資料庫</h2>
+            </div>
           <input className="manus-field" placeholder="搜尋材料" value={query} onChange={(event) => setQuery(event.target.value)} />
           {filtered.map((material) => (
-            <button className={material.id === selected?.id ? 'material-select-row active' : 'material-select-row'} key={material.id} onClick={() => setSelectedId(material.id)}>
-              <span style={{ backgroundColor: material.color }} />
-              <div><strong>{material.displayName}</strong><small>{material.description}</small></div>
-            </button>
+              <ManusListRow
+                active={material.id === selected?.id}
+                color={material.color}
+                key={material.id}
+                title={material.displayName}
+                subtitle={material.description}
+                badge={<ManusStatusBadge>{materialCategoryLabel(material.category)}</ManusStatusBadge>}
+                onClick={() => setSelectedId(material.id)}
+              />
           ))}
-        </Card>
-        <Card title="Material detail">
-          {selected ? (
-            <div className="material-detail-editor">
-              <div className="form-grid-2">
-                <label>Name<input value={selected.name} onChange={(event) => updateMaterial(selected.id, (material) => ({ ...material, name: event.target.value }))} /></label>
-                <label>Display name<input value={selected.displayName} onChange={(event) => updateMaterial(selected.id, (material) => ({ ...material, displayName: event.target.value }))} /></label>
-                <label>Category<select value={selected.category} onChange={(event) => updateMaterial(selected.id, (material) => ({ ...material, category: event.target.value as MaterialCategory }))}>{materialCategories.map((category) => <option value={category} key={category}>{category}</option>)}</select></label>
-                <label>Carrier type<select value={selected.carrierType} onChange={(event) => updateMaterial(selected.id, (material) => ({ ...material, carrierType: event.target.value as CarrierType }))}>{carrierTypes.map((type) => <option value={type} key={type}>{type}</option>)}</select></label>
-                <label>Color<input value={selected.color} onChange={(event) => updateMaterial(selected.id, (material) => ({ ...material, color: event.target.value }))} /></label>
-              </div>
-              <label>Description<textarea value={selected.description} onChange={(event) => updateMaterial(selected.id, (material) => ({ ...material, description: event.target.value }))} /></label>
-              <label>
-                Parameter
-                <select value={selectedParameterKey} onChange={(event) => setSelectedParameterKey(event.target.value)}>
-                  {getMaterialParameters(selected).map(([key, parameter]) => <option value={key} key={key}>{parameter.label}</option>)}
-                </select>
-              </label>
-              {selectedParameter ? (
-                <ParameterEditor
-                  parameter={selectedParameter}
-                  references={project.references}
-                  linkedReferences={linkedReferences}
-                  onChange={(parameter) => updateMaterial(selected.id, (material) => ({ ...material, [selectedParameterKey]: parameter } as Material))}
-                />
-              ) : null}
+          </>
+        )}
+        detail={selected ? (
+            <div className="material-detail-panel">
+              <ManusDetailHeader
+                title={selected.displayName}
+                subtitle={selected.description}
+                badge={<ManusStatusBadge tone="primary">{materialCategoryLabel(selected.category)}</ManusStatusBadge>}
+                icon={<span className="material-monogram" style={{ backgroundColor: selected.color }}>{selected.displayName.slice(0, 2)}</span>}
+              />
+              <section>
+                <h3>材料參數</h3>
+                <div className="material-parameter-grid">
+                  {getMaterialParameters(selected).slice(0, 7).map(([key, parameter]) => (
+                    <button className={selectedParameterKey === key ? 'material-parameter-card active' : 'material-parameter-card'} type="button" key={key} onClick={() => setSelectedParameterKey(key)}>
+                      <span>{parameter.label}</span>
+                      <strong>{formatMaterialParameter(parameter)}</strong>
+                      <ConfidenceBadge confidence={parameter.confidence} conflict={Boolean(parameter.candidates?.length && hasCandidateConflict(parameter))} />
+                    </button>
+                  ))}
+                </div>
+              </section>
+              <section className="raman-notes">
+                <h3>Raman Peaks</h3>
+                <code>{selected.id === 'wse2' ? '250 cm⁻¹ (E2g), 260 cm⁻¹ (A1g)' : selected.notes[0] ?? '待補材料光譜資料'}</code>
+              </section>
+              <section className="note-list">
+                <h3>注意事項</h3>
+                {(selected.notes.length ? selected.notes : ['層數、缺陷、接觸金屬與製程會影響電性。']).map((note) => <p key={note}>• {note}</p>)}
+              </section>
+              <details className="secondary-editor" open>
+                <summary>Edit material parameters</summary>
+                <div className="material-detail-editor">
+                  <div className="form-grid-2">
+                    <label>Name<input value={selected.name} onChange={(event) => updateMaterial(selected.id, (material) => ({ ...material, name: event.target.value }))} /></label>
+                    <label>Display name<input value={selected.displayName} onChange={(event) => updateMaterial(selected.id, (material) => ({ ...material, displayName: event.target.value }))} /></label>
+                    <label>Category<select value={selected.category} onChange={(event) => updateMaterial(selected.id, (material) => ({ ...material, category: event.target.value as MaterialCategory }))}>{materialCategories.map((category) => <option value={category} key={category}>{category}</option>)}</select></label>
+                    <label>Carrier type<select value={selected.carrierType} onChange={(event) => updateMaterial(selected.id, (material) => ({ ...material, carrierType: event.target.value as CarrierType }))}>{carrierTypes.map((type) => <option value={type} key={type}>{type}</option>)}</select></label>
+                    <label>Color<input value={selected.color} onChange={(event) => updateMaterial(selected.id, (material) => ({ ...material, color: event.target.value }))} /></label>
+                  </div>
+                  <label>Description<textarea value={selected.description} onChange={(event) => updateMaterial(selected.id, (material) => ({ ...material, description: event.target.value }))} /></label>
+                  <label>
+                    Parameter
+                    <select value={selectedParameterKey} onChange={(event) => setSelectedParameterKey(event.target.value)}>
+                      {getMaterialParameters(selected).map(([key, parameter]) => <option value={key} key={key}>{parameter.label}</option>)}
+                    </select>
+                  </label>
+                  {selectedParameter ? (
+                    <ParameterEditor
+                      parameter={selectedParameter}
+                      references={project.references}
+                      linkedReferences={linkedReferences}
+                      onChange={(parameter) => updateMaterial(selected.id, (material) => ({ ...material, [selectedParameterKey]: parameter } as Material))}
+                    />
+                  ) : null}
+                </div>
+              </details>
             </div>
           ) : <EmptyState text="選擇 material 後可編輯參數。" />}
-        </Card>
-      </div>
+      />
     </WorkspacePage>
   )
 }
@@ -644,26 +812,68 @@ export function ReferencesPage() {
 
   return (
     <WorkspacePage title="References" icon={<BookOpen size={18} />}>
-      <div className="library-grid">
-        <Card title="文獻來源">
-          <button className="manus-button primary" type="button" onClick={() => setSelectedId(addReference().id)}>新增 reference</button>
-          {project.references.map((reference) => (
-            <button className={reference.id === selected?.id ? 'paper-select-row active' : 'paper-select-row'} key={reference.id} onClick={() => setSelectedId(reference.id)}>
-              <strong>{reference.title}</strong>
-              <span>{reference.authors} ({reference.year}) · score {reference.reliabilityScore}/10</span>
-            </button>
-          ))}
-        </Card>
-        <Card title="Reference detail">
-          {selected ? (
-            <ReferenceEditor
-              reference={selected}
-              usages={getReferenceUsage(project, selected.id)}
-              onChange={(reference) => updateReference(selected.id, () => reference)}
+      <ManusSplitDetail
+        className="references-workspace"
+        list={(
+          <>
+            <div className="split-panel-heading">
+              <div>
+                <h2>文獻來源</h2>
+                <p>{project.references.length} papers</p>
+              </div>
+              <button className="manus-button primary" type="button" onClick={() => setSelectedId(addReference().id)}>新增 reference</button>
+            </div>
+            {project.references.map((reference) => (
+              <ManusListRow
+                active={reference.id === selected?.id}
+                key={reference.id}
+                title={reference.title}
+                subtitle={`${reference.authors} (${reference.year})`}
+                meta={reference.journal ?? reference.doi ?? 'manual note'}
+                badge={<ManusStatusBadge tone={reference.status === 'accepted' ? 'success' : 'primary'}>{reference.status}</ManusStatusBadge>}
+                onClick={() => setSelectedId(reference.id)}
+              />
+            ))}
+          </>
+        )}
+        detail={selected ? (
+          <div className="reference-detail-panel">
+            <ManusDetailHeader
+              title={selected.title}
+              subtitle={`${selected.authors} · ${selected.year}${selected.journal ? ` · ${selected.journal}` : ''}`}
+              badge={<ManusStatusBadge tone={selected.status === 'accepted' ? 'success' : 'primary'}>{selected.status}</ManusStatusBadge>}
+              icon={<BookOpen size={22} />}
             />
-          ) : <EmptyState text="新增或選擇 reference。" />}
-        </Card>
-      </div>
+            <ManusMetadataGrid items={[
+              { label: 'DOI', value: selected.doi ?? 'not provided' },
+              { label: 'URL', value: selected.url ?? 'not provided' },
+              { label: 'Material', value: selected.material ?? 'multiple / TBD' },
+              { label: 'Extracted parameter', value: selected.parameterExtracted ?? 'review required' },
+            ]} />
+            <section className="reference-score-panel">
+              <span>Reliability score</span>
+              <ManusScoreDots score={selected.reliabilityScore} />
+              <strong>{selected.reliabilityScore}/10</strong>
+            </section>
+            <ManusCallout tone="neutral">
+              <strong>Review notes</strong>
+              <p>{selected.notes ?? 'No review notes yet.'}</p>
+            </ManusCallout>
+            <div className="linked-source-list">
+              <strong>Used by</strong>
+              {getReferenceUsage(project, selected.id).length ? getReferenceUsage(project, selected.id).map((usage) => <span key={`${usage.materialId}-${usage.parameterKey}`}>{usage.materialName} · {usage.parameterLabel}</span>) : <span>No material parameters linked yet</span>}
+            </div>
+            <details className="secondary-editor" open>
+              <summary>Edit reference</summary>
+              <ReferenceEditor
+                reference={selected}
+                usages={getReferenceUsage(project, selected.id)}
+                onChange={(reference) => updateReference(selected.id, () => reference)}
+              />
+            </details>
+          </div>
+        ) : <EmptyState text="新增或選擇 reference。" />}
+      />
     </WorkspacePage>
   )
 }
@@ -674,7 +884,8 @@ export function MeasurementsPage() {
   const [table, setTable] = useState<ParsedCsvTable>()
   const [sourceName, setSourceName] = useState('')
   const [mappings, setMappings] = useState<ColumnMappingState>({})
-  const selected = project.measurements.find((measurement) => measurement.electrical) ?? project.measurements[0]
+  const [selectedMeasurementId, setSelectedMeasurementId] = useState(project.measurements.find((measurement) => measurement.electrical)?.id ?? project.measurements[0]?.id ?? '')
+  const selected = project.measurements.find((measurement) => measurement.id === selectedMeasurementId) ?? project.measurements.find((measurement) => measurement.electrical) ?? project.measurements[0]
   const metrics = calculateElectricalMetrics(selected)
 
   async function handleFile(event: ChangeEvent<HTMLInputElement>) {
@@ -689,88 +900,177 @@ export function MeasurementsPage() {
 
   function saveImport() {
     if (!table) return
-    addMeasurement(createElectricalMeasurement({
+    const measurement = createElectricalMeasurement({
       table,
       mappings,
       activeDeviceId: activeDevice.id,
       activeDeviceName: activeDevice.name,
       sourceName,
-    }))
+    })
+    addMeasurement(measurement)
+    setSelectedMeasurementId(measurement.id)
     setTable(undefined)
   }
 
   return (
     <WorkspacePage title="Measurements" icon={<FlaskConical size={18} />}>
       <input ref={inputRef} className="sr-only" type="file" accept=".csv,.txt,text/csv,text/plain" onChange={(event) => { void handleFile(event) }} />
-      <div className="measurements-grid">
-        <Card title="CSV / TXT import">
-          <button className="manus-button primary" type="button" onClick={() => inputRef.current?.click()}>Import electrical CSV</button>
-          {table ? (
-            <div className="import-preview">
-              <strong>{sourceName}</strong>
-              <div className="mapping-grid">
-                {table.headers.map((header) => (
-                  <div className="mapping-row" key={header}>
-                    <span>{header}</span>
-                    <select value={mappings[header]?.role ?? 'ignore'} onChange={(event) => setMappings((current) => ({ ...current, [header]: { ...current[header], role: event.target.value as ElectricalMeasurementColumnRole } }))}>
-                      {measurementColumnRoles.map((role) => <option value={role} key={role}>{role}</option>)}
-                    </select>
-                    <select value={mappings[header]?.unit ?? ''} onChange={(event) => setMappings((current) => ({ ...current, [header]: { ...current[header], unit: event.target.value } }))}>
-                      <option value="">unit</option>
-                      {[...voltageUnits, ...currentUnits].map((unit) => <option value={unit} key={unit}>{unit}</option>)}
-                    </select>
-                  </div>
-                ))}
+      <ManusSplitDetail
+        className="measurements-workspace"
+        list={(
+          <>
+            <div className="split-panel-heading">
+              <div>
+                <h2>量測資料</h2>
+                <p>{project.measurements.length} datasets</p>
               </div>
-              <button className="manus-button primary" type="button" onClick={saveImport}>Save measurement</button>
             </div>
-          ) : <EmptyState text="匯入 Id-Vg / Id-Vd CSV 或 TXT 後可設定欄位對應與單位。" />}
-        </Card>
-        <Card title="Measurement datasets">
-          {project.measurements.map((measurement) => (
-            <div className="split-row" key={measurement.id}>
-              <div><strong>{measurement.sampleName}</strong><span>{measurement.type} · {measurement.tool} · {measurement.electrical?.measurementKind ?? 'metadata'}</span></div>
-              <time>{measurement.date}</time>
-            </div>
-          ))}
-        </Card>
-        <Card title="Electrical chart">
-          {selected?.electrical ? (
-            <Chart
-              data={selected.electrical.points.filter((point) => point.Vg !== undefined && point.Id !== undefined).map((point) => ({ vg: point.Vg!, id: (point.Id ?? 0) * 1e6 }))}
-              xKey="vg"
-              unit="uA"
-              lines={[{ key: 'id', color: 'oklch(0.78 0.15 195)' }]}
-            />
-          ) : <EmptyState text="尚未匯入 electrical dataset。" />}
-        </Card>
-        <Card title="Basic metrics">
-          <div className="metrics-grid">
-            <Meta label="points" value={`${metrics.pointCount}`} />
-            <Meta label="max |Id|" value={formatScientific(metrics.maxAbsId_A, 'A')} />
-            <Meta label="on/off" value={metrics.onOffRatio ? metrics.onOffRatio.toExponential(2) : 'n/a'} />
-            <Meta label="Vg range" value={metrics.vgRange ? `${metrics.vgRange[0]} to ${metrics.vgRange[1]} V` : 'n/a'} />
+            {project.measurements.map((measurement) => (
+              <ManusListRow
+                active={measurement.id === selected?.id}
+                color={measurement.electrical ? 'oklch(0.78 0.15 195)' : 'oklch(0.72 0.16 290)'}
+                key={measurement.id}
+                title={measurement.sampleName}
+                subtitle={measurement.notes ?? measurement.deviceName}
+                meta={measurement.date}
+                badge={<ManusStatusBadge>{measurement.electrical?.measurementKind ?? measurement.type}</ManusStatusBadge>}
+                onClick={() => setSelectedMeasurementId(measurement.id)}
+              />
+            ))}
+          </>
+        )}
+        detail={(
+          <div className="measurement-detail-panel">
+            {selected ? (
+              <>
+                <ManusDetailHeader
+                  title={`${selected.sampleName} — ${selected.type.toUpperCase()}`}
+                  subtitle={selected.deviceName}
+                  badge={<ManusStatusBadge tone={selected.electrical ? 'primary' : 'neutral'}>{selected.electrical?.measurementKind ?? selected.type}</ManusStatusBadge>}
+                  icon={<FlaskConical size={22} />}
+                />
+                <ManusMetadataGrid items={[
+                  { label: '日期', value: selected.date },
+                  { label: '操作者', value: selected.operator ?? 'not specified' },
+                  { label: '儀器', value: selected.tool ?? 'not specified' },
+                  { label: 'Device', value: selected.deviceName },
+                ]} />
+                <section>
+                  <h3>備註</h3>
+                  <p>{selected.notes ?? 'No notes yet.'}</p>
+                </section>
+                <ManusPreviewCard>
+                  {selected.electrical ? (
+                    <Chart
+                      data={selected.electrical.points.filter((point) => point.Vg !== undefined && point.Id !== undefined).map((point) => ({ vg: point.Vg!, id: (point.Id ?? 0) * 1e6 }))}
+                      xKey="vg"
+                      unit="uA"
+                      lines={[{ key: 'id', color: 'oklch(0.78 0.15 195)' }]}
+                    />
+                  ) : <div className="measurement-visual-placeholder">量測數據視覺化區域 — 可匯入 CSV/Excel 資料</div>}
+                </ManusPreviewCard>
+                <div className="metrics-grid">
+                  <Meta label="points" value={`${metrics.pointCount}`} />
+                  <Meta label="max |Id|" value={formatScientific(metrics.maxAbsId_A, 'A')} />
+                  <Meta label="on/off" value={metrics.onOffRatio ? metrics.onOffRatio.toExponential(2) : 'n/a'} />
+                  <Meta label="Vg range" value={metrics.vgRange ? `${metrics.vgRange[0]} to ${metrics.vgRange[1]} V` : 'n/a'} />
+                </div>
+                {selected.electrical ? <RawMeasurementTable rows={selected.electrical.points.slice(0, 12)} /> : null}
+              </>
+            ) : <EmptyState text="尚未建立 measurement dataset。" />}
+            <details className="secondary-editor" open>
+              <summary>CSV / TXT import</summary>
+              <button className="manus-button primary" type="button" onClick={() => inputRef.current?.click()}>Import electrical CSV</button>
+              {table ? (
+                <div className="import-preview">
+                  <strong>{sourceName}</strong>
+                  <div className="mapping-grid">
+                    {table.headers.map((header) => (
+                      <div className="mapping-row" key={header}>
+                        <span>{header}</span>
+                        <select value={mappings[header]?.role ?? 'ignore'} onChange={(event) => setMappings((current) => ({ ...current, [header]: { ...current[header], role: event.target.value as ElectricalMeasurementColumnRole } }))}>
+                          {measurementColumnRoles.map((role) => <option value={role} key={role}>{role}</option>)}
+                        </select>
+                        <select value={mappings[header]?.unit ?? ''} onChange={(event) => setMappings((current) => ({ ...current, [header]: { ...current[header], unit: event.target.value } }))}>
+                          <option value="">unit</option>
+                          {[...voltageUnits, ...currentUnits].map((unit) => <option value={unit} key={unit}>{unit}</option>)}
+                        </select>
+                      </div>
+                    ))}
+                  </div>
+                  <button className="manus-button primary" type="button" onClick={saveImport}>Save measurement</button>
+                </div>
+              ) : <EmptyState text="匯入 Id-Vg / Id-Vd CSV 或 TXT 後可設定欄位對應與單位。" />}
+            </details>
           </div>
-        </Card>
-        <Card title="Raw table">
-          {selected?.electrical ? <RawMeasurementTable rows={selected.electrical.points.slice(0, 12)} /> : <EmptyState text="No rows yet." />}
-        </Card>
-      </div>
+        )}
+      />
     </WorkspacePage>
   )
 }
 
 export function ComparisonLabPage() {
   const { project } = useProjectStore()
-  const compared = ['wse2', 'mos2', 'pd', 'ti'].map((id) => findMaterial(project.materials, id))
+  const [selectedIds, setSelectedIds] = useState<string[]>(['wse2', 'mos2', 'pd', 'ti'])
+  const compared = selectedIds.map((id) => findMaterial(project.materials, id))
+  const comparisonRows = [
+    ['Band Gap', 'bandGap_eV'],
+    ['Work Function', 'workFunction_eV'],
+    ['Electron Affinity', 'electronAffinity_eV'],
+    ['Dielectric Constant', 'dielectricConstant'],
+    ['Mobility', 'mobility_cm2Vs'],
+    ['Lattice Constant', 'latticeConstant_A'],
+    ['Default Thickness', 'defaultThickness_nm'],
+  ] as const
 
   return (
     <WorkspacePage title="Comparison Lab" icon={<GitCompare size={18} />}>
-      <Card title="材料比較">
-        <div className="comparison-row">
-          {compared.map((material) => <MaterialRow key={material.id} material={material} />)}
-        </div>
-      </Card>
+      <div className="comparison-workspace">
+        <Card title="選擇比較材料">
+          <ManusChipSelector
+            items={project.materials.map((material) => ({ id: material.id, label: material.displayName, color: material.color, meta: materialCategoryLabel(material.category) }))}
+            selected={selectedIds}
+            onToggle={(id) => setSelectedIds((current) => current.includes(id) ? current.filter((entry) => entry !== id) : [...current, id].slice(-5))}
+          />
+        </Card>
+        <Card title="參數比較表">
+          <div className="comparison-table" data-testid="comparison-table">
+            <table>
+              <thead>
+                <tr>
+                  <th>Parameter</th>
+                  {compared.map((material) => <th key={material.id}><span style={{ backgroundColor: material.color }} />{material.displayName}</th>)}
+                </tr>
+              </thead>
+              <tbody>
+                {comparisonRows.map(([label, key]) => (
+                  <tr key={key}>
+                    <td>{label}</td>
+                    {compared.map((material) => {
+                      const parameter = material[key]
+                      return (
+                        <td key={`${material.id}-${key}`}>
+                          <strong>{formatMaterialParameter(parameter)}</strong>
+                          <ConfidenceBadge confidence={parameter.confidence} />
+                        </td>
+                      )
+                    })}
+                  </tr>
+                ))}
+                <tr>
+                  <td>Category</td>
+                  {compared.map((material) => <td key={`${material.id}-category`}><ManusStatusBadge>{materialCategoryLabel(material.category)}</ManusStatusBadge></td>)}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div className="confidence-legend">
+            <span><i className="known" />Known</span>
+            <span><i className="estimated" />Estimated</span>
+            <span><i className="unknown" />Unknown</span>
+          </div>
+        </Card>
+      </div>
     </WorkspacePage>
   )
 }
@@ -781,37 +1081,52 @@ export function ResearchNotesPage() {
   const selected = project.hypotheses.find((hypothesis) => hypothesis.id === selectedId) ?? project.hypotheses[0]
 
   return (
-    <div className="research-notes-page">
-      <aside className="hypothesis-list">
-        <header>
-          <div><h1>研究假說</h1><p>{project.hypotheses.length} hypotheses</p></div>
-          <button aria-label="新增研究假說"><Plus size={18} /></button>
-        </header>
-        {project.hypotheses.map((hypothesis) => (
-          <button className={hypothesis.id === selected.id ? 'active' : ''} key={hypothesis.id} onClick={() => setSelectedId(hypothesis.id)}>
-            <Lightbulb size={16} />
-            <div><strong>{hypothesis.title}</strong><span>{statusLabels[hypothesis.status]} · {hypothesis.createdAt}</span></div>
-          </button>
-        ))}
-      </aside>
-      <section className="hypothesis-detail">
-        <header>
-          <Lightbulb size={24} />
-          <div>
-            <h2>{selected.title}</h2>
-            <p><span>{statusLabels[selected.status]}</span>{selected.createdAt}</p>
-          </div>
-        </header>
-        <div className="detail-section">
-          <small>描述</small>
-          <p>{selected.description}</p>
-        </div>
-        <div className="linked-panels">
-          <div><span>相關元件</span><strong>0 linked</strong></div>
-          <div><span>相關文獻</span><strong>0 linked</strong></div>
-        </div>
-        <div className="scroll-spacer" aria-hidden="true" />
-      </section>
+    <div className="manus-page research-notes-page">
+      <ManusSplitDetail
+        className="research-workspace"
+        list={(
+          <>
+            <div className="split-panel-heading">
+              <div><h2>研究假說</h2><p>{project.hypotheses.length} hypotheses</p></div>
+              <button aria-label="新增研究假說"><Plus size={18} /></button>
+            </div>
+            {project.hypotheses.map((hypothesis) => (
+              <ManusListRow
+                active={hypothesis.id === selected.id}
+                icon={<Lightbulb size={16} />}
+                key={hypothesis.id}
+                title={hypothesis.title}
+                subtitle={hypothesis.description}
+                meta={`${statusLabels[hypothesis.status]} · ${hypothesis.createdAt}`}
+                onClick={() => setSelectedId(hypothesis.id)}
+              />
+            ))}
+          </>
+        )}
+        detail={(
+          <section className="hypothesis-detail">
+            <ManusDetailHeader
+              icon={<Lightbulb size={24} />}
+              title={selected.title}
+              subtitle={selected.createdAt}
+              badge={<ManusStatusBadge tone={selected.status === 'confirmed' ? 'success' : selected.status === 'rejected' ? 'danger' : 'primary'}>{statusLabels[selected.status]}</ManusStatusBadge>}
+            />
+            <div className="detail-section">
+              <small>描述</small>
+              <p>{selected.description}</p>
+            </div>
+            <div className="linked-panels">
+              <div><span>相關元件</span><strong>{project.devices.length} available</strong></div>
+              <div><span>相關文獻</span><strong>{project.references.length} references</strong></div>
+            </div>
+            <ManusCallout tone="neutral">
+              <strong>Evidence structure</strong>
+              <p>把材料參數、製程 step、量測 dataset 與文獻來源連結到此假說後，可作為下一步 review queue。</p>
+            </ManusCallout>
+            <div className="scroll-spacer" aria-hidden="true" />
+          </section>
+        )}
+      />
     </div>
   )
 }
@@ -846,15 +1161,6 @@ function StatCard({ icon, label, value, suffix, tone }: { icon: ReactNode; label
 
 function Meta({ label, value }: { label: string; value: string }) {
   return <div className="meta-box"><span>{label}</span><strong>{value}</strong></div>
-}
-
-function MaterialRow({ material }: { material: Material }) {
-  return (
-    <div className="material-row">
-      <span style={{ backgroundColor: material.color }} />
-      <div><strong>{material.displayName}</strong><small>{material.description}</small></div>
-    </div>
-  )
 }
 
 function EmptyState({ text }: { text: string }) {
@@ -996,6 +1302,32 @@ function RawMeasurementTable({ rows }: { rows: ElectricalMeasurementPoint[] }) {
       </table>
     </div>
   )
+}
+
+function resolveParameterNumber(parameter: MaterialParameter) {
+  if (parameter.confidence === 'unknown') return undefined
+  if (typeof parameter.selectedValue === 'number') return parameter.selectedValue
+  if (typeof parameter.value === 'number') return parameter.value
+  if (parameter.range?.typical !== undefined) return parameter.range.typical
+  if (parameter.range?.min !== undefined && parameter.range?.max !== undefined) {
+    return (parameter.range.min + parameter.range.max) / 2
+  }
+  return undefined
+}
+
+function formatMaterialParameter(parameter: MaterialParameter) {
+  if (parameter.valueType === 'unknown' || parameter.confidence === 'unknown') {
+    return '未知'
+  }
+  if (parameter.valueType === 'range' && parameter.range?.min !== undefined && parameter.range?.max !== undefined) {
+    return `${formatParameterValue(parameter.range.min)}–${formatParameterValue(parameter.range.max)} ${parameter.unit ?? ''}`.trim()
+  }
+  const value = parameter.selectedValue ?? parameter.value ?? parameter.range?.typical
+  return value === undefined || value === null ? 'missing' : `${formatParameterValue(value)} ${parameter.unit ?? ''}`.trim()
+}
+
+function materialCategoryLabel(category: MaterialCategory) {
+  return category.replaceAll('_', ' ')
 }
 
 function formatMaybe(value?: number) {
@@ -1182,14 +1514,6 @@ function ReferenceEditor({
 
 function ConfidenceBadge({ confidence, conflict = false }: { confidence: ParameterConfidence | 'fallback'; conflict?: boolean }) {
   return <span className={`confidence-badge confidence-${conflict ? 'conflict' : confidence}`}>{conflict ? 'conflict' : confidence}</span>
-}
-
-function PlaceholderGrid({ items }: { items: string[] }) {
-  return (
-    <div className="placeholder-grid">
-      {items.map((item) => <div key={item}><Box size={16} /><span>{item}</span></div>)}
-    </div>
-  )
 }
 
 function formatNumber(value: number) {
