@@ -103,6 +103,10 @@ try {
   await page.goto(`${baseUrl}/research-notes`, { waitUntil: 'networkidle' })
   await assertCanScroll(page, 'research-notes can scroll')
 
+  const referencePage = await browser.newPage({ viewport: { width: 1440, height: 1000 } })
+  await assertManusStyleParity(referencePage, page, baseUrl, artifactDir)
+  await referencePage.close()
+
   await page.goto(`${baseUrl}/device-builder`, { waitUntil: 'domcontentloaded' })
   await expectVisible(page.locator('.pane-list > header', { hasText: 'Layer Stack' }), 'device-builder route renders')
   await page.evaluate(({ legacyStorageKey, storageKey }) => {
@@ -440,5 +444,121 @@ async function expectVisible(locator, label) {
     await locator.waitFor({ state: 'visible', timeout: 5000 })
   } catch {
     throw new Error(label)
+  }
+}
+
+async function assertManusStyleParity(referencePage, currentPage, baseUrl, artifactDir) {
+  const referenceBase = 'https://semiviz2d-cfdeom2b.manus.space'
+  const routeConfigs = [
+    { route: '/device-builder', left: 'Layer Stack', right: 'Properties', currentLeft: '.pane-list', currentRight: '.inspector-card', currentMajor: '.large-device-stage', referenceMajor: '3D' },
+    { route: '/band-diagram', left: '材料選擇', right: '能帶參數', currentLeft: '.manus-three-left', currentRight: '.manus-three-right', currentMajor: '.manus-chart-card', referenceMajor: 'Energy Band Diagram' },
+    { route: '/iv-simulator', left: '模擬參數', right: '分析結果', currentLeft: '.manus-three-left', currentRight: '.manus-three-right', currentMajor: '.manus-chart-card', referenceMajor: 'Transfer Curve' },
+    { route: '/references', left: '文獻來源', currentLeft: '.manus-split-list', currentMajor: '.reference-detail-panel', referenceMajor: 'Reliability score' },
+    { route: '/research-notes', left: '研究假說', currentLeft: '.manus-split-list', currentMajor: '.hypothesis-detail', referenceMajor: '描述' },
+  ]
+
+  for (const config of routeConfigs) {
+    await referencePage.goto(`${referenceBase}${config.route}`, { waitUntil: 'networkidle', timeout: 45000 }).catch(async () => {
+      await referencePage.goto(`${referenceBase}${config.route}`, { waitUntil: 'domcontentloaded', timeout: 45000 })
+    })
+    await currentPage.goto(`${baseUrl}${config.route}`, { waitUntil: config.route === '/device-builder' ? 'domcontentloaded' : 'networkidle' })
+    await referencePage.waitForTimeout(500)
+    await currentPage.waitForTimeout(500)
+
+    const referenceMetrics = await measureComparableStyle(referencePage, config)
+    const currentMetrics = await measureComparableStyle(currentPage, config)
+
+    assertWithin(currentMetrics.sidebarWidth, referenceMetrics.sidebarWidth, 2, `${config.route} sidebar width`)
+    assertWithin(currentMetrics.topbarHeight, referenceMetrics.topbarHeight, 2, `${config.route} topbar height`)
+    if (referenceMetrics.leftWidth && currentMetrics.leftWidth) {
+      assertWithin(currentMetrics.leftWidth, referenceMetrics.leftWidth, 4, `${config.route} left panel width`)
+    }
+    if (referenceMetrics.rightWidth && currentMetrics.rightWidth) {
+      assertWithin(currentMetrics.rightWidth, referenceMetrics.rightWidth, 4, `${config.route} right panel width`)
+    }
+    if (referenceMetrics.rowHeight && currentMetrics.rowHeight) {
+      assertWithin(currentMetrics.rowHeight, referenceMetrics.rowHeight, 4, `${config.route} row height`)
+    }
+    if (referenceMetrics.majorWidth && currentMetrics.majorWidth) {
+      assertWithin(currentMetrics.majorWidth, referenceMetrics.majorWidth, 8, `${config.route} major card width`)
+    }
+
+    const longTicks = await currentPage.locator('.recharts-cartesian-axis-tick text, .band-diagram-preview text').evaluateAll((nodes) =>
+      nodes.map((node) => node.textContent ?? '').filter((text) => /\d+\.\d{6,}/.test(text)),
+    )
+    if (longTicks.length) {
+      throw new Error(`${config.route} has long floating tick labels`)
+    }
+  }
+
+  await currentPage.screenshot({ path: path.join(artifactDir, 'current-style-parity-check.png'), fullPage: false })
+}
+
+async function measureComparableStyle(page, config) {
+  return page.evaluate((config) => {
+    const round = (value) => Math.round(value * 100) / 100
+    const rect = (element) => {
+      if (!element) return null
+      const box = element.getBoundingClientRect()
+      return { width: round(box.width), height: round(box.height), x: round(box.x), y: round(box.y) }
+    }
+    const findText = (text) => {
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
+      let node = walker.nextNode()
+      while (node) {
+        if (node.nodeValue?.includes(text)) return node.parentElement
+        node = walker.nextNode()
+      }
+      return null
+    }
+    const panelFromText = (text, minHeight = 260, maxWidth = 430) => {
+      const anchor = findText(text)
+      let element = anchor
+      let best = null
+      while (element && element !== document.body) {
+        const box = element.getBoundingClientRect()
+        if (box.height >= minHeight && box.width >= 160 && box.width <= maxWidth) best = element
+        element = element.parentElement
+      }
+      return best
+    }
+    const cardFromText = (text) => {
+      const anchor = findText(text)
+      let element = anchor
+      while (element && element !== document.body) {
+        const box = element.getBoundingClientRect()
+        if (box.width >= 280 && box.height >= 240 && box.width < window.innerWidth - 260) return element
+        element = element.parentElement
+      }
+      return null
+    }
+    const firstVisible = (selector) => Array.from(document.querySelectorAll(selector)).find((element) => {
+      const box = element.getBoundingClientRect()
+      return box.width > 1 && box.height > 1
+    })
+
+    const left = document.querySelector(config.currentLeft) ?? panelFromText(config.left)
+    const right = config.currentRight ? (document.querySelector(config.currentRight) ?? panelFromText(config.right)) : null
+    const row = firstVisible('.manus-list-row, .layer-editor-row, button')
+    const major = document.querySelector(config.currentMajor) ?? cardFromText(config.referenceMajor)
+
+    return {
+      sidebarWidth: rect(document.querySelector('.manus-sidebar') ?? document.querySelector('aside'))?.width,
+      topbarHeight: rect(document.querySelector('.manus-topbar') ?? document.querySelector('header'))?.height,
+      leftWidth: rect(left)?.width,
+      rightWidth: rect(right)?.width,
+      rowHeight: rect(row)?.height,
+      majorWidth: rect(major)?.width,
+      majorHeight: rect(major)?.height,
+    }
+  }, config)
+}
+
+function assertWithin(actual, expected, tolerance, label) {
+  if (actual === undefined || expected === undefined) {
+    return
+  }
+  if (Math.abs(actual - expected) > tolerance) {
+    throw new Error(`${label}: expected ${actual}px to be within ±${tolerance}px of Manus ${expected}px`)
   }
 }

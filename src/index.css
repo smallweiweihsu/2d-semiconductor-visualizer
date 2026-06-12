@@ -1,21 +1,22 @@
 @import url("https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap");
 @import "tailwindcss";
+@import "./styles/manusTokens.css";
 
 :root {
-  --background: oklch(0.13 0.02 250);
+  --background: var(--manus-page-bg);
   --foreground: oklch(0.93 0.01 250);
-  --card: oklch(0.17 0.02 250);
+  --card: var(--manus-card-bg);
   --primary: oklch(0.78 0.15 195);
   --secondary: oklch(0.22 0.025 250);
   --muted: oklch(0.65 0.02 250);
-  --border: oklch(0.25 0.02 250);
-  --sidebar: oklch(0.15 0.02 250);
+  --border: var(--manus-border-color);
+  --sidebar: var(--manus-panel-bg);
   --orange: oklch(0.72 0.15 55);
   --purple: oklch(0.7 0.15 290);
   --green: oklch(0.7 0.15 160);
   color: var(--foreground);
   background: var(--background);
-  font-family: Inter, system-ui, -apple-system, sans-serif;
+  font-family: var(--manus-body-font);
   color-scheme: dark;
 }
 
@@ -69,7 +70,7 @@ a {
 
 .manus-sidebar {
   display: flex;
-  flex: 0 0 240px;
+  flex: 0 0 var(--manus-sidebar-width);
   flex-direction: column;
   overflow: hidden;
   border-right: 1px solid var(--border);
@@ -80,7 +81,7 @@ a {
   display: flex;
   align-items: center;
   gap: 10px;
-  height: 56px;
+  height: var(--manus-topbar-height);
   padding: 0 12px;
   border-bottom: 1px solid var(--border);
   font-size: 14px;
@@ -111,7 +112,7 @@ a {
   border-radius: 6px;
   color: oklch(0.74 0.025 250);
   text-decoration: none;
-  font-size: 14px;
+  font-size: var(--manus-font-base);
   transition: 160ms cubic-bezier(0.23, 1, 0.32, 1);
 }
 
@@ -143,7 +144,7 @@ a {
   display: flex;
   align-items: center;
   gap: 16px;
-  height: 56px;
+  height: var(--manus-topbar-height);
   padding: 0 16px;
   border-bottom: 1px solid var(--border);
   background: oklch(0.12 0.018 250);
@@ -169,7 +170,7 @@ a {
   outline: 0;
   background: transparent;
   color: var(--foreground);
-  font-size: 14px;
+  font-size: var(--manus-font-base);
 }
 
 .manus-actions {
@@ -194,20 +195,20 @@ a {
 .manus-page {
   display: grid;
   gap: 24px;
-  padding: 24px;
+  padding: var(--manus-card-padding);
 }
 
 .manus-card,
 .stat-card {
   border: 1px solid var(--border);
-  border-radius: 12px;
+  border-radius: var(--manus-card-radius);
   background: var(--card);
   color: var(--foreground);
 }
 
 .manus-card {
   min-width: 0;
-  padding: 24px;
+  padding: var(--manus-card-padding);
 }
 
 .manus-card > header {
@@ -236,11 +237,11 @@ a {
   height: 32px;
   padding: 0 12px;
   border: 1px solid var(--border);
-  border-radius: 7px;
+  border-radius: var(--manus-button-radius);
   background: oklch(0.12 0.018 250);
   color: var(--foreground);
   text-decoration: none;
-  font-size: 13px;
+  font-size: var(--manus-font-md);
   font-weight: 600;
   cursor: pointer;
 }
@@ -537,31 +538,60 @@ a {
 
 .three-pane-page {
   display: grid;
-  grid-template-columns: 280px minmax(0, 1fr) 320px;
-  gap: 16px;
-  min-height: 1300px;
+  grid-template-columns: var(--manus-device-left-width) minmax(0, 1fr) var(--manus-device-right-width);
+  gap: 0;
+  min-height: var(--manus-content-height);
+  padding: 0;
 }
 
 .pane-list,
 .viewport-card,
 .inspector-card {
-  min-height: calc(100vh - 104px);
+  min-height: var(--manus-content-height);
+  border-radius: 0;
+  border-top: 0;
+  border-bottom: 0;
+  padding: var(--manus-panel-padding);
+}
+
+.pane-list {
+  border-left: 0;
+  border-right: 1px solid var(--border);
+}
+
+.viewport-card {
+  border-right: 1px solid var(--border);
+  border-left: 0;
+  padding: 0;
+}
+
+.viewport-card > header {
+  display: none;
+}
+
+.viewport-card .manus-card-body {
+  height: 100%;
+}
+
+.inspector-card {
+  border-left: 0;
+  border-right: 0;
 }
 
 .template-panel {
   display: grid;
   gap: 8px;
   margin-bottom: 14px;
-  padding: 14px;
+  padding: var(--manus-row-padding-y) var(--manus-row-padding-x);
   border: 1px solid oklch(0.78 0.15 195 / 0.35);
-  border-radius: 8px;
-  background: oklch(0.78 0.15 195 / 0.08);
+  border-radius: var(--manus-row-radius);
+  background: var(--manus-selected-bg);
 }
 
 .template-panel small,
 .template-panel span {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--manus-font-sm);
 }
 
 .device-select-field {
@@ -569,14 +599,14 @@ a {
   gap: 8px;
   margin-bottom: 14px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--manus-font-sm);
 }
 
 .device-select-field select {
   width: 100%;
   height: 36px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--manus-button-radius);
   background: oklch(0.11 0.015 250);
   color: var(--foreground);
   padding: 0 10px;
@@ -590,9 +620,9 @@ a {
   align-items: center;
   gap: 10px;
   margin-bottom: 8px;
-  padding: 12px;
+  padding: var(--manus-row-padding-y) var(--manus-row-padding-x);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--manus-row-radius);
   background: oklch(0.13 0.02 250);
   color: var(--foreground);
   text-align: left;
@@ -609,14 +639,14 @@ a {
   gap: 8px;
   margin-bottom: 8px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--manus-row-radius);
   background: oklch(0.13 0.02 250);
   padding: 10px;
 }
 
 .layer-editor-row.active {
-  border-color: oklch(0.78 0.15 195 / 0.65);
-  background: oklch(0.78 0.15 195 / 0.1);
+  border-color: var(--manus-selected-border);
+  background: var(--manus-selected-bg);
 }
 
 .layer-row-main {
@@ -634,8 +664,8 @@ a {
 
 .layer-row-main > span {
   flex: 0 0 auto;
-  width: 12px;
-  height: 12px;
+  width: var(--manus-dot-size);
+  height: var(--manus-dot-size);
   border-radius: 999px;
 }
 
@@ -653,12 +683,12 @@ a {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 13px;
+  font-size: var(--manus-font-md);
 }
 
 .layer-row-main small {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--manus-font-sm);
 }
 
 .layer-row-main em {
@@ -709,7 +739,7 @@ a {
 
 .simulation-config-editor h3 {
   margin: 0;
-  font-size: 13px;
+  font-size: var(--manus-font-md);
 }
 
 .layer-property-form label,
@@ -717,7 +747,7 @@ a {
   display: grid;
   gap: 6px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--manus-font-sm);
 }
 
 .layer-property-form input,
@@ -726,7 +756,7 @@ a {
 .simulation-config-editor select {
   width: 100%;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--manus-button-radius);
   background: oklch(0.11 0.015 250);
   color: var(--foreground);
   padding: 8px 10px;
@@ -751,14 +781,14 @@ a {
 
 .layer-row.active,
 .process-row.active {
-  border-color: oklch(0.78 0.15 195 / 0.65);
-  background: oklch(0.78 0.15 195 / 0.1);
+  border-color: var(--manus-selected-border);
+  background: var(--manus-selected-bg);
 }
 
 .layer-row > span {
   flex: 0 0 auto;
-  width: 12px;
-  height: 12px;
+  width: var(--manus-dot-size);
+  height: var(--manus-dot-size);
   border-radius: 999px;
 }
 
@@ -773,33 +803,35 @@ a {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  font-size: 13px;
+  font-size: var(--manus-font-md);
 }
 
 .layer-row small,
 .process-row small {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--manus-font-sm);
 }
 
 .view-tabs {
   display: flex;
   gap: 4px;
-  margin-bottom: 14px;
-  padding: 4px;
+  min-height: var(--manus-toolbar-height);
+  margin-bottom: 0;
+  padding: 8px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-width: 0 0 1px;
+  border-radius: 0;
   background: oklch(0.12 0.018 250);
 }
 
 .view-tabs button {
-  height: 28px;
-  padding: 0 12px;
+  height: var(--manus-button-height-sm);
+  padding: 0 var(--manus-button-padding-x);
   border: 0;
-  border-radius: 6px;
+  border-radius: var(--manus-button-radius);
   background: transparent;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--manus-font-xs);
   cursor: pointer;
 }
 
@@ -811,11 +843,11 @@ a {
 .large-device-stage {
   position: relative;
   display: grid;
-  height: 560px;
+  height: calc(var(--manus-content-height) - var(--manus-toolbar-height));
   min-height: 560px;
   place-items: center;
   overflow: hidden;
-  border-radius: 8px;
+  border-radius: 0;
   background:
     radial-gradient(circle at 50% 48%, oklch(0.78 0.15 195 / 0.18), transparent 34%),
     #0c1222;
@@ -1135,10 +1167,17 @@ a {
   display: none;
 }
 
+.manus-page:has(> .band-diagram-workspace),
+.manus-page:has(> .iv-simulator-workspace),
+.manus-page:has(> .references-workspace) {
+  gap: 0;
+  padding: 0;
+}
+
 .manus-three-column {
   display: grid;
-  grid-template-columns: 288px minmax(0, 1fr) 288px;
-  min-height: 980px;
+  grid-template-columns: var(--manus-iv-left-width) minmax(0, 1fr) var(--manus-iv-right-width);
+  min-height: var(--manus-content-height);
   border-top: 1px solid var(--border);
 }
 
@@ -1157,7 +1196,7 @@ a {
 
 .manus-three-center {
   min-width: 0;
-  padding: 16px;
+  padding: var(--manus-center-padding);
 }
 
 .manus-side-panel,
@@ -1165,7 +1204,7 @@ a {
   display: grid;
   align-content: start;
   gap: 18px;
-  padding: 16px 12px;
+  padding: var(--manus-panel-padding);
 }
 
 .manus-side-panel > header,
@@ -1177,14 +1216,14 @@ a {
 .manus-side-panel h2,
 .manus-analysis-panel h2 {
   margin: 0;
-  font-size: 14px;
+  font-size: var(--manus-font-base);
 }
 
 .manus-side-panel p,
 .manus-side-panel h3 {
   margin: 0;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--manus-font-sm);
   font-weight: 600;
 }
 
@@ -1197,9 +1236,9 @@ a {
   display: grid;
   gap: 14px;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--manus-card-radius);
   background: oklch(0.13 0.019 250);
-  padding: 24px;
+  padding: var(--manus-card-padding);
 }
 
 .manus-chart-card > header {
@@ -1211,7 +1250,7 @@ a {
 
 .manus-chart-card h2 {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--manus-font-base);
 }
 
 .manus-chart-body {
@@ -1224,13 +1263,13 @@ a {
   border-bottom: 1px solid var(--border);
   padding: 0 0 10px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--manus-font-sm);
 }
 
 .manus-compact-field strong {
   color: var(--foreground);
   font-family: "JetBrains Mono", monospace;
-  font-size: 13px;
+  font-size: var(--manus-font-md);
 }
 
 .manus-compact-field em {
@@ -1254,14 +1293,14 @@ a {
 .manus-split-detail {
   display: grid;
   grid-template-columns: 320px minmax(0, 1fr);
-  min-height: 980px;
+  min-height: var(--manus-content-height);
   border-top: 1px solid var(--border);
 }
 
 .manus-split-list {
   border-right: 1px solid var(--border);
   background: oklch(0.14 0.018 250);
-  padding: 16px 12px;
+  padding: var(--manus-panel-padding);
 }
 
 .manus-split-main {
@@ -1282,13 +1321,13 @@ a {
 }
 
 .split-panel-heading h2 {
-  font-size: 14px;
+  font-size: var(--manus-font-base);
 }
 
 .split-panel-heading p {
   margin-top: 4px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--manus-font-sm);
 }
 
 .manus-list-row {
@@ -1299,10 +1338,11 @@ a {
   align-items: start;
   margin-bottom: 8px;
   border: 1px solid transparent;
-  border-radius: 7px;
+  min-height: var(--manus-row-height);
+  border-radius: var(--manus-row-radius);
   background: transparent;
   color: var(--foreground);
-  padding: 12px;
+  padding: var(--manus-row-padding-y) var(--manus-row-padding-x);
   text-align: left;
 }
 
@@ -1311,13 +1351,13 @@ button.manus-list-row {
 }
 
 .manus-list-row.active {
-  border-color: oklch(0.78 0.15 195 / 0.52);
-  background: oklch(0.78 0.15 195 / 0.11);
+  border-color: var(--manus-selected-border);
+  background: var(--manus-selected-bg);
 }
 
 .manus-row-dot {
-  width: 12px;
-  height: 12px;
+  width: var(--manus-dot-size);
+  height: var(--manus-dot-size);
   margin-top: 3px;
   border-radius: 999px;
 }
@@ -1334,7 +1374,7 @@ button.manus-list-row {
 
 .manus-row-copy strong {
   overflow: hidden;
-  font-size: 13px;
+  font-size: var(--manus-font-md);
   text-overflow: ellipsis;
   white-space: nowrap;
 }
@@ -1342,7 +1382,7 @@ button.manus-list-row {
 .manus-row-copy small {
   margin-top: 4px;
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--manus-font-sm);
   line-height: 1.35;
 }
 
@@ -1350,7 +1390,7 @@ button.manus-list-row {
   margin-top: 6px;
   color: oklch(0.68 0.045 250);
   font-family: "JetBrains Mono", monospace;
-  font-size: 11px;
+  font-size: var(--manus-font-xs);
   font-style: normal;
 }
 
@@ -1374,13 +1414,13 @@ button.manus-list-row {
 }
 
 .manus-detail-header h2 {
-  font-size: 20px;
+  font-size: var(--manus-font-xl);
 }
 
 .manus-detail-header p {
   margin-top: 4px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--manus-font-md);
 }
 
 .manus-detail-icon,
@@ -1399,10 +1439,11 @@ button.manus-list-row {
   display: inline-flex;
   align-items: center;
   border: 1px solid var(--border);
+  min-height: var(--manus-badge-height);
   border-radius: 999px;
   background: var(--secondary);
   color: var(--muted);
-  padding: 3px 8px;
+  padding: 3px var(--manus-badge-padding-x);
   font-family: "JetBrains Mono", monospace;
   font-size: 10px;
   font-weight: 800;
@@ -1446,13 +1487,13 @@ button.manus-list-row {
 
 .manus-metadata-grid span {
   color: var(--muted);
-  font-size: 12px;
+  font-size: var(--manus-font-sm);
 }
 
 .manus-metadata-grid strong {
   margin-top: 4px;
   font-family: "JetBrains Mono", monospace;
-  font-size: 13px;
+  font-size: var(--manus-font-md);
 }
 
 .manus-callout {
@@ -1460,11 +1501,11 @@ button.manus-list-row {
   gap: 6px;
   margin-top: 16px;
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: var(--manus-card-radius);
   background: oklch(0.12 0.018 250);
   padding: 14px;
   color: var(--muted);
-  font-size: 13px;
+  font-size: var(--manus-font-md);
   line-height: 1.55;
 }
 
@@ -1490,9 +1531,9 @@ button.manus-list-row {
 
 .manus-preview-card {
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: var(--manus-card-radius);
   background: linear-gradient(180deg, oklch(0.15 0.025 250), oklch(0.10 0.018 250));
-  padding: 24px;
+  padding: var(--manus-card-padding);
 }
 
 .manus-chip-selector {
@@ -1536,8 +1577,8 @@ button.manus-list-row {
 }
 
 .manus-score-dots i {
-  width: 7px;
-  height: 7px;
+  width: var(--manus-score-dot-size);
+  height: var(--manus-score-dot-size);
   border-radius: 999px;
   background: oklch(0.28 0.04 250);
 }
@@ -2085,12 +2126,12 @@ button.manus-list-row {
 }
 
 .band-diagram-workspace {
-  grid-template-columns: 288px minmax(520px, 1fr) 288px;
+  grid-template-columns: var(--manus-band-left-width) minmax(0, 1fr) var(--manus-band-right-width);
   min-height: 980px;
 }
 
 .iv-simulator-workspace {
-  grid-template-columns: 300px minmax(520px, 1fr) 300px;
+  grid-template-columns: var(--manus-iv-left-width) minmax(0, 1fr) var(--manus-iv-right-width);
   min-height: 1120px;
 }
 
@@ -2118,13 +2159,13 @@ button.manus-list-row {
 .band-diagram-preview {
   display: grid;
   gap: 18px;
-  min-height: 760px;
+  min-height: var(--manus-band-plot-height);
   align-items: center;
 }
 
 .band-diagram-preview svg {
   width: 100%;
-  min-height: 720px;
+  min-height: var(--manus-band-plot-height);
 }
 
 .band-analysis-cards {
@@ -2150,11 +2191,11 @@ button.manus-list-row {
 }
 
 .iv-chart-stack .manus-chart-card {
-  min-height: 388px;
+  min-height: var(--manus-chart-card-min-height);
 }
 
 .iv-chart-stack .recharts-responsive-container {
-  min-height: 300px;
+  min-height: var(--manus-iv-plot-height);
 }
 
 .compact-control-stack {
@@ -2184,7 +2225,11 @@ button.manus-list-row {
 
 .references-workspace,
 .research-workspace {
-  grid-template-columns: 360px minmax(0, 1fr);
+  grid-template-columns: var(--manus-references-left-width) minmax(0, 1fr);
+}
+
+.research-workspace {
+  grid-template-columns: var(--manus-research-left-width) minmax(0, 1fr);
 }
 
 .references-workspace .manus-split-main,
@@ -2194,7 +2239,11 @@ button.manus-list-row {
 
 .references-workspace .manus-list-row,
 .research-workspace .manus-list-row {
-  min-height: 78px;
+  min-height: var(--manus-reference-row-height);
+}
+
+.research-workspace .manus-list-row {
+  min-height: var(--manus-research-row-height);
 }
 
 .references-workspace .manus-list-row svg,
@@ -2572,7 +2621,7 @@ button.manus-list-row {
 }
 
 .hypothesis-detail {
-  max-width: 760px;
+  max-width: 672px;
   padding: 0;
 }
 

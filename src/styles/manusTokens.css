@@ -1,0 +1,61 @@
+:root {
+  --manus-sidebar-width: 240px;
+  --manus-topbar-height: 56px;
+  --manus-content-height: calc(100vh - var(--manus-topbar-height));
+
+  --manus-device-left-width: 288px;
+  --manus-device-right-width: 320px;
+  --manus-band-left-width: 256px;
+  --manus-band-right-width: 288px;
+  --manus-iv-left-width: 288px;
+  --manus-iv-right-width: 288px;
+  --manus-references-left-width: 384px;
+  --manus-research-left-width: 320px;
+
+  --manus-panel-bg: oklch(0.14 0.018 250);
+  --manus-card-bg: oklch(0.13 0.019 250);
+  --manus-page-bg: oklch(0.13 0.02 250);
+  --manus-selected-bg: oklch(0.78 0.15 195 / 0.11);
+  --manus-selected-border: oklch(0.78 0.15 195 / 0.52);
+  --manus-border-color: oklch(0.25 0.02 250);
+  --manus-divider-color: var(--manus-border-color);
+
+  --manus-card-radius: 12px;
+  --manus-panel-radius: 0px;
+  --manus-row-radius: 6px;
+  --manus-button-radius: 6px;
+  --manus-card-padding: 24px;
+  --manus-panel-padding: 12px;
+  --manus-center-padding: 16px;
+  --manus-row-padding-x: 12px;
+  --manus-row-padding-y: 12px;
+  --manus-row-height: 68px;
+  --manus-reference-row-height: 88px;
+  --manus-research-row-height: 94px;
+  --manus-toolbar-height: 45px;
+  --manus-button-height-sm: 28px;
+  --manus-button-padding-x: 10px;
+  --manus-badge-height: 22px;
+  --manus-badge-padding-x: 8px;
+  --manus-dot-size: 12px;
+  --manus-score-dot-size: 7px;
+  --manus-score-dot-gap: 4px;
+
+  --manus-font-xs: 11px;
+  --manus-font-sm: 12px;
+  --manus-font-md: 13px;
+  --manus-font-base: 14px;
+  --manus-font-lg: 18px;
+  --manus-font-xl: 20px;
+  --manus-line-tight: 1.25;
+  --manus-line-normal: 1.45;
+  --manus-body-font: Inter, system-ui, -apple-system, sans-serif;
+  --manus-mono-font: "JetBrains Mono", monospace;
+
+  --manus-chart-card-min-height: 410px;
+  --manus-band-card-height: 912px;
+  --manus-band-plot-height: 802px;
+  --manus-iv-plot-height: 320px;
+  --manus-grid-color: oklch(0.34 0.07 245 / 0.34);
+  --manus-chart-line-width: 2px;
+}

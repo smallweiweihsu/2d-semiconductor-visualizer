@@ -1291,9 +1291,9 @@ function Chart({
   return (
     <ResponsiveContainer height={320}>
       <LineChart data={data}>
-        <CartesianGrid stroke="oklch(0.25 0.02 250)" />
-        <XAxis dataKey={xKey} stroke="oklch(0.65 0.02 250)" />
-        <YAxis stroke="oklch(0.65 0.02 250)" />
+        <CartesianGrid stroke="oklch(0.34 0.07 245 / 0.34)" />
+        <XAxis dataKey={xKey} stroke="oklch(0.65 0.02 250)" tickFormatter={formatTickValue} />
+        <YAxis stroke="oklch(0.65 0.02 250)" tickFormatter={formatTickValue} />
         <Tooltip
           formatter={(value) => [`${Number(value).toExponential(3)} ${unit}`, 'Id']}
           contentStyle={{ background: 'oklch(0.17 0.02 250)', border: '1px solid oklch(0.25 0.02 250)' }}
@@ -1304,6 +1304,15 @@ function Chart({
       </LineChart>
     </ResponsiveContainer>
   )
+}
+
+function formatTickValue(value: number | string) {
+  const numeric = Number(value)
+  if (!Number.isFinite(numeric)) return String(value)
+  if (Math.abs(numeric) >= 1000 || (Math.abs(numeric) > 0 && Math.abs(numeric) < 0.001)) {
+    return numeric.toExponential(1)
+  }
+  return Number(numeric.toFixed(2)).toString()
 }
 
 function mergeTransferOverlay(
