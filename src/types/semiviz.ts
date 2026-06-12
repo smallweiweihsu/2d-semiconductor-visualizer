@@ -170,6 +170,7 @@ export interface ResearchHypothesis {
 }
 
 export interface SemivizProject {
+  activeDeviceId: string
   devices: DeviceStructure[]
   materials: Material[]
   processes: ProcessFlow[]

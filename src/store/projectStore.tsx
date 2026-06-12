@@ -8,14 +8,17 @@ import {
   type ReactNode,
 } from 'react'
 import { seedProject } from '../data/seedProject'
+import { normalizeImportedProject, normalizeStoredProject } from './projectValidation'
 import type { DeviceStructure, SemivizProject } from '../types/semiviz'
 
 const storageKey = 'semiviz-project-v1'
 
 interface ProjectStoreValue {
   project: SemivizProject
+  activeDevice: DeviceStructure
   addDevice: (name: string, description: string) => DeviceStructure
-  replaceProject: (project: SemivizProject) => void
+  setActiveDeviceId: (deviceId: string) => void
+  replaceProject: (project: unknown) => { ok: boolean; error?: string }
   exportProject: () => void
 }
 
@@ -23,6 +26,7 @@ const ProjectStoreContext = createContext<ProjectStoreValue | null>(null)
 
 export function ProjectStoreProvider({ children }: { children: ReactNode }) {
   const [project, setProject] = useState<SemivizProject>(() => readStoredProject())
+  const activeDevice = project.devices.find((device) => device.id === project.activeDeviceId) ?? project.devices[0]
 
   useEffect(() => {
     window.localStorage.setItem(storageKey, JSON.stringify(project))
@@ -44,14 +48,31 @@ export function ProjectStoreProvider({ children }: { children: ReactNode }) {
 
     setProject((current) => ({
       ...current,
+      activeDeviceId: nextDevice.id,
       devices: [nextDevice, ...current.devices],
     }))
 
     return nextDevice
   }, [])
 
-  const replaceProject = useCallback((nextProject: SemivizProject) => {
-    setProject(normalizeProject(nextProject))
+  const setActiveDeviceId = useCallback((deviceId: string) => {
+    setProject((current) => {
+      if (!current.devices.some((device) => device.id === deviceId)) {
+        return current
+      }
+
+      return { ...current, activeDeviceId: deviceId }
+    })
+  }, [])
+
+  const replaceProject = useCallback((nextProject: unknown) => {
+    const result = normalizeImportedProject(nextProject)
+
+    if (result.ok && result.project) {
+      setProject(result.project)
+    }
+
+    return { ok: result.ok, error: result.error }
   }, [])
 
   const exportProject = useCallback(() => {
@@ -69,8 +90,8 @@ export function ProjectStoreProvider({ children }: { children: ReactNode }) {
   }, [project])
 
   const value = useMemo(
-    () => ({ project, addDevice, replaceProject, exportProject }),
-    [addDevice, exportProject, project, replaceProject],
+    () => ({ project, activeDevice, addDevice, setActiveDeviceId, replaceProject, exportProject }),
+    [activeDevice, addDevice, exportProject, project, replaceProject, setActiveDeviceId],
   )
 
   return (
@@ -99,21 +120,8 @@ function readStoredProject() {
   }
 
   try {
-    return normalizeProject(JSON.parse(raw) as Partial<SemivizProject>)
+    return normalizeStoredProject(JSON.parse(raw))
   } catch {
     return seedProject
-  }
-}
-
-function normalizeProject(project: Partial<SemivizProject>): SemivizProject {
-  return {
-    devices: project.devices?.length ? project.devices : seedProject.devices,
-    materials: project.materials?.length ? project.materials : seedProject.materials,
-    processes: project.processes?.length ? project.processes : seedProject.processes,
-    measurements: project.measurements?.length
-      ? project.measurements
-      : seedProject.measurements,
-    references: project.references?.length ? project.references : seedProject.references,
-    hypotheses: project.hypotheses?.length ? project.hypotheses : seedProject.hypotheses,
   }
 }

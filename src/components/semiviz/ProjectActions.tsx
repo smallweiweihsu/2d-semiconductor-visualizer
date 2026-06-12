@@ -1,13 +1,14 @@
 import { useRef, useState, type ChangeEvent, type FormEvent } from 'react'
 import { Download, Plus, Upload, X } from 'lucide-react'
 import { useProjectStore } from '../../store/projectStore'
-import type { SemivizProject } from '../../types/semiviz'
+import { parseProjectJson } from '../../store/projectValidation'
 
 export function ProjectActions() {
   const inputRef = useRef<HTMLInputElement>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [name, setName] = useState('New Device')
   const [description, setDescription] = useState('自訂二維半導體元件結構')
+  const [importMessage, setImportMessage] = useState('')
   const { addDevice, exportProject, replaceProject } = useProjectStore()
 
   function handleCreate(event: FormEvent) {
@@ -26,9 +27,21 @@ export function ProjectActions() {
       return
     }
 
-    const text = await file.text()
-    replaceProject(JSON.parse(text) as SemivizProject)
-    input.value = ''
+    try {
+      const result = parseProjectJson(await file.text())
+
+      if (!result.ok || !result.project) {
+        setImportMessage(`匯入失敗：${result.error ?? 'project schema 不完整'}`)
+        return
+      }
+
+      const replaceResult = replaceProject(result.project)
+      setImportMessage(replaceResult.ok ? '匯入完成' : `匯入失敗：${replaceResult.error ?? 'project schema 不完整'}`)
+    } catch {
+      setImportMessage('匯入失敗：無法讀取檔案')
+    } finally {
+      input.value = ''
+    }
   }
 
   return (
@@ -44,6 +57,7 @@ export function ProjectActions() {
         }}
       />
       <div className="manus-actions">
+        {importMessage ? <span className="import-status" role="status">{importMessage}</span> : null}
         <button className="manus-button ghost" onClick={() => inputRef.current?.click()}>
           <Upload size={15} />
           匯入資料

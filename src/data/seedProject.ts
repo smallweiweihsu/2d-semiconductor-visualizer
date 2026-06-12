@@ -73,6 +73,7 @@ export const defaultProcessSteps: ProcessStep[] = [
 ]
 
 export const seedProject: SemivizProject = {
+  activeDeviceId: initialDeviceStructure.id,
   devices: [initialDeviceStructure],
   materials,
   processes: [

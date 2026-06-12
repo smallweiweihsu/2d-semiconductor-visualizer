@@ -54,7 +54,7 @@ try {
   await page.getByLabel('描述').fill('localStorage persistence check')
   await page.getByRole('button', { name: '建立並保存' }).click()
   await page.reload({ waitUntil: 'networkidle' })
-  await expectVisible(page.getByText('Smoke Test Device'), 'new device persists after reload')
+  await expectVisible(page.locator('.template-panel strong', { hasText: 'Smoke Test Device' }), 'new device persists after reload')
 
   const downloadPromise = page.waitForEvent('download')
   await page.getByRole('button', { name: '匯出 JSON' }).click()
@@ -63,10 +63,25 @@ try {
     throw new Error('export JSON did not produce a JSON download')
   }
 
-  await page.goto(baseUrl, { waitUntil: 'networkidle' })
   const tempDir = await mkdtemp(path.join(tmpdir(), 'semiviz-smoke-'))
+
+  await page.goto(baseUrl, { waitUntil: 'networkidle' })
+  const beforeInvalidImport = await page.evaluate(() => window.localStorage.getItem('semiviz-project-v1'))
+  const invalidImportPath = path.join(tempDir, 'invalid-project.json')
+  await writeFile(invalidImportPath, '{ invalid json')
+  const invalidChooserPromise = page.waitForEvent('filechooser')
+  await page.getByRole('button', { name: '匯入資料' }).click()
+  const invalidChooser = await invalidChooserPromise
+  await invalidChooser.setFiles(invalidImportPath)
+  await expectVisible(page.getByText(/匯入失敗/), 'invalid JSON import reports failure')
+  const afterInvalidImport = await page.evaluate(() => window.localStorage.getItem('semiviz-project-v1'))
+  if (beforeInvalidImport !== afterInvalidImport) {
+    throw new Error('invalid JSON import overwrote localStorage')
+  }
+
   const importPath = path.join(tempDir, 'project.json')
   await writeFile(importPath, JSON.stringify({
+    activeDeviceId: 'imported-device',
     devices: [{
       id: 'imported-device',
       templateId: 'imported',
@@ -95,6 +110,8 @@ try {
   }
   await page.goto(baseUrl, { waitUntil: 'networkidle' })
   await expectVisible(page.getByText('Imported JSON Device'), 'import JSON replaces project data')
+  await page.goto(`${baseUrl}/device-builder`, { waitUntil: 'networkidle' })
+  await expectVisible(page.locator('.empty-state', { hasText: '尚無 layer，請匯入或新增 layer。' }).first(), 'empty-layer device shows empty state')
 
   if (warnings.length) {
     throw new Error(`console errors:\n${warnings.join('\n')}`)
@@ -161,7 +178,9 @@ async function assertCanScroll(page, label) {
 }
 
 async function expectVisible(locator, label) {
-  if (!(await locator.isVisible())) {
+  try {
+    await locator.waitFor({ state: 'visible', timeout: 5000 })
+  } catch {
     throw new Error(label)
   }
 }

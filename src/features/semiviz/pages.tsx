@@ -26,12 +26,18 @@ import {
   YAxis,
 } from 'recharts'
 import { DevicePreview } from '../../components/semiviz/DevicePreview'
+import {
+  calculateCox,
+  calculateOutputCurve,
+  calculateTransferCurve,
+  extractDeviceParameters,
+  scaleCurrent,
+} from '../../simulation/mosfet'
 import { useProjectStore } from '../../store/projectStore'
 import type {
   DeviceLayer,
   HypothesisStatus,
   Material,
-  MeasurementType,
   ProcessType,
 } from '../../types/semiviz'
 
@@ -66,8 +72,7 @@ const statusLabels: Record<HypothesisStatus, string> = {
 }
 
 export function DashboardPage() {
-  const { project } = useProjectStore()
-  const activeDevice = project.devices[0]
+  const { project, activeDevice } = useProjectStore()
   const missingMaterials = project.materials.filter((material) =>
     ['wse2', 'mos2', 'hbn', 'sb2o3', 'wox'].includes(material.id),
   )
@@ -157,27 +162,34 @@ export function DashboardPage() {
 }
 
 export function DeviceBuilderPage() {
-  const { project } = useProjectStore()
-  const [selectedId, setSelectedId] = useState(project.devices[0].layers[2]?.id)
+  const { project, activeDevice, setActiveDeviceId } = useProjectStore()
+  const [selectedId, setSelectedId] = useState(activeDevice.layers[2]?.id ?? activeDevice.layers[0]?.id ?? '')
   const [viewMode, setViewMode] = useState('3D')
-  const device = project.devices[0]
-  const selected = device.layers.find((layer) => layer.id === selectedId) ?? device.layers[0]
-  const material = findMaterial(project.materials, selected.materialId)
+  const selected = activeDevice.layers.find((layer) => layer.id === selectedId) ?? activeDevice.layers[2] ?? activeDevice.layers[0]
+  const material = selected ? findMaterial(project.materials, selected.materialId) : undefined
 
   return (
     <div className="manus-page three-pane-page">
       <Card className="pane-list" title="Layer Stack">
+        <label className="device-select-field">
+          Active device
+          <select value={activeDevice.id} onChange={(event) => setActiveDeviceId(event.target.value)}>
+            {project.devices.map((deviceOption) => (
+              <option value={deviceOption.id} key={deviceOption.id}>{deviceOption.name}</option>
+            ))}
+          </select>
+        </label>
         <div className="template-panel">
           <small>Sb/WSe₂ TG</small>
-          <strong>{device.name}</strong>
-          <span>Sb / WSe₂ / top gate / Sb₂O₃</span>
+          <strong>{activeDevice.name}</strong>
+          <span>{activeDevice.layers.length ? 'Sb / WSe₂ / top gate / Sb₂O₃' : '尚無 layer，請匯入或新增 layer。'}</span>
         </div>
-        {device.layers.map((layer) => (
-          <button className={layer.id === selected.id ? 'layer-row active' : 'layer-row'} key={layer.id} onClick={() => setSelectedId(layer.id)}>
+        {activeDevice.layers.length ? activeDevice.layers.map((layer) => (
+          <button className={selected && layer.id === selected.id ? 'layer-row active' : 'layer-row'} key={layer.id} onClick={() => setSelectedId(layer.id)}>
             <span style={{ backgroundColor: findMaterial(project.materials, layer.materialId).color }} />
             <div><strong>{layer.name}</strong><small>{layer.role} · {layer.geometry.thickness_nm} nm</small></div>
           </button>
-        ))}
+        )) : <EmptyState text="尚無 layer，請匯入或新增 layer。" />}
       </Card>
 
       <Card className="viewport-card" title="3D Viewport">
@@ -189,24 +201,30 @@ export function DeviceBuilderPage() {
           ))}
         </div>
         <div className={`large-device-stage ${viewMode.toLowerCase()}`}>
-          <LayerStackGraphic layers={device.layers} selectedId={selected.id} />
+          {activeDevice.layers.length
+            ? <LayerStackGraphic layers={activeDevice.layers} selectedId={selected?.id ?? ''} />
+            : <EmptyState text="此 active device 尚未定義 layer stack。" />}
         </div>
       </Card>
 
       <Card className="inspector-card" title="Properties">
-        <div className="selected-material">
-          <span style={{ backgroundColor: material.color }} />
-          <div><h2>{selected.name}</h2><p>{material.displayName} · {selected.role}</p></div>
-        </div>
-        <div className="property-grid">
-          <Meta label="Length" value={`${selected.geometry.length_um} µm`} />
-          <Meta label="Width" value={`${selected.geometry.width_um} µm`} />
-          <Meta label="Thickness" value={`${selected.geometry.thickness_nm} nm`} />
-          <Meta label="X" value={`${selected.geometry.x_um} µm`} />
-          <Meta label="Y" value={`${selected.geometry.y_um} µm`} />
-          <Meta label="Voltage" value={selected.voltageLabel ?? '-'} />
-        </div>
-        <p className="soft-note">{selected.notes}</p>
+        {selected && material ? (
+          <>
+            <div className="selected-material">
+              <span style={{ backgroundColor: material.color }} />
+              <div><h2>{selected.name}</h2><p>{material.displayName} · {selected.role}</p></div>
+            </div>
+            <div className="property-grid">
+              <Meta label="Length" value={`${selected.geometry.length_um} µm`} />
+              <Meta label="Width" value={`${selected.geometry.width_um} µm`} />
+              <Meta label="Thickness" value={`${selected.geometry.thickness_nm} nm`} />
+              <Meta label="X" value={`${selected.geometry.x_um} µm`} />
+              <Meta label="Y" value={`${selected.geometry.y_um} µm`} />
+              <Meta label="Voltage" value={selected.voltageLabel ?? '-'} />
+            </div>
+            <p className="soft-note">{selected.notes}</p>
+          </>
+        ) : <EmptyState text="選取 active device 後，這裡會顯示 layer 參數。" />}
       </Card>
     </div>
   )
@@ -246,19 +264,134 @@ export function ProcessFlowPage() {
 }
 
 export function IVSimulatorPage() {
-  const [mobility, setMobility] = useState(80)
+  const { project, activeDevice } = useProjectStore()
+  const extracted = useMemo(
+    () => extractDeviceParameters(activeDevice, project.materials),
+    [activeDevice, project.materials],
+  )
+  const [vd, setVd] = useState(1)
+  const [vgMin, setVgMin] = useState(-2)
+  const [vgMax, setVgMax] = useState(2)
   const [vth, setVth] = useState(0.6)
-  const data = useMemo(() => createTransferData(mobility, vth), [mobility, vth])
+  const [mobilityOverrides, setMobilityOverrides] = useState<Record<string, number>>({})
+  const [rc, setRc] = useState(1000)
+  const [leakageFloor, setLeakageFloor] = useState(1e-12)
+  const [currentUnit, setCurrentUnit] = useState<'A' | 'uA' | 'nA'>('uA')
+  const mobilityOverride = mobilityOverrides[activeDevice.id] ?? extracted.mobility_cm2Vs ?? 80
+  const modelInput = useMemo(() => ({
+    mobility_cm2Vs: mobilityOverride,
+    dielectricConstant: extracted.dielectricConstant ?? 3.9,
+    tox_nm: extracted.tox_nm ?? 20,
+    width_um: extracted.width_um ?? 1,
+    length_um: extracted.length_um ?? 1,
+    vd,
+    vgMin,
+    vgMax,
+    vth,
+    rc_ohm: rc,
+    leakage_A: leakageFloor,
+  }), [extracted.dielectricConstant, extracted.length_um, extracted.tox_nm, extracted.width_um, leakageFloor, mobilityOverride, rc, vd, vgMax, vgMin, vth])
+  const transferData = useMemo(
+    () => calculateTransferCurve(modelInput).map((point) => ({
+      vg: point.vg,
+      id: scaleCurrent(point.id_A, currentUnit),
+      region: point.region,
+    })),
+    [currentUnit, modelInput],
+  )
+  const outputData = useMemo(
+    () => calculateOutputCurve({
+      ...modelInput,
+      vdMax: Math.max(0.2, vd * 2),
+      vgValues: [vth + 0.5, vth + 1, vth + 1.5],
+    }).map((point) => ({
+      ...point,
+      'Vg+0.5': scaleCurrent(point[`Vg=${Number((vth + 0.5).toFixed(1))}V`] ?? 0, currentUnit),
+      'Vg+1.0': scaleCurrent(point[`Vg=${Number((vth + 1).toFixed(1))}V`] ?? 0, currentUnit),
+      'Vg+1.5': scaleCurrent(point[`Vg=${Number((vth + 1.5).toFixed(1))}V`] ?? 0, currentUnit),
+    })),
+    [currentUnit, modelInput, vd, vth],
+  )
+  const cox = calculateCox(modelInput.dielectricConstant, modelInput.tox_nm)
 
   return (
     <WorkspacePage title="I–V Simulator" icon={<Activity size={18} />}>
-      <div className="analysis-grid">
-        <Card title="模型參數">
-          <RangeInput label="Mobility" value={mobility} min={1} max={250} unit="cm²/V·s" onChange={setMobility} />
-          <RangeInput label="Vth" value={vth} min={-2} max={2} step={0.1} unit="V" onChange={setVth} />
+      <div className="simulation-grid">
+        <Card title="Active device summary">
+          <div className="summary-stack">
+            <h2>{activeDevice.name}</h2>
+            <p>{activeDevice.description}</p>
+            <Meta label="Channel" value={extracted.channelMaterial?.displayName ?? 'missing'} />
+            <Meta label="Gate dielectric" value={extracted.dielectricMaterial?.displayName ?? 'missing'} />
+            <Meta label="Contacts" value={extracted.contactMaterials.map((material) => material.displayName).join(', ') || 'missing'} />
+          </div>
+        </Card>
+        <Card title="Extracted parameters">
+          <ParameterTable rows={[
+            ['L', extracted.length_um, 'µm'],
+            ['W', extracted.width_um, 'µm'],
+            ['tox', extracted.tox_nm, 'nm'],
+            ['k', extracted.dielectricConstant, ''],
+            ['Cox', cox, 'F/m²'],
+            ['mobility', extracted.mobility_cm2Vs, 'cm²/V·s'],
+            ['Eg', extracted.bandGap_eV, 'eV'],
+            ['χ', extracted.electronAffinity_eV, 'eV'],
+            ['contact φ', extracted.contactWorkFunction_eV, 'eV'],
+          ]} />
+        </Card>
+        <Card title="Missing parameter warnings">
+          {extracted.missing.length ? (
+            <div className="warning-list">
+              {extracted.missing.map((item) => <div key={item}><AlertTriangle size={14} />{item}</div>)}
+            </div>
+          ) : <EmptyState text="Active device 已具備 MVP 模型需要的主要參數。" />}
+        </Card>
+        <Card title="Model controls">
+          <RangeInput label="Vd" value={vd} min={0.05} max={5} step={0.05} unit="V" onChange={setVd} />
+          <RangeInput label="Vg min" value={vgMin} min={-5} max={vgMax - 0.1} step={0.1} unit="V" onChange={setVgMin} />
+          <RangeInput label="Vg max" value={vgMax} min={vgMin + 0.1} max={5} step={0.1} unit="V" onChange={setVgMax} />
+          <RangeInput label="Vth override" value={vth} min={-3} max={3} step={0.05} unit="V" onChange={setVth} />
+          <RangeInput
+            label="Mobility override"
+            value={mobilityOverride}
+            min={1}
+            max={300}
+            step={1}
+            unit="cm²/V·s"
+            onChange={(value) => setMobilityOverrides((current) => ({ ...current, [activeDevice.id]: value }))}
+          />
+          <RangeInput label="Rc override" value={rc} min={0} max={100000} step={100} unit="Ω" onChange={setRc} />
+          <RangeInput label="Leakage floor" value={leakageFloor} min={1e-13} max={1e-8} step={1e-13} unit="A" onChange={setLeakageFloor} />
+          <label className="device-select-field">
+            Current unit
+            <select value={currentUnit} onChange={(event) => setCurrentUnit(event.target.value as 'A' | 'uA' | 'nA')}>
+              <option value="A">A</option>
+              <option value="uA">µA</option>
+              <option value="nA">nA</option>
+            </select>
+          </label>
         </Card>
         <Card title="Id-Vg Transfer Curve">
-          <Chart data={data} />
+          <Chart data={transferData} xKey="vg" unit={currentUnit} lines={[{ key: 'id', color: 'oklch(0.78 0.15 195)' }]} />
+        </Card>
+        <Card title="Id-Vd Output Curve">
+          <Chart
+            data={outputData}
+            xKey="vd"
+            unit={currentUnit}
+            lines={[
+              { key: 'Vg+0.5', color: 'oklch(0.78 0.15 195)' },
+              { key: 'Vg+1.0', color: 'oklch(0.7 0.15 160)' },
+              { key: 'Vg+1.5', color: 'oklch(0.7 0.15 290)' },
+            ]}
+          />
+        </Card>
+        <Card title="Model assumptions">
+          <div className="assumption-list">
+            <p>使用長通道 MOSFET prototype 模型，Cox = ε0k/tox。</p>
+            <p>Vg 小於 Vth 時採用 leakage floor；接觸電阻 Rc 以簡化電流限制處理。</p>
+            <p>這批先不做 Supabase、DOI lookup 或 CSV fitting。</p>
+          </div>
         </Card>
       </div>
     </WorkspacePage>
@@ -424,6 +557,10 @@ function MaterialRow({ material }: { material: Material }) {
   )
 }
 
+function EmptyState({ text }: { text: string }) {
+  return <div className="empty-state">{text}</div>
+}
+
 function LayerStackGraphic({ layers, selectedId }: { layers: DeviceLayer[]; selectedId: string }) {
   const { project } = useProjectStore()
 
@@ -454,17 +591,45 @@ function RangeInput({ label, value, min, max, step = 1, unit, onChange }: { labe
   )
 }
 
-function Chart({ data }: { data: Array<{ vg: number; id: number }> }) {
+function Chart({
+  data,
+  xKey,
+  lines,
+  unit,
+}: {
+  data: Array<Record<string, number | string>>
+  xKey: string
+  lines: Array<{ key: string; color: string }>
+  unit: string
+}) {
   return (
     <ResponsiveContainer height={320}>
       <LineChart data={data}>
         <CartesianGrid stroke="oklch(0.25 0.02 250)" />
-        <XAxis dataKey="vg" stroke="oklch(0.65 0.02 250)" />
+        <XAxis dataKey={xKey} stroke="oklch(0.65 0.02 250)" />
         <YAxis stroke="oklch(0.65 0.02 250)" />
-        <Tooltip contentStyle={{ background: 'oklch(0.17 0.02 250)', border: '1px solid oklch(0.25 0.02 250)' }} />
-        <Line dataKey="id" stroke="oklch(0.78 0.15 195)" dot={false} strokeWidth={2} />
+        <Tooltip
+          formatter={(value) => [`${Number(value).toExponential(3)} ${unit}`, 'Id']}
+          contentStyle={{ background: 'oklch(0.17 0.02 250)', border: '1px solid oklch(0.25 0.02 250)' }}
+        />
+        {lines.map((line) => (
+          <Line dataKey={line.key} stroke={line.color} dot={false} key={line.key} strokeWidth={2} />
+        ))}
       </LineChart>
     </ResponsiveContainer>
+  )
+}
+
+function ParameterTable({ rows }: { rows: Array<[string, number | undefined, string]> }) {
+  return (
+    <div className="parameter-table">
+      {rows.map(([label, value, unit]) => (
+        <div key={label}>
+          <span>{label}</span>
+          <strong>{value === undefined ? 'missing' : `${formatNumber(value)} ${unit}`}</strong>
+        </div>
+      ))}
+    </div>
   )
 }
 
@@ -476,30 +641,14 @@ function PlaceholderGrid({ items }: { items: string[] }) {
   )
 }
 
-function createTransferData(mobility: number, vth: number) {
-  return Array.from({ length: 61 }, (_, index) => {
-    const vg = -2 + index * 0.083
-    const vov = vg - vth
-    const id = vov > 0 ? mobility * 1e-4 * (2 / 5) * vov ** 2 * 0.5 : 0
-    return { vg: +vg.toFixed(2), id: +(id * 1000).toFixed(4) }
-  })
-}
-
 function findMaterial(materials: Material[], id: string) {
   return materials.find((material) => material.id === id) ?? materials[0]
 }
 
-function measurementColor(type: MeasurementType) {
-  const colors: Record<MeasurementType, string> = {
-    electrical: '#22d3ee',
-    raman: '#a78bfa',
-    pl: '#34d399',
-    xps: '#fbbf24',
-    afm: '#60a5fa',
-    sem: '#f472b6',
-    tem: '#f87171',
+function formatNumber(value: number) {
+  if (Math.abs(value) < 0.001 || Math.abs(value) >= 10000) {
+    return value.toExponential(2)
   }
-  return colors[type]
-}
 
-void measurementColor
+  return Number(value.toPrecision(4)).toString()
+}
