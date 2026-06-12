@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { Component, lazy, Suspense, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
 import {
   Activity,
   AlertTriangle,
@@ -67,6 +67,11 @@ import type {
   ProcessType,
 } from '../../types/semiviz'
 import { getMaterialParameters, getReferenceUsage } from '../../store/materialParameterUtils'
+import type { DeviceViewportMode } from '../../components/semiviz/deviceViewport3DUtils'
+
+const DeviceViewport3D = lazy(() =>
+  import('../../components/semiviz/DeviceViewport3D').then((module) => ({ default: module.DeviceViewport3D })),
+)
 
 const heroImage =
   'https://d2xsxph8kpxj0f.cloudfront.net/310519663719279500/Cfdeom2BqRqeA6yyQXzySn/hero-semiconductor-3d-NhSiKiaawo3GDQQmrbNUaz.webp'
@@ -203,7 +208,7 @@ export function DashboardPage() {
 export function DeviceBuilderPage() {
   const { project, activeDevice, setActiveDeviceId, updateActiveDevice } = useProjectStore()
   const [selectedId, setSelectedId] = useState(activeDevice.layers[2]?.id ?? activeDevice.layers[0]?.id ?? '')
-  const [viewMode, setViewMode] = useState('3D')
+  const [viewMode, setViewMode] = useState<DeviceViewportMode>('3D')
   const [normalizeMessage, setNormalizeMessage] = useState('')
   const selected = activeDevice.layers.find((layer) => layer.id === selectedId) ?? activeDevice.layers[2] ?? activeDevice.layers[0]
   const material = selected ? findMaterial(project.materials, selected.materialId) : undefined
@@ -258,7 +263,7 @@ export function DeviceBuilderPage() {
 
       <Card className="viewport-card" title="3D Viewport">
         <div className="view-tabs">
-          {['3D', 'TOP', 'SIDE', 'EXPLODED'].map((mode) => (
+          {(['3D', 'TOP', 'SIDE', 'EXPLODED'] as DeviceViewportMode[]).map((mode) => (
             <button className={viewMode === mode ? 'active' : ''} key={mode} onClick={() => setViewMode(mode)}>
               {mode}
             </button>
@@ -266,7 +271,20 @@ export function DeviceBuilderPage() {
         </div>
         <div className={`large-device-stage ${viewMode.toLowerCase()}`}>
           {activeDevice.layers.length
-            ? <LayerStackGraphic layers={activeDevice.layers} selectedId={selected?.id ?? ''} viewMode={viewMode} />
+            ? (
+                <ViewportErrorBoundary fallback={<ViewportFallback layers={activeDevice.layers} selectedId={selected?.id ?? ''} viewMode={viewMode} />}>
+                  <Suspense fallback={<ViewportFallback layers={activeDevice.layers} selectedId={selected?.id ?? ''} viewMode={viewMode} />}>
+                    <DeviceViewport3D
+                      fallbackPreview={<LayerStackGraphic layers={activeDevice.layers} selectedId={selected?.id ?? ''} viewMode={viewMode} />}
+                      layers={activeDevice.layers}
+                      materials={project.materials}
+                      selectedId={selected?.id ?? ''}
+                      viewMode={viewMode}
+                      onSelectLayer={setSelectedId}
+                    />
+                  </Suspense>
+                </ViewportErrorBoundary>
+              )
             : <EmptyState text="此 active device 尚未定義 layer stack。" />}
         </div>
       </Card>
@@ -684,7 +702,7 @@ export function ResearchNotesPage() {
   )
 }
 
-function WorkspacePage({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
+function WorkspacePage({ title, icon, children }: { title: string; icon: ReactNode; children: ReactNode }) {
   return (
     <div className="manus-page workspace-page">
       <header className="workspace-heading">{icon}<h1>{title}</h1></header>
@@ -694,7 +712,7 @@ function WorkspacePage({ title, icon, children }: { title: string; icon: React.R
   )
 }
 
-function Card({ title, icon, className = '', children }: { title: string; icon?: React.ReactNode; className?: string; children: React.ReactNode }) {
+function Card({ title, icon, className = '', children }: { title: string; icon?: ReactNode; className?: string; children: ReactNode }) {
   return (
     <section className={`manus-card ${className}`}>
       <header>{icon}{title}</header>
@@ -703,7 +721,7 @@ function Card({ title, icon, className = '', children }: { title: string; icon?:
   )
 }
 
-function StatCard({ icon, label, value, suffix, tone }: { icon: React.ReactNode; label: string; value: string; suffix: string; tone: string }) {
+function StatCard({ icon, label, value, suffix, tone }: { icon: ReactNode; label: string; value: string; suffix: string; tone: string }) {
   return (
     <section className={`stat-card tone-${tone}`}>
       <div className="stat-icon">{icon}</div>
@@ -755,11 +773,44 @@ function LayerStackGraphic({ layers, selectedId, viewMode }: { layers: DeviceLay
             '--layer-thickness': `${layer.visualThickness}px`,
             '--layer-width': `${layer.visualWidth * 100}%`,
             '--layer-offset-x': `${layer.visualOffsetX * 100}%`,
-          } as React.CSSProperties}
+          } as CSSProperties}
         >
           {layer.name}
         </span>
       ))}
+    </div>
+  )
+}
+
+class ViewportErrorBoundary extends Component<{ children: ReactNode; fallback: ReactNode }, { hasError: boolean }> {
+  state = { hasError: false }
+
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+
+  componentDidCatch(error: Error) {
+    console.error('3D viewport unavailable:', error)
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="viewport-fallback">
+          <div className="viewport-fallback-message">3D viewport unavailable. Showing 2D stack preview.</div>
+          {this.props.fallback}
+        </div>
+      )
+    }
+
+    return this.props.children
+  }
+}
+
+function ViewportFallback({ layers, selectedId, viewMode }: { layers: DeviceLayer[]; selectedId: string; viewMode: DeviceViewportMode }) {
+  return (
+    <div className="viewport-fallback">
+      <LayerStackGraphic layers={layers} selectedId={selectedId} viewMode={viewMode} />
     </div>
   )
 }

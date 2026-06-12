@@ -50,7 +50,8 @@ try {
   await page.goto(`${baseUrl}/research-notes`, { waitUntil: 'networkidle' })
   await assertCanScroll(page, 'research-notes can scroll')
 
-  await page.goto(`${baseUrl}/device-builder`, { waitUntil: 'networkidle' })
+  await page.goto(`${baseUrl}/device-builder`, { waitUntil: 'domcontentloaded' })
+  await expectVisible(page.locator('.pane-list > header', { hasText: 'Layer Stack' }), 'device-builder route renders')
   await page.evaluate(({ legacyStorageKey, storageKey }) => {
     const project = JSON.parse(window.localStorage.getItem(storageKey))
     delete project.schemaVersion
@@ -67,19 +68,39 @@ try {
     window.localStorage.removeItem(storageKey)
     window.localStorage.setItem(legacyStorageKey, JSON.stringify(project))
   }, { legacyStorageKey, storageKey })
-  await page.reload({ waitUntil: 'networkidle' })
+  await page.reload({ waitUntil: 'domcontentloaded' })
   await page.getByRole('button', { name: 'EXPLODED' }).click()
   await expectVisible(page.locator('.view-tabs button.active', { hasText: 'EXPLODED' }), 'device-builder can switch view mode')
+  await expectVisible(page.locator('[data-testid="device-viewport3d"] canvas'), 'interactive 3D viewport canvas renders')
+  const canvas = page.locator('[data-testid="device-viewport3d"] canvas')
+  const canvasBox = await canvas.boundingBox()
+  if (!canvasBox) {
+    throw new Error('3D viewport canvas has no bounding box')
+  }
+  await page.mouse.move(canvasBox.x + canvasBox.width * 0.35, canvasBox.y + canvasBox.height * 0.45)
+  await page.mouse.down()
+  await page.mouse.move(canvasBox.x + canvasBox.width * 0.55, canvasBox.y + canvasBox.height * 0.52, { steps: 8 })
+  await page.mouse.up()
+  await page.getByRole('button', { name: 'Reset view' }).click()
+  await page.getByRole('button', { name: 'Fit view' }).click()
+  await page.getByRole('button', { name: 'Show labels' }).click()
+  await page.getByRole('button', { name: 'Show labels' }).click()
+  await page.getByRole('button', { name: 'TOP' }).click()
+  await expectVisible(page.locator('.view-tabs button.active', { hasText: 'TOP' }), 'TOP view mode works with 3D canvas')
+  await page.getByRole('button', { name: 'SIDE' }).click()
+  await expectVisible(page.locator('.view-tabs button.active', { hasText: 'SIDE' }), 'SIDE view mode works with 3D canvas')
+  await page.getByRole('button', { name: 'EXPLODED' }).click()
   const viewportContainsStack = await page.evaluate(() => {
     const stage = document.querySelector('.large-device-stage')?.getBoundingClientRect()
-    const stack = document.querySelector('.layer-stack-graphic')?.getBoundingClientRect()
-    if (!stage || !stack) return false
-    return stack.left >= stage.left && stack.right <= stage.right && stack.top >= stage.top && stack.bottom <= stage.bottom
+    const viewport = document.querySelector('[data-testid="device-viewport3d"]')?.getBoundingClientRect()
+    if (!stage || !viewport) return false
+    return viewport.left >= stage.left && viewport.right <= stage.right && viewport.top >= stage.top && viewport.bottom <= stage.bottom
   })
   if (!viewportContainsStack) {
     throw new Error('device-builder stack viewport overflows stage')
   }
   await page.getByRole('button', { name: 'WSe₂ 通道 semiconductor · 1 nm channel' }).click()
+  await expectVisible(page.locator('.selected-material', { hasText: 'WSe₂ 通道' }), 'layer list selection syncs to properties and 3D highlight state')
   const migratedZValue = await page.getByLabel('relative z offset (nm)').inputValue()
   if (migratedZValue === '500010') {
     throw new Error('legacy absolute z value was not migrated to relative z')
@@ -92,11 +113,12 @@ try {
     const raw = window.localStorage.getItem('semiviz-project-v2')
     return raw?.includes('"z_nm":20') && raw?.includes('"z_nm":50')
   })
-  await page.reload({ waitUntil: 'networkidle' })
+  await page.reload({ waitUntil: 'domcontentloaded' })
   const zStillReasonable = await page.evaluate(() => window.localStorage.getItem('semiviz-project-v2')?.includes('"z_nm":20'))
   if (!zStillReasonable) {
     throw new Error('normalized z positions did not persist after refresh')
   }
+  await expectVisible(page.locator('[data-testid="device-viewport3d"] canvas'), '3D viewport renders after refresh')
   await page.goto(`${baseUrl}/iv-simulator`, { waitUntil: 'networkidle' })
   await expectVisible(page.getByText('ready with estimates'), 'migrated project uses seed estimates without fallback')
   const migratedIsFallback = await page.locator('.status-fallback_preview').count()
@@ -116,7 +138,7 @@ try {
   }
   await page.reload({ waitUntil: 'networkidle' })
   await expectVisible(page.getByText('ready with estimates'), 'reset project persists after refresh')
-  await page.goto(`${baseUrl}/device-builder`, { waitUntil: 'networkidle' })
+  await page.goto(`${baseUrl}/device-builder`, { waitUntil: 'domcontentloaded' })
 
   await page.getByRole('button', { name: '新增 layer' }).click()
   await page.getByLabel('layer name').fill('Smoke Gate Oxide')
@@ -125,7 +147,7 @@ try {
   await page.getByLabel('electricalRole').selectOption('gate_dielectric')
   await page.getByLabel('Gate dielectric').selectOption({ label: 'Smoke Gate Oxide' })
   await page.waitForFunction(() => window.localStorage.getItem('semiviz-project-v2')?.includes('Smoke Gate Oxide'))
-  await page.reload({ waitUntil: 'networkidle' })
+  await page.reload({ waitUntil: 'domcontentloaded' })
   await expectVisible(page.locator('.pane-list').getByText('Smoke Gate Oxide'), 'edited layer persists after refresh')
   await page.goto(`${baseUrl}/iv-simulator`, { waitUntil: 'networkidle' })
   await expectVisible(page.getByText('HfO₂'), 'I-V simulator reads configured gate dielectric layer')
@@ -159,12 +181,12 @@ try {
   await page.getByText('Use fallback values for prototype preview', { exact: true }).click()
   await expectVisible(page.locator('svg.recharts-surface').first(), 'fallback preview restores chart')
 
-  await page.goto(`${baseUrl}/device-builder`, { waitUntil: 'networkidle' })
+  await page.goto(`${baseUrl}/device-builder`, { waitUntil: 'domcontentloaded' })
   await page.getByRole('button', { name: '新增元件' }).click()
   await page.getByLabel('元件名稱').fill('Smoke Test Device')
   await page.getByLabel('描述').fill('localStorage persistence check')
   await page.getByRole('button', { name: '建立並保存' }).click()
-  await page.reload({ waitUntil: 'networkidle' })
+  await page.reload({ waitUntil: 'domcontentloaded' })
   await expectVisible(page.locator('.template-panel strong', { hasText: 'Smoke Test Device' }), 'new device persists after reload')
 
   const downloadPromise = page.waitForEvent('download')
@@ -221,14 +243,14 @@ try {
   }
   await page.goto(baseUrl, { waitUntil: 'networkidle' })
   await expectVisible(page.getByText('Imported JSON Device'), 'import JSON replaces project data')
-  await page.goto(`${baseUrl}/device-builder`, { waitUntil: 'networkidle' })
+  await page.goto(`${baseUrl}/device-builder`, { waitUntil: 'domcontentloaded' })
   await expectVisible(page.locator('.empty-state', { hasText: '尚無 layer，請新增第一個 layer。' }).first(), 'empty-layer device shows empty state')
 
   previewServer = await startServer('preview', previewPort)
   const previewPage = await browser.newPage({ viewport: { width: 1280, height: 900 } })
   await previewPage.goto(`${previewUrl}/iv-simulator`, { waitUntil: 'networkidle' })
   await expectVisible(previewPage.getByRole('heading', { name: 'I–V Simulator' }), 'preview direct /iv-simulator route renders')
-  await previewPage.goto(`${previewUrl}/device-builder`, { waitUntil: 'networkidle' })
+  await previewPage.goto(`${previewUrl}/device-builder`, { waitUntil: 'domcontentloaded' })
   await expectVisible(previewPage.locator('.pane-list > header', { hasText: 'Layer Stack' }), 'preview direct /device-builder route renders')
   await previewPage.goto(`${previewUrl}/research-notes`, { waitUntil: 'networkidle' })
   await previewPage.reload({ waitUntil: 'networkidle' })
