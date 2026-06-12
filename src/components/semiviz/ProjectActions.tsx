@@ -52,6 +52,7 @@ export function ProjectActions() {
     }
 
     resetProject()
+    window.dispatchEvent(new CustomEvent('semiviz:reset-simulation-demo-values'))
     setImportMessage('已重設 local project')
   }
 

@@ -2130,6 +2130,12 @@ button.manus-list-row {
   min-height: 980px;
 }
 
+.band-diagram-workspace .manus-chart-card {
+  min-height: 0;
+  max-height: calc(100vh - var(--manus-topbar-height) - 32px);
+  overflow: hidden;
+}
+
 .iv-simulator-workspace {
   grid-template-columns: var(--manus-iv-left-width) minmax(0, 1fr) var(--manus-iv-right-width);
   min-height: 1120px;
@@ -2145,8 +2151,12 @@ button.manus-list-row {
   border-radius: 7px;
   background: transparent;
   color: var(--foreground);
-  padding: 10px 12px;
+  font-size: 12px;
+  min-height: 36px;
+  padding: 8px 10px;
   font-weight: 700;
+  line-height: 1.25;
+  white-space: nowrap;
   cursor: pointer;
 }
 
@@ -2158,14 +2168,64 @@ button.manus-list-row {
 
 .band-diagram-preview {
   display: grid;
-  gap: 18px;
-  min-height: var(--manus-band-plot-height);
   align-items: center;
+  justify-items: center;
+  min-height: 0;
 }
 
 .band-diagram-preview svg {
   width: 100%;
-  min-height: var(--manus-band-plot-height);
+  max-width: 574px;
+  height: clamp(500px, calc(100vh - 170px), 802px);
+  min-height: 0;
+  overflow: visible;
+}
+
+.band-plot-bg {
+  fill: oklch(0.115 0.024 250);
+  stroke: oklch(0.28 0.045 250);
+  stroke-dasharray: 3 5;
+}
+
+.band-grid-line {
+  stroke: var(--manus-grid-color);
+  stroke-width: 1;
+  stroke-dasharray: 3 5;
+}
+
+.band-curve {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2;
+}
+
+.band-curve.conduction {
+  stroke: var(--primary);
+}
+
+.band-curve.valence {
+  stroke: var(--purple);
+}
+
+.band-fermi-line {
+  stroke: #facc15;
+  stroke-width: 1.6;
+  stroke-dasharray: 5 6;
+}
+
+.band-tick-label {
+  fill: oklch(0.58 0.04 250);
+  font-family: var(--manus-body-font);
+  font-size: 10px;
+  line-height: 1;
+}
+
+.band-axis-label {
+  fill: oklch(0.58 0.04 250);
+  font-family: var(--manus-body-font);
+  font-size: 12px;
+  line-height: 1;
 }
 
 .band-analysis-cards {

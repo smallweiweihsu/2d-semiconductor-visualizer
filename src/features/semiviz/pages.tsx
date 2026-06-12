@@ -1,4 +1,4 @@
-import { Component, lazy, Suspense, useMemo, useRef, useState, type ChangeEvent, type CSSProperties, type ReactNode } from 'react'
+import { Component, lazy, Suspense, useEffect, useMemo, useRef, useState, type ChangeEvent, type CSSProperties, type ReactNode } from 'react'
 import {
   Activity,
   AlertTriangle,
@@ -24,13 +24,14 @@ import {
   XAxis,
   YAxis,
 } from 'recharts'
+import { BandDiagramPreview } from '../../components/semiviz/BandDiagramPreview'
+import { formatEnergy } from '../../components/semiviz/bandDiagramFormatters'
 import { DevicePreview } from '../../components/semiviz/DevicePreview'
 import {
   ManusCallout,
   ManusAnalysisPanel,
   ManusChartCard,
   ManusChipSelector,
-  ManusCompactField,
   ManusDetailHeader,
   ManusListRow,
   ManusMetadataGrid,
@@ -67,7 +68,6 @@ import {
   calculateOutputCurve,
   calculateTransferCurve,
   extractDeviceParameters,
-  prototypeFallbackValues,
   resolveSimulationModel,
   scaleCurrent,
 } from '../../simulation/mosfet'
@@ -146,6 +146,16 @@ const referenceStatusOptions: LiteratureStatus[] = ['candidate', 'reviewed', 'ac
 const measurementColumnRoles: ElectricalMeasurementColumnRole[] = ['ignore', 'Vg', 'Vd', 'Id', 'Ig', 'time', 'sweepDirection', 'temperature']
 const voltageUnits = ['V', 'mV']
 const currentUnits = ['A', 'mA', 'uA', 'nA', 'pA']
+const ivDemoDefaults = {
+  vd: 2,
+  vgMin: -3,
+  vgMax: 3,
+  channelLength_um: 1,
+  channelWidth_um: 2,
+  mobility_cm2Vs: 50,
+  vth: -1.5,
+  rc_ohm: 1000,
+}
 
 export function DashboardPage() {
   const { project, activeDevice } = useProjectStore()
@@ -415,25 +425,29 @@ export function IVSimulatorPage() {
     () => extractDeviceParameters(activeDevice, project.materials),
     [activeDevice, project.materials],
   )
-  const [vd, setVd] = useState(1)
-  const [vgMin, setVgMin] = useState(-2)
-  const [vgMax, setVgMax] = useState(2)
-  const [vth, setVth] = useState(0.6)
+  const [vd, setVd] = useState(ivDemoDefaults.vd)
+  const [vgMin, setVgMin] = useState(ivDemoDefaults.vgMin)
+  const [vgMax, setVgMax] = useState(ivDemoDefaults.vgMax)
+  const [channelLength, setChannelLength] = useState(ivDemoDefaults.channelLength_um)
+  const [channelWidth, setChannelWidth] = useState(ivDemoDefaults.channelWidth_um)
+  const [vth, setVth] = useState(ivDemoDefaults.vth)
   const [mobilityOverrides, setMobilityOverrides] = useState<Record<string, number>>({})
-  const [rc, setRc] = useState(1000)
+  const [rc, setRc] = useState(ivDemoDefaults.rc_ohm)
   const [leakageFloor, setLeakageFloor] = useState(1e-12)
   const [currentUnit, setCurrentUnit] = useState<'A' | 'uA' | 'nA'>('uA')
   const [useFallbackValues, setUseFallbackValues] = useState(false)
   const electricalMeasurements = project.measurements.filter((measurement) => measurement.electrical)
   const [overlayMeasurementId, setOverlayMeasurementId] = useState('')
   const overlayMeasurement = electricalMeasurements.find((measurement) => measurement.id === overlayMeasurementId)
-  const mobilityOverride = mobilityOverrides[activeDevice.id]
+  const mobilityOverride = mobilityOverrides[activeDevice.id] ?? ivDemoDefaults.mobility_cm2Vs
   const extractedForModel = useMemo(
     () => ({
       ...extracted,
-      mobility_cm2Vs: mobilityOverride ?? extracted.mobility_cm2Vs,
+      length_um: channelLength,
+      width_um: channelWidth,
+      mobility_cm2Vs: mobilityOverride,
     }),
-    [extracted, mobilityOverride],
+    [channelLength, channelWidth, extracted, mobilityOverride],
   )
   const simulation = useMemo(
     () => resolveSimulationModel(extractedForModel, {
@@ -484,6 +498,32 @@ export function IVSimulatorPage() {
   const onOffRatio = transferAbsCurrents.length
     ? Math.max(...transferAbsCurrents) / Math.max(Math.min(...transferAbsCurrents), Number.EPSILON)
     : undefined
+  function resetSimulationDemoValues() {
+    setVd(ivDemoDefaults.vd)
+    setVgMin(ivDemoDefaults.vgMin)
+    setVgMax(ivDemoDefaults.vgMax)
+    setChannelLength(ivDemoDefaults.channelLength_um)
+    setChannelWidth(ivDemoDefaults.channelWidth_um)
+    setVth(ivDemoDefaults.vth)
+    setRc(ivDemoDefaults.rc_ohm)
+    setMobilityOverrides((current) => ({ ...current, [activeDevice.id]: ivDemoDefaults.mobility_cm2Vs }))
+  }
+
+  useEffect(() => {
+    function handleResetSimulationDemoValues() {
+      setVd(ivDemoDefaults.vd)
+      setVgMin(ivDemoDefaults.vgMin)
+      setVgMax(ivDemoDefaults.vgMax)
+      setChannelLength(ivDemoDefaults.channelLength_um)
+      setChannelWidth(ivDemoDefaults.channelWidth_um)
+      setVth(ivDemoDefaults.vth)
+      setRc(ivDemoDefaults.rc_ohm)
+      setMobilityOverrides((current) => ({ ...current, [activeDevice.id]: ivDemoDefaults.mobility_cm2Vs }))
+    }
+
+    window.addEventListener('semiviz:reset-simulation-demo-values', handleResetSimulationDemoValues)
+    return () => window.removeEventListener('semiviz:reset-simulation-demo-values', handleResetSimulationDemoValues)
+  }, [activeDevice.id])
 
   return (
     <WorkspacePage title="I–V Simulator" icon={<Activity size={18} />}>
@@ -495,11 +535,11 @@ export function IVSimulatorPage() {
               <RangeInput label="Vd max" value={vd} min={0.05} max={5} step={0.05} unit="V" onChange={setVd} />
               <RangeInput label="Vg min" value={vgMin} min={-5} max={vgMax - 0.1} step={0.1} unit="V" onChange={setVgMin} />
               <RangeInput label="Vg max" value={vgMax} min={vgMin + 0.1} max={5} step={0.1} unit="V" onChange={setVgMax} />
-              <ManusCompactField label="Channel L" value={formatParameterValue(extracted.length_um ?? 'missing')} unit="µm" />
-              <ManusCompactField label="Channel W" value={formatParameterValue(extracted.width_um ?? 'missing')} unit="µm" />
+              <RangeInput label="Channel L" value={channelLength} min={0.1} max={10} step={0.1} unit="µm" onChange={setChannelLength} />
+              <RangeInput label="Channel W" value={channelWidth} min={0.1} max={20} step={0.1} unit="µm" onChange={setChannelWidth} />
               <RangeInput
                 label="Mobility"
-                value={mobilityOverride ?? extracted.mobility_cm2Vs ?? prototypeFallbackValues.mobility_cm2Vs}
+                value={mobilityOverride}
                 min={0}
                 max={300}
                 step={1}
@@ -508,6 +548,7 @@ export function IVSimulatorPage() {
               />
               <RangeInput label="Vth" value={vth} min={-3} max={3} step={0.05} unit="V" onChange={setVth} />
               <RangeInput label="Rc" value={rc} min={0} max={100000} step={100} unit="Ω" onChange={setRc} />
+              <button className="manus-button ghost simulation-reset-button" type="button" onClick={resetSimulationDemoValues}>Reset simulation demo values</button>
               <details className="secondary-editor">
                 <summary>Advanced model controls</summary>
                 <label className="toggle-field compact">
@@ -598,9 +639,9 @@ export function IVSimulatorPage() {
             <div data-testid="iv-analysis-panel">
               <ParameterTable rows={[
                 { label: 'Threshold Voltage', value: vth, unit: 'V', source: 'estimated' },
-                { label: 'Mobility', value: mobilityOverride ?? extracted.mobility_cm2Vs, unit: 'cm²/V·s', source: confidenceLabel(extracted.mobilityMeta?.confidence) },
+                { label: 'Mobility', value: mobilityOverride, unit: 'cm²/V·s', source: 'estimated' },
                 { label: 'Contact Resistance', value: rc, unit: 'Ω', source: 'estimated' },
-                { label: 'Channel Length', value: extracted.length_um, unit: 'µm', source: extracted.length_um === undefined ? 'missing' : 'extracted' },
+                { label: 'Channel Length', value: channelLength, unit: 'µm', source: 'estimated' },
                 { label: 'On/Off Ratio', value: onOffRatio ? onOffRatio.toExponential(2) : undefined, unit: '', source: onOffRatio ? 'derived' : 'missing' },
                 { label: 'SS', value: 'prototype', unit: '', source: 'estimated' },
               ]} references={project.references} />
@@ -688,28 +729,7 @@ export function BandDiagramPage() {
         )}
         center={(
           <ManusChartCard title={`Energy Band Diagram: ${metal.displayName} / ${semiconductor.displayName}`} badge={<ManusStatusBadge tone="primary">{mode === 'after' ? 'after contact' : 'before contact'}</ManusStatusBadge>}>
-            <div className="band-diagram-preview" data-testid="band-diagram-preview">
-              <svg viewBox="0 0 680 640" role="img" aria-label="energy band diagram">
-                <defs>
-                  <linearGradient id="bandGrid" x1="0" x2="0" y1="0" y2="1">
-                    <stop offset="0" stopColor="oklch(0.18 0.035 250)" />
-                    <stop offset="1" stopColor="oklch(0.10 0.02 250)" />
-                  </linearGradient>
-                </defs>
-                <rect x="52" y="44" width="560" height="520" rx="8" fill="url(#bandGrid)" stroke="oklch(0.28 0.045 250)" strokeDasharray="4 6" />
-                {Array.from({ length: 11 }).map((_, index) => <line x1={72 + index * 52} x2={72 + index * 52} y1="48" y2="560" stroke="oklch(0.34 0.07 245 / 0.34)" strokeDasharray="4 6" key={`v${index}`} />)}
-                {Array.from({ length: 5 }).map((_, index) => <line x1="52" x2="612" y1={108 + index * 104} y2={108 + index * 104} stroke="oklch(0.34 0.07 245 / 0.34)" strokeDasharray="4 6" key={`h${index}`} />)}
-                <line x1="92" x2="284" y1="296" y2="296" stroke="oklch(0.78 0.15 195)" strokeWidth="4" />
-                <line x1="284" x2="284" y1="296" y2={mode === 'after' ? 156 : 296} stroke="oklch(0.78 0.15 195)" strokeWidth="4" />
-                <path d={mode === 'after' ? 'M284 156 C360 72 480 70 588 64' : 'M284 296 C380 296 480 296 588 296'} fill="none" stroke="oklch(0.78 0.15 195)" strokeWidth="4" />
-                <line x1="92" x2="284" y1="378" y2="378" stroke="oklch(0.72 0.16 290)" strokeWidth="4" />
-                <line x1="284" x2="284" y1="378" y2={mode === 'after' ? 526 : 378} stroke="oklch(0.72 0.16 290)" strokeWidth="4" />
-                <path d={mode === 'after' ? 'M284 526 C366 430 482 404 588 392' : 'M284 378 C380 378 480 378 588 378'} fill="none" stroke="oklch(0.72 0.16 290)" strokeWidth="4" />
-                <line x1="284" x2="588" y1="322" y2="322" stroke="#facc15" strokeWidth="3" strokeDasharray="6 7" />
-                <text x="44" y="590" fill="oklch(0.58 0.04 250)" fontSize="13">Position (a.u.)</text>
-                <text x="14" y="326" fill="oklch(0.58 0.04 250)" fontSize="13" transform="rotate(-90 14 326)">Energy (eV)</text>
-              </svg>
-            </div>
+            <BandDiagramPreview mode={mode} />
           </ManusChartCard>
         )}
         right={(
@@ -717,17 +737,17 @@ export function BandDiagramPage() {
             <div className="band-analysis-cards" data-testid="band-energy-panel">
               <section>
                 <h3>Schottky Barrier</h3>
-                <Meta label="φ_Bn (n-type)" value={`${formatParameterValue(nBarrier ?? 'missing')} eV`} />
-                <Meta label="φ_Bp (p-type)" value={`${formatParameterValue(pBarrier ?? 'missing')} eV`} />
+                <Meta label="φ_Bn (n-type)" value={`${formatBandValue(nBarrier)} eV`} />
+                <Meta label="φ_Bp (p-type)" value={`${formatBandValue(pBarrier)} eV`} />
               </section>
               <section>
                 <h3>Metal: {metal.displayName}</h3>
-                <Meta label="Work Function" value={`${formatParameterValue(metalPhi ?? 'missing')} eV`} />
+                <Meta label="Work Function" value={`${formatBandValue(metalPhi)} eV`} />
               </section>
               <section>
                 <h3>Semiconductor: {semiconductor.displayName}</h3>
-                <Meta label="Electron Affinity" value={`${formatParameterValue(affinity ?? 'missing')} eV`} />
-                <Meta label="Band Gap" value={`${formatParameterValue(bandGap ?? 'missing')} eV`} />
+                <Meta label="Electron Affinity" value={`${formatBandValue(affinity)} eV`} />
+                <Meta label="Band Gap" value={`${formatBandValue(bandGap)} eV`} />
               </section>
               <ManusCallout tone="warning">
                 <strong>注意</strong>
@@ -1355,6 +1375,10 @@ function resolveParameterNumber(parameter: MaterialParameter) {
     return (parameter.range.min + parameter.range.max) / 2
   }
   return undefined
+}
+
+function formatBandValue(value: number | undefined) {
+  return value === undefined ? 'missing' : formatEnergy(value)
 }
 
 function formatMaterialParameter(parameter: MaterialParameter) {

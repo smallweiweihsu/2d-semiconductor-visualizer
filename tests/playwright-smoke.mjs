@@ -10,6 +10,16 @@ const previewPort = 4174
 const previewUrl = `http://127.0.0.1:${previewPort}`
 const storageKey = 'semiviz-project-v2'
 const legacyStorageKey = 'semiviz-project-v1'
+const ivExpected = {
+  vd: 2,
+  vgMin: -3,
+  vgMax: 3,
+  channelLength: 1,
+  channelWidth: 2,
+  mobility: 50,
+  vth: -1.5,
+  rc: 1000,
+}
 const routes = [
   ['Dashboard', '/', 'dashboard'],
   ['Device Builder', '/device-builder', 'device-builder'],
@@ -67,6 +77,7 @@ try {
       await expectVisible(page.locator('[data-testid="band-diagram-preview"]'), 'band diagram has diagram preview')
       await expectVisible(page.locator('[data-testid="band-energy-panel"]'), 'band diagram has right energy parameter panel')
       await expectVisible(page.getByText('Energy Band Diagram', { exact: false }), 'band diagram title includes Energy Band Diagram')
+      await assertBandDiagramInternals(page, 'band diagram internal visual QA')
       await page.screenshot({ path: path.join(artifactDir, 'current-band-diagram-refined.png'), fullPage: true })
     }
     if (route === '/iv-simulator') {
@@ -102,6 +113,12 @@ try {
 
   await page.goto(`${baseUrl}/research-notes`, { waitUntil: 'networkidle' })
   await assertCanScroll(page, 'research-notes can scroll')
+
+  await page.setViewportSize({ width: 1366, height: 768 })
+  await page.goto(`${baseUrl}/band-diagram`, { waitUntil: 'networkidle' })
+  await assertBandDiagramInternals(page, 'band diagram internal visual QA at 1366x768')
+  await page.locator('.band-diagram-workspace .manus-chart-card').screenshot({ path: path.join(artifactDir, 'band-diagram-1366-card.png') })
+  await page.setViewportSize({ width: 1440, height: 1000 })
 
   const referencePage = await browser.newPage({ viewport: { width: 1440, height: 1000 } })
   await assertManusStyleParity(referencePage, page, baseUrl, artifactDir)
@@ -199,6 +216,14 @@ try {
   page.once('dialog', (dialog) => dialog.accept())
   await page.getByRole('button', { name: 'Reset local project' }).click()
   await expectVisible(page.getByText('已重設 local project'), 'reset project status appears')
+  await expectRangeValue(page, 'Vd max', ivExpected.vd)
+  await expectRangeValue(page, 'Vg min', ivExpected.vgMin)
+  await expectRangeValue(page, 'Vg max', ivExpected.vgMax)
+  await expectRangeValue(page, 'Channel L', ivExpected.channelLength)
+  await expectRangeValue(page, 'Channel W', ivExpected.channelWidth)
+  await expectRangeValue(page, 'Mobility', ivExpected.mobility)
+  await expectRangeValue(page, 'Vth', ivExpected.vth)
+  await expectRangeValue(page, 'Rc', ivExpected.rc)
   const resetState = await page.evaluate(({ legacyStorageKey, storageKey }) => ({
     hasLegacy: Boolean(window.localStorage.getItem(legacyStorageKey)),
     current: window.localStorage.getItem(storageKey),
@@ -444,6 +469,68 @@ async function expectVisible(locator, label) {
     await locator.waitFor({ state: 'visible', timeout: 5000 })
   } catch {
     throw new Error(label)
+  }
+}
+
+async function expectRangeValue(page, label, expected) {
+  const value = await page
+    .locator('label.range-field', { hasText: label })
+    .locator('input')
+    .inputValue()
+  if (Number(value) !== Number(expected)) {
+    throw new Error(`${label} expected ${expected}, received ${value}`)
+  }
+}
+
+async function assertBandDiagramInternals(page, label) {
+  const result = await page.evaluate(() => {
+    const round = (value) => Math.round(value * 100) / 100
+    const rect = (selector) => {
+      const element = document.querySelector(selector)
+      if (!element) return null
+      const box = element.getBoundingClientRect()
+      return { x: round(box.x), y: round(box.y), width: round(box.width), height: round(box.height), bottom: round(box.bottom) }
+    }
+    const svg = rect('.band-diagram-preview svg')
+    const plot = rect('.band-plot-bg')
+    const card = rect('.band-diagram-workspace .manus-chart-card')
+    const workspace = rect('[data-testid="route-scroll-container"]')
+    const curve = document.querySelector('.band-curve.conduction')
+    const curveStroke = curve ? Number.parseFloat(getComputedStyle(curve).strokeWidth) : null
+    const longTickLabels = Array.from(document.querySelectorAll('.band-diagram-preview text'))
+      .map((node) => node.textContent ?? '')
+      .filter((text) => /\d+\.\d{6,}/.test(text))
+    const zeroScientificCount = Array.from(document.querySelectorAll('[data-testid="band-energy-panel"] *'))
+      .filter((node) => node.textContent?.includes('0.00e+0')).length
+    const modeButtons = Array.from(document.querySelectorAll('.segmented-vertical button')).map((button) => {
+      const box = button.getBoundingClientRect()
+      return { text: button.textContent ?? '', height: round(box.height), scrollWidth: button.scrollWidth, clientWidth: button.clientWidth }
+    })
+
+    return { svg, plot, card, workspace, curveStroke, longTickLabels, zeroScientificCount, modeButtons }
+  })
+
+  if (!result.svg || !result.plot || !result.card || !result.workspace) {
+    throw new Error(`${label}: missing chart geometry`)
+  }
+  if (result.svg.bottom > result.workspace.y + result.workspace.height + 2) {
+    throw new Error(`${label}: chart exceeds visible workspace`)
+  }
+  if (result.plot.height > result.card.height - 90) {
+    throw new Error(`${label}: plot area is too tall for the card`)
+  }
+  if (result.longTickLabels.length) {
+    throw new Error(`${label}: long float tick labels ${result.longTickLabels.join(', ')}`)
+  }
+  if (result.zeroScientificCount) {
+    throw new Error(`${label}: right panel contains 0.00e+0`)
+  }
+  if (!result.curveStroke || result.curveStroke > 3.2) {
+    throw new Error(`${label}: curve stroke ${result.curveStroke} is too thick`)
+  }
+  const tallMode = result.modeButtons.find((button) => button.height > 46 || button.scrollWidth > button.clientWidth + 1)
+  if (tallMode) {
+    throw new Error(`${label}: mode button wraps or is too tall (${tallMode.text})`)
   }
 }
 

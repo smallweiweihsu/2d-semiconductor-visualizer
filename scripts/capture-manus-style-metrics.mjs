@@ -1,4 +1,4 @@
-import { mkdir, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 import { chromium } from 'playwright'
 
@@ -32,6 +32,16 @@ for (const route of routes) {
   await createSideBySide(route.slug)
 }
 
+const bandInternalMetrics = {
+  referenceBase,
+  currentBase,
+  manus: await captureBandInternal(referencePage, referenceBase, 'manus'),
+  current: await captureBandInternal(currentPage, currentBase, 'current'),
+}
+bandInternalMetrics.diff = diffMetrics({ band: bandInternalMetrics.manus }, { band: bandInternalMetrics.current }).band
+await writeJson('band-diagram-internal-metrics.json', bandInternalMetrics)
+await createBandInternalSideBySide()
+
 const diff = diffMetrics(referenceMetrics, currentMetrics)
 await writeJson('manus-style-metrics.json', referenceMetrics)
 await writeJson('current-style-metrics.json', currentMetrics)
@@ -46,6 +56,7 @@ console.log(JSON.stringify({
     'test-artifacts/manus-style-metrics.json',
     'test-artifacts/current-style-metrics.json',
     'test-artifacts/style-metrics-diff.json',
+    'test-artifacts/band-diagram-internal-metrics.json',
   ],
 }, null, 2))
 
@@ -193,6 +204,8 @@ async function captureRoute(page, baseUrl, route, prefix) {
 
 async function createSideBySide(slug) {
   const page = await browser.newPage({ viewport: { width: 2880, height: 1000 } })
+  const manuscriptImage = await pngDataUrl(path.join(artifactDir, `manus-${slug}-metrics.png`))
+  const currentImage = await pngDataUrl(path.join(artifactDir, `current-${slug}-metrics.png`))
   await page.setContent(`
     <style>
       body{margin:0;background:#05080d;color:#d8e4f0;font:14px Inter,Arial,sans-serif}
@@ -202,12 +215,132 @@ async function createSideBySide(slug) {
       img{width:100%;display:block}
     </style>
     <div class="wrap">
-      <figure><figcaption>Manus ${slug}</figcaption><img src="file:///${path.join(artifactDir, `manus-${slug}-metrics.png`).replaceAll('\\', '/')}" /></figure>
-      <figure><figcaption>Current ${slug}</figcaption><img src="file:///${path.join(artifactDir, `current-${slug}-metrics.png`).replaceAll('\\', '/')}" /></figure>
+      <figure><figcaption>Manus ${slug}</figcaption><img src="${manuscriptImage}" /></figure>
+      <figure><figcaption>Current ${slug}</figcaption><img src="${currentImage}" /></figure>
     </div>
   `)
+  await waitForImages(page)
   await page.screenshot({ path: path.join(artifactDir, `compare-${slug}.png`), fullPage: true })
   await page.close()
+}
+
+async function createBandInternalSideBySide() {
+  const page = await browser.newPage({ viewport: { width: 2880, height: 1000 } })
+  const manuscriptImage = await pngDataUrl(path.join(artifactDir, 'manus-band-diagram-internal.png'))
+  const currentImage = await pngDataUrl(path.join(artifactDir, 'current-band-diagram-internal.png'))
+  await page.setContent(`
+    <style>
+      body{margin:0;background:#05080d;color:#d8e4f0;font:14px Inter,Arial,sans-serif}
+      .wrap{display:grid;grid-template-columns:1fr 1fr;gap:0}
+      figure{margin:0;border-right:1px solid #22303c}
+      figcaption{position:fixed;top:8px;margin-left:8px;background:#08131c;padding:6px 10px;border:1px solid #22303c;border-radius:6px}
+      img{width:100%;display:block}
+    </style>
+    <div class="wrap">
+      <figure><figcaption>Manus band internals</figcaption><img src="${manuscriptImage}" /></figure>
+      <figure><figcaption>Current band internals</figcaption><img src="${currentImage}" /></figure>
+    </div>
+  `)
+  await waitForImages(page)
+  await page.screenshot({ path: path.join(artifactDir, 'compare-band-diagram-internal.png'), fullPage: true })
+  await page.close()
+}
+
+async function captureBandInternal(page, baseUrl, prefix) {
+  await page.goto(`${baseUrl}/band-diagram`, { waitUntil: 'networkidle', timeout: 45000 }).catch(async () => {
+    await page.goto(`${baseUrl}/band-diagram`, { waitUntil: 'domcontentloaded', timeout: 45000 })
+  })
+  await page.waitForTimeout(900)
+  await page.screenshot({ path: path.join(artifactDir, `${prefix}-band-diagram-internal.png`), fullPage: true })
+  return page.evaluate(() => {
+    const round = (value) => Math.round(value * 100) / 100
+    const rect = (element) => {
+      if (!element) return null
+      const box = element.getBoundingClientRect()
+      return { x: round(box.x), y: round(box.y), width: round(box.width), height: round(box.height), top: round(box.top), bottom: round(box.bottom) }
+    }
+    const style = (element, props) => {
+      if (!element) return {}
+      const computed = getComputedStyle(element)
+      return Object.fromEntries(props.map((prop) => [prop, computed.getPropertyValue(prop)]))
+    }
+    const firstVisible = (selector) => Array.from(document.querySelectorAll(selector)).find((element) => {
+      const box = element.getBoundingClientRect()
+      return box.width > 1 && box.height > 1
+    }) ?? null
+    const findText = (text) => {
+      const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT)
+      let node = walker.nextNode()
+      while (node) {
+        if (node.nodeValue?.includes(text)) return node.parentElement
+        node = walker.nextNode()
+      }
+      return null
+    }
+    const cardFromText = (text) => {
+      const anchor = findText(text)
+      let element = anchor
+      while (element && element !== document.body) {
+        const box = element.getBoundingClientRect()
+        if (box.width >= 300 && box.height >= 250 && box.width < window.innerWidth - 260) return element
+        element = element.parentElement
+      }
+      return null
+    }
+    const largestVisible = (elements) => elements
+      .filter((element) => {
+        const box = element.getBoundingClientRect()
+        return box.width > 20 && box.height > 20
+      })
+      .sort((a, b) => {
+        const aBox = a.getBoundingClientRect()
+        const bBox = b.getBoundingClientRect()
+        return (bBox.width * bBox.height) - (aBox.width * aBox.height)
+      })[0] ?? null
+    const centerCard = cardFromText('Energy Band Diagram') ?? document.querySelector('.manus-chart-card')
+    const title = findText('Energy Band Diagram')
+    const badge = firstVisible('.manus-status-badge, [class*="badge"]')
+    const svg = largestVisible(Array.from(centerCard?.querySelectorAll('svg') ?? document.querySelectorAll('.band-diagram-preview svg, svg')))
+    const plot = svg?.querySelector('.band-plot-bg, .recharts-cartesian-grid-bg') ?? svg
+    const grid = Array.from(svg?.querySelectorAll('.band-grid-line, .recharts-cartesian-grid line, line') ?? [])
+      .find((element) => {
+        const box = element.getBoundingClientRect()
+        return box.width > 40 || box.height > 40
+      }) ?? null
+    const curve = Array.from(svg?.querySelectorAll('.band-curve, .recharts-line-curve, path') ?? [])
+      .find((element) => {
+        const stroke = getComputedStyle(element).stroke
+        const box = element.getBoundingClientRect()
+        return stroke && stroke !== 'none' && box.width > 40 && box.height > 4
+      }) ?? null
+    const xTick = Array.from(svg?.querySelectorAll('.band-tick-label, .recharts-cartesian-axis-tick text, text') ?? [])
+      .find((element) => {
+        const text = element.textContent ?? ''
+        const box = element.getBoundingClientRect()
+        return box.width > 0 && /-?\d/.test(text)
+      }) ?? null
+    const rightRow = firstVisible('.band-analysis-cards .meta-box, .meta-box')
+    const leftRow = firstVisible('.manus-three-left .manus-list-row, .manus-list-row, button')
+    const modeButton = firstVisible('.segmented-vertical button')
+
+    return {
+      centerCard: rect(centerCard),
+      plotArea: rect(plot),
+      title: { rect: rect(title), style: style(title, ['font-size', 'line-height', 'font-weight']) },
+      badge: { rect: rect(badge), style: style(badge, ['font-size', 'height', 'padding-left', 'padding-right']) },
+      xAxisTick: { rect: rect(xTick), style: style(xTick, ['font-size', 'fill', 'color']) },
+      yAxisTick: { rect: rect(xTick), style: style(xTick, ['font-size', 'fill', 'color']) },
+      gridLine: { rect: rect(grid), style: style(grid, ['stroke', 'stroke-opacity', 'stroke-width']) },
+      curve: { rect: rect(curve), style: style(curve, ['stroke', 'stroke-width']) },
+      chartMargins: {
+        left: plot && centerCard ? round(plot.getBoundingClientRect().left - centerCard.getBoundingClientRect().left) : null,
+        top: plot && centerCard ? round(plot.getBoundingClientRect().top - centerCard.getBoundingClientRect().top) : null,
+      },
+      rightParameterRow: rect(rightRow),
+      leftSelectorRow: rect(leftRow),
+      modeButton: rect(modeButton),
+    }
+  })
 }
 
 function diffMetrics(reference, current) {
@@ -242,4 +375,15 @@ function roundRect(rectangle) {
 
 function round(value) {
   return Math.round(value * 100) / 100
+}
+
+async function pngDataUrl(filePath) {
+  const buffer = await readFile(filePath)
+  return `data:image/png;base64,${buffer.toString('base64')}`
+}
+
+async function waitForImages(page) {
+  await page.waitForFunction(() =>
+    Array.from(document.images).every((image) => image.complete && image.naturalWidth > 0),
+  )
 }
