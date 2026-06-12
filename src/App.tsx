@@ -1,7 +1,7 @@
-import { AppShell } from './components/layout/AppShell'
+import { DesignSystemApp } from './DesignSystemApp'
 
 function App() {
-  return <AppShell />
+  return <DesignSystemApp />
 }
 
 export default App
