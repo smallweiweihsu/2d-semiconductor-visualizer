@@ -63,7 +63,36 @@ try {
       await expectVisible(page.locator('.material-parameter-card').first(), 'materials has parameter rows')
     }
     if (route === '/band-diagram') {
+      await expectVisible(page.locator('.band-diagram-workspace .manus-three-left'), 'band diagram has left material selector')
       await expectVisible(page.locator('[data-testid="band-diagram-preview"]'), 'band diagram has diagram preview')
+      await expectVisible(page.locator('[data-testid="band-energy-panel"]'), 'band diagram has right energy parameter panel')
+      await expectVisible(page.getByText('Energy Band Diagram', { exact: false }), 'band diagram title includes Energy Band Diagram')
+      await page.screenshot({ path: path.join(artifactDir, 'current-band-diagram-refined.png'), fullPage: true })
+    }
+    if (route === '/iv-simulator') {
+      await expectVisible(page.locator('[data-testid="iv-simulation-controls"]'), 'I-V simulator has left controls panel')
+      await expectVisible(page.locator('[data-testid="iv-chart-stack"] .manus-chart-card').nth(0), 'I-V simulator has transfer chart card')
+      await expectVisible(page.locator('[data-testid="iv-chart-stack"] .manus-chart-card').nth(1), 'I-V simulator has output chart card')
+      await expectVisible(page.locator('[data-testid="iv-analysis-panel"]'), 'I-V simulator has right analysis panel')
+      const visibleSecondary = await page.locator('.iv-secondary-info').evaluate((element) => element.getBoundingClientRect().height)
+      if (visibleSecondary > 80) {
+        throw new Error('I-V advanced/extracted information is dominating default layout')
+      }
+      await page.screenshot({ path: path.join(artifactDir, 'current-iv-simulator-refined.png'), fullPage: true })
+    }
+    if (route === '/references') {
+      await expectVisible(page.locator('.references-workspace .manus-split-list'), 'references has left paper list')
+      await expectVisible(page.locator('.references-workspace .manus-list-row.active'), 'references has active selected paper row')
+      await expectVisible(page.locator('.reference-detail-panel .manus-detail-header h2'), 'references detail title visible')
+      await expectVisible(page.locator('.reference-detail-panel .manus-score-dots'), 'references reliability dots visible')
+      await page.screenshot({ path: path.join(artifactDir, 'current-references-refined.png'), fullPage: true })
+    }
+    if (route === '/research-notes') {
+      await expectVisible(page.locator('.research-workspace .manus-split-list'), 'research notes has left hypothesis list')
+      await expectVisible(page.locator('.research-workspace .manus-list-row.active'), 'research notes has active selected hypothesis row')
+      await expectVisible(page.locator('.hypothesis-detail .detail-section'), 'research notes detail description visible')
+      await expectVisible(page.locator('.hypothesis-detail .linked-panels'), 'research notes linked cards visible')
+      await page.screenshot({ path: path.join(artifactDir, 'current-research-notes-refined.png'), fullPage: true })
     }
     if (route === '/process-flow') {
       await expectVisible(page.locator('.process-timeline'), 'process flow has timeline list')
@@ -187,6 +216,7 @@ try {
   await page.reload({ waitUntil: 'domcontentloaded' })
   await expectVisible(page.locator('.pane-list').getByText('Smoke Gate Oxide'), 'edited layer persists after refresh')
   await page.goto(`${baseUrl}/iv-simulator`, { waitUntil: 'networkidle' })
+  await page.getByText('Active device and extracted parameters').click()
   await expectVisible(page.getByText('HfO₂'), 'I-V simulator reads configured gate dielectric layer')
 
   await page.goto(`${baseUrl}/measurements`, { waitUntil: 'networkidle' })
@@ -204,11 +234,16 @@ try {
   await expectVisible(page.locator('.measurements-workspace').getByText('transfer').first(), 'imported measurement persists after refresh')
   await expectVisible(page.locator('svg.recharts-surface').first(), 'measurement chart renders')
   await page.goto(`${baseUrl}/iv-simulator`, { waitUntil: 'networkidle' })
+  await page.getByText('Advanced model controls').click()
   await page.getByLabel('Measurement overlay').selectOption({ label: 'transfer' })
-  await expectVisible(page.locator('.parameter-table', { hasText: 'estimated' }), 'I-V remains functional with measurement overlay available')
+  await page.waitForFunction(() => {
+    return Array.from(document.querySelectorAll('select')).some((entry) => entry.selectedOptions[0]?.textContent === 'transfer')
+  })
+  await expectVisible(page.locator('[data-testid="iv-chart-stack"]'), 'I-V remains functional with measurement overlay available')
 
   await page.goto(`${baseUrl}/references`, { waitUntil: 'networkidle' })
   await page.getByRole('button', { name: '新增 reference' }).click()
+  await page.getByText('Edit reference').click()
   await page.getByLabel('Title').fill('Smoke Mobility Source')
   await page.getByLabel('Authors').fill('Manual QA')
   await page.getByLabel('DOI').fill('manual-smoke-doi')
@@ -224,8 +259,9 @@ try {
   await expectVisible(page.locator('.linked-source-list', { hasText: 'Smoke Mobility Source · manual-smoke-doi' }), 'material mobility source persists after refresh')
 
   await page.goto(`${baseUrl}/iv-simulator`, { waitUntil: 'networkidle' })
+  await page.getByText('Active device and extracted parameters').click()
   await expectVisible(page.getByText('Smoke Mobility Source · manual-smoke-doi'), 'I-V simulator shows mobility source')
-  await expectVisible(page.locator('.parameter-table', { hasText: 'estimated' }), 'I-V simulator shows mobility confidence')
+  await expectVisible(page.locator('.iv-simulator-workspace', { hasText: 'estimated' }), 'I-V simulator shows mobility confidence')
 
   await page.goto(`${baseUrl}/materials`, { waitUntil: 'networkidle' })
   await page.locator('.materials-workspace .manus-list-row', { hasText: 'WSe₂' }).first().click()
@@ -233,6 +269,7 @@ try {
   await page.waitForFunction(() => window.localStorage.getItem('semiviz-project-v2')?.includes('"confidence":"unknown"'))
   await page.goto(`${baseUrl}/iv-simulator`, { waitUntil: 'networkidle' })
   await expectVisible(page.locator('.disabled-chart').first(), 'unknown mobility disables chart')
+  await page.getByText('Advanced model controls').click()
   await page.getByText('Use fallback values for prototype preview', { exact: true }).click()
   await expectVisible(page.locator('svg.recharts-surface').first(), 'fallback preview restores chart')
 
@@ -302,7 +339,7 @@ try {
   previewServer = await startServer('preview', previewPort)
   const previewPage = await browser.newPage({ viewport: { width: 1280, height: 900 } })
   await previewPage.goto(`${previewUrl}/iv-simulator`, { waitUntil: 'networkidle' })
-  await expectVisible(previewPage.getByRole('heading', { name: 'I–V Simulator' }), 'preview direct /iv-simulator route renders')
+  await expectVisible(previewPage.locator('.iv-simulator-workspace'), 'preview direct /iv-simulator route renders')
   await previewPage.goto(`${previewUrl}/device-builder`, { waitUntil: 'domcontentloaded' })
   await expectVisible(previewPage.locator('.pane-list > header', { hasText: 'Layer Stack' }), 'preview direct /device-builder route renders')
   await previewPage.goto(`${previewUrl}/research-notes`, { waitUntil: 'networkidle' })

@@ -27,7 +27,10 @@ import {
 import { DevicePreview } from '../../components/semiviz/DevicePreview'
 import {
   ManusCallout,
+  ManusAnalysisPanel,
+  ManusChartCard,
   ManusChipSelector,
+  ManusCompactField,
   ManusDetailHeader,
   ManusListRow,
   ManusMetadataGrid,
@@ -35,6 +38,8 @@ import {
   ManusScoreDots,
   ManusSplitDetail,
   ManusStatusBadge,
+  ManusSidePanel,
+  ManusThreeColumnLayout,
 } from '../../components/semiviz/ManusPrimitives'
 import { LayerPropertyEditor } from './LayerPropertyEditor'
 import { LayerStackPanel } from './LayerStackPanel'
@@ -475,132 +480,151 @@ export function IVSimulatorPage() {
   )
   const cox = simulation.input ? calculateCox(simulation.input.dielectricConstant, simulation.input.tox_nm) : undefined
   const chartDisabled = !simulation.input
+  const transferAbsCurrents = transferData.map((point) => Math.abs(point.id)).filter((value) => value > 0)
+  const onOffRatio = transferAbsCurrents.length
+    ? Math.max(...transferAbsCurrents) / Math.max(Math.min(...transferAbsCurrents), Number.EPSILON)
+    : undefined
 
   return (
     <WorkspacePage title="I–V Simulator" icon={<Activity size={18} />}>
-      <div className="simulation-grid">
-        <Card title="Active device summary">
-          <div className="summary-stack">
-            <h2>{activeDevice.name}</h2>
-            <p>{activeDevice.description}</p>
-            <Meta label="Channel" value={extracted.channelMaterial?.displayName ?? 'missing'} />
-            <Meta label="Gate dielectric" value={extracted.dielectricMaterial?.displayName ?? 'missing'} />
-            <Meta label="Contacts" value={extracted.contactMaterials.map((material) => material.displayName).join(', ') || 'missing'} />
-            <Meta label="Role detection" value={`channel ${extracted.detection.channel} · dielectric ${extracted.detection.gateDielectric}`} />
-            <Meta label="Carrier type" value={extracted.carrierType} />
-            <div className={`status-pill status-${simulation.status}`}>{simulationStatusLabels[simulation.status]}</div>
-            {simulation.status === 'fallback_preview' ? (
-              <div className="simulation-status-note warning">Using fallback values because project parameters are missing. Go to Materials to review parameters or reset local project.</div>
-            ) : null}
-            {simulation.status === 'ready_with_estimates' ? (
-              <div className="simulation-status-note estimate">Simulation uses estimated seed parameters. Replace with reviewed literature before quantitative use.</div>
-            ) : null}
-          </div>
-        </Card>
-        <Card title="Extracted parameters">
-          <ParameterTable rows={[
-            ...simulation.parameters.map((parameter) => ({
-              label: parameter.label,
-              value: parameter.value,
-              unit: parameter.unit,
-              source: parameter.source,
-              sourceIds: parameter.sourceIds,
-              notes: parameter.notes,
-              conditions: parameter.conditions,
-            })),
-            { label: 'Cox', value: cox, unit: 'F/m²', source: cox === undefined ? 'missing' : 'derived' },
-            { label: 'Eg', value: extracted.bandGap_eV, unit: 'eV', source: confidenceLabel(extracted.bandGapMeta?.confidence), sourceIds: extracted.bandGapMeta?.sourceIds, conditions: extracted.bandGapMeta?.conditions },
-            { label: 'χ', value: extracted.electronAffinity_eV, unit: 'eV', source: confidenceLabel(extracted.electronAffinityMeta?.confidence), sourceIds: extracted.electronAffinityMeta?.sourceIds, conditions: extracted.electronAffinityMeta?.conditions },
-            { label: 'contact φ', value: extracted.contactWorkFunction_eV, unit: 'eV', source: confidenceLabel(extracted.contactWorkFunctionMeta?.confidence), sourceIds: extracted.contactWorkFunctionMeta?.sourceIds, conditions: extracted.contactWorkFunctionMeta?.conditions },
-          ]} references={project.references} />
-        </Card>
-        <Card title="Missing parameter warnings">
-          {simulation.warnings.length ? (
-            <div className="prototype-warning">
-              <AlertTriangle size={14} />
-              {simulation.warnings[0]}
-            </div>
-          ) : null}
-          {extracted.missing.length || simulation.missing.length ? (
-            <div className="warning-list">
-              {[...new Set([...extracted.missing, ...simulation.missing])].map((item) => <div key={item}><AlertTriangle size={14} />{item}</div>)}
-            </div>
-          ) : <EmptyState text="Active device 已具備 MVP 模型需要的主要參數。" />}
-        </Card>
-        <Card title="Model controls">
-          <label className="toggle-field">
-            <input type="checkbox" checked={useFallbackValues} onChange={(event) => setUseFallbackValues(event.target.checked)} />
-            Use fallback values for prototype preview
-          </label>
-          <RangeInput label="Vd" value={vd} min={0.05} max={5} step={0.05} unit="V" onChange={setVd} />
-          <RangeInput label="Vg min" value={vgMin} min={-5} max={vgMax - 0.1} step={0.1} unit="V" onChange={setVgMin} />
-          <RangeInput label="Vg max" value={vgMax} min={vgMin + 0.1} max={5} step={0.1} unit="V" onChange={setVgMax} />
-          <RangeInput label="Vth override" value={vth} min={-3} max={3} step={0.05} unit="V" onChange={setVth} />
-          <RangeInput
-            label="Mobility override"
-            value={mobilityOverride ?? extracted.mobility_cm2Vs ?? prototypeFallbackValues.mobility_cm2Vs}
-            min={0}
-            max={300}
-            step={1}
-            unit="cm²/V·s"
-            onChange={(value) => setMobilityOverrides((current) => ({ ...current, [activeDevice.id]: value }))}
-          />
-          <RangeInput label="Rc override" value={rc} min={0} max={100000} step={100} unit="Ω" onChange={setRc} />
-          <RangeInput label="Leakage floor" value={leakageFloor} min={1e-13} max={1e-8} step={1e-13} unit="A" onChange={setLeakageFloor} />
-          <label className="device-select-field">
-            Current unit
-            <select value={currentUnit} onChange={(event) => setCurrentUnit(event.target.value as 'A' | 'uA' | 'nA')}>
-              <option value="A">A</option>
-              <option value="uA">µA</option>
-              <option value="nA">nA</option>
-            </select>
-          </label>
-          <label className="device-select-field">
-            Measurement overlay
-            <select value={overlayMeasurementId} onChange={(event) => setOverlayMeasurementId(event.target.value)}>
-              <option value="">none</option>
-              {electricalMeasurements.map((measurement) => <option value={measurement.id} key={measurement.id}>{measurement.sampleName}</option>)}
-            </select>
-          </label>
-          {overlayWarnings.length ? <div className="warning-list">{overlayWarnings.map((warning) => <div key={warning}><AlertTriangle size={14} />{warning}</div>)}</div> : null}
-        </Card>
-        <Card title="Id-Vg Transfer Curve">
-          {chartDisabled ? <DisabledChart missing={simulation.missing} /> : (
-            <>
-              {simulation.status === 'fallback_preview' ? <div className="prototype-warning"><AlertTriangle size={14} />Prototype preview using fallback values, not calibrated.</div> : null}
-              <Chart
-                data={transferWithOverlay}
-                xKey="vg"
-                unit={currentUnit}
-                lines={[
-                  { key: 'id', color: 'oklch(0.78 0.15 195)' },
-                  ...(overlayMeasurement ? [{ key: 'measuredId', color: 'oklch(0.74 0.18 55)' }] : []),
-                ]}
+      <ManusThreeColumnLayout
+        className="iv-simulator-workspace"
+        left={(
+          <ManusSidePanel title="模擬參數" subtext={<ManusStatusBadge tone="primary">Simplified MOSFET Model</ManusStatusBadge>}>
+            <div className="compact-control-stack" data-testid="iv-simulation-controls">
+              <RangeInput label="Vd max" value={vd} min={0.05} max={5} step={0.05} unit="V" onChange={setVd} />
+              <RangeInput label="Vg min" value={vgMin} min={-5} max={vgMax - 0.1} step={0.1} unit="V" onChange={setVgMin} />
+              <RangeInput label="Vg max" value={vgMax} min={vgMin + 0.1} max={5} step={0.1} unit="V" onChange={setVgMax} />
+              <ManusCompactField label="Channel L" value={formatParameterValue(extracted.length_um ?? 'missing')} unit="µm" />
+              <ManusCompactField label="Channel W" value={formatParameterValue(extracted.width_um ?? 'missing')} unit="µm" />
+              <RangeInput
+                label="Mobility"
+                value={mobilityOverride ?? extracted.mobility_cm2Vs ?? prototypeFallbackValues.mobility_cm2Vs}
+                min={0}
+                max={300}
+                step={1}
+                unit="cm²/V·s"
+                onChange={(value) => setMobilityOverrides((current) => ({ ...current, [activeDevice.id]: value }))}
               />
-            </>
-          )}
-        </Card>
-        <Card title="Id-Vd Output Curve">
-          {chartDisabled ? <DisabledChart missing={simulation.missing} /> : (
-            <Chart
-              data={outputData}
-              xKey="vd"
-              unit={currentUnit}
-              lines={outputGateValues.map((vg, index) => ({
-                key: formatGateSeries(vg),
-                color: ['oklch(0.78 0.15 195)', 'oklch(0.7 0.15 160)', 'oklch(0.7 0.15 290)'][index] ?? 'oklch(0.78 0.15 195)',
-              }))}
-            />
-          )}
-        </Card>
-        <Card title="Model assumptions">
-          <div className="assumption-list">
-            <p>使用長通道 MOSFET prototype 模型，Cox = ε0k/tox。</p>
-            <p>Vg 小於 Vth 時採用 leakage floor；接觸電阻 Rc 以簡化電流限制處理。</p>
-            <p>這批先不做 Supabase、DOI lookup 或 CSV fitting。</p>
+              <RangeInput label="Vth" value={vth} min={-3} max={3} step={0.05} unit="V" onChange={setVth} />
+              <RangeInput label="Rc" value={rc} min={0} max={100000} step={100} unit="Ω" onChange={setRc} />
+              <details className="secondary-editor">
+                <summary>Advanced model controls</summary>
+                <label className="toggle-field compact">
+                  <input type="checkbox" checked={useFallbackValues} onChange={(event) => setUseFallbackValues(event.target.checked)} />
+                  Use fallback values for prototype preview
+                </label>
+                <RangeInput label="Leakage floor" value={leakageFloor} min={1e-13} max={1e-8} step={1e-13} unit="A" onChange={setLeakageFloor} />
+                <label className="device-select-field">
+                  Current unit
+                  <select value={currentUnit} onChange={(event) => setCurrentUnit(event.target.value as 'A' | 'uA' | 'nA')}>
+                    <option value="A">A</option>
+                    <option value="uA">µA</option>
+                    <option value="nA">nA</option>
+                  </select>
+                </label>
+                <label className="device-select-field">
+                  Measurement overlay
+                  <select value={overlayMeasurementId} onChange={(event) => setOverlayMeasurementId(event.target.value)}>
+                    <option value="">none</option>
+                    {electricalMeasurements.map((measurement) => <option value={measurement.id} key={measurement.id}>{measurement.sampleName}</option>)}
+                  </select>
+                </label>
+              </details>
+            </div>
+          </ManusSidePanel>
+        )}
+        center={(
+          <div className="iv-chart-stack" data-testid="iv-chart-stack">
+            <ManusChartCard title={<>I<sub>d</sub> – V<sub>g</sub> Transfer Curve</>} badge={<ManusStatusBadge tone="primary">simulated</ManusStatusBadge>}>
+              {chartDisabled ? <DisabledChart missing={simulation.missing} /> : (
+                <>
+                  {simulation.status === 'fallback_preview' ? <div className="prototype-warning"><AlertTriangle size={14} />Prototype preview using fallback values, not calibrated.</div> : null}
+                  <Chart
+                    data={transferWithOverlay}
+                    xKey="vg"
+                    unit={currentUnit}
+                    lines={[
+                      { key: 'id', color: 'oklch(0.78 0.15 195)' },
+                      ...(overlayMeasurement ? [{ key: 'measuredId', color: 'oklch(0.74 0.18 55)' }] : []),
+                    ]}
+                  />
+                </>
+              )}
+            </ManusChartCard>
+            <ManusChartCard title={<>I<sub>d</sub> – V<sub>d</sub> Output Curves</>} badge={<ManusStatusBadge tone="primary">simulated</ManusStatusBadge>}>
+              {chartDisabled ? <DisabledChart missing={simulation.missing} /> : (
+                <Chart
+                  data={outputData}
+                  xKey="vd"
+                  unit={currentUnit}
+                  lines={outputGateValues.map((vg, index) => ({
+                    key: formatGateSeries(vg),
+                    color: ['oklch(0.78 0.15 195)', 'oklch(0.7 0.15 160)', 'oklch(0.7 0.15 290)'][index] ?? 'oklch(0.78 0.15 195)',
+                  }))}
+                />
+              )}
+            </ManusChartCard>
+            <details className="secondary-editor iv-secondary-info">
+              <summary>Active device and extracted parameters</summary>
+              <div className="summary-stack">
+                <h2>{activeDevice.name}</h2>
+                <p>{activeDevice.description}</p>
+                <Meta label="Channel" value={extracted.channelMaterial?.displayName ?? 'missing'} />
+                <Meta label="Gate dielectric" value={extracted.dielectricMaterial?.displayName ?? 'missing'} />
+                <Meta label="Contacts" value={extracted.contactMaterials.map((material) => material.displayName).join(', ') || 'missing'} />
+                <Meta label="Carrier type" value={extracted.carrierType} />
+              </div>
+              <ParameterTable rows={[
+                ...simulation.parameters.map((parameter) => ({
+                  label: parameter.label,
+                  value: parameter.value,
+                  unit: parameter.unit,
+                  source: parameter.source,
+                  sourceIds: parameter.sourceIds,
+                  notes: parameter.notes,
+                  conditions: parameter.conditions,
+                })),
+                { label: 'Cox', value: cox, unit: 'F/m²', source: cox === undefined ? 'missing' : 'derived' },
+                { label: 'Eg', value: extracted.bandGap_eV, unit: 'eV', source: confidenceLabel(extracted.bandGapMeta?.confidence), sourceIds: extracted.bandGapMeta?.sourceIds, conditions: extracted.bandGapMeta?.conditions },
+                { label: 'χ', value: extracted.electronAffinity_eV, unit: 'eV', source: confidenceLabel(extracted.electronAffinityMeta?.confidence), sourceIds: extracted.electronAffinityMeta?.sourceIds, conditions: extracted.electronAffinityMeta?.conditions },
+                { label: 'contact φ', value: extracted.contactWorkFunction_eV, unit: 'eV', source: confidenceLabel(extracted.contactWorkFunctionMeta?.confidence), sourceIds: extracted.contactWorkFunctionMeta?.sourceIds, conditions: extracted.contactWorkFunctionMeta?.conditions },
+              ]} references={project.references} />
+            </details>
           </div>
-        </Card>
-      </div>
+        )}
+        right={(
+          <ManusAnalysisPanel title="分析結果">
+            <div data-testid="iv-analysis-panel">
+              <ParameterTable rows={[
+                { label: 'Threshold Voltage', value: vth, unit: 'V', source: 'estimated' },
+                { label: 'Mobility', value: mobilityOverride ?? extracted.mobility_cm2Vs, unit: 'cm²/V·s', source: confidenceLabel(extracted.mobilityMeta?.confidence) },
+                { label: 'Contact Resistance', value: rc, unit: 'Ω', source: 'estimated' },
+                { label: 'Channel Length', value: extracted.length_um, unit: 'µm', source: extracted.length_um === undefined ? 'missing' : 'extracted' },
+                { label: 'On/Off Ratio', value: onOffRatio ? onOffRatio.toExponential(2) : undefined, unit: '', source: onOffRatio ? 'derived' : 'missing' },
+                { label: 'SS', value: 'prototype', unit: '', source: 'estimated' },
+              ]} references={project.references} />
+              <div className={`status-pill status-${simulation.status}`}>{simulationStatusLabels[simulation.status]}</div>
+              {simulation.status === 'fallback_preview' ? (
+                <div className="simulation-status-note warning">Using fallback values because project parameters are missing. Go to Materials to review parameters or reset local project.</div>
+              ) : null}
+              {simulation.status === 'ready_with_estimates' ? (
+                <div className="simulation-status-note estimate">Simulation uses estimated seed parameters. Replace with reviewed literature before quantitative use.</div>
+              ) : null}
+              {overlayWarnings.length ? <div className="warning-list">{overlayWarnings.map((warning) => <div key={warning}><AlertTriangle size={14} />{warning}</div>)}</div> : null}
+              {extracted.missing.length || simulation.missing.length || simulation.warnings.length ? (
+                <div className="warning-list">
+                  {[...new Set([...simulation.warnings, ...extracted.missing, ...simulation.missing])].map((item) => <div key={item}><AlertTriangle size={14} />{item}</div>)}
+                </div>
+              ) : <ManusCallout tone="primary"><strong>Ready</strong><p>Active device 已具備 MVP 模型需要的主要參數。</p></ManusCallout>}
+              <ManusCallout tone="neutral">
+                <strong>Model assumptions</strong>
+                <p>Long-channel MOSFET prototype model with Cox = ε0k/tox and simplified Rc current limiting.</p>
+              </ManusCallout>
+            </div>
+          </ManusAnalysisPanel>
+        )}
+      />
     </WorkspacePage>
   )
 }
@@ -622,88 +646,97 @@ export function BandDiagramPage() {
 
   return (
     <WorkspacePage title="Band Diagram" icon={<BarChart3 size={18} />}>
-      <div className="band-diagram-workspace">
-        <aside className="band-selector-panel">
-          <h2>材料選擇</h2>
-          <section>
-            <h3>接觸金屬</h3>
-            {metals.map((entry) => (
-              <ManusListRow
-                active={entry.id === metalId}
-                color={entry.color}
-                key={entry.id}
-                title={entry.displayName}
-                meta={`φ=${formatParameterValue(resolveParameterNumber(entry.workFunction_eV) ?? 'unknown')} eV`}
-                onClick={() => setMetalId(entry.id)}
-              />
-            ))}
-          </section>
-          <section>
-            <h3>半導體</h3>
-            {semiconductors.map((entry) => (
-              <ManusListRow
-                active={entry.id === semiconductorId}
-                color={entry.color}
-                key={entry.id}
-                title={entry.displayName}
-                subtitle={`χ=${formatParameterValue(resolveParameterNumber(entry.electronAffinity_eV) ?? 'unknown')} eV`}
-                meta={`Eg=${formatParameterValue(resolveParameterNumber(entry.bandGap_eV) ?? 'unknown')} eV`}
-                onClick={() => setSemiconductorId(entry.id)}
-              />
-            ))}
-          </section>
-          <section>
-            <h3>顯示模式</h3>
-            <div className="segmented-vertical">
-              <button className={mode === 'after' ? 'active' : ''} type="button" onClick={() => setMode('after')}>After Contact (Band Bending)</button>
-              <button className={mode === 'before' ? 'active' : ''} type="button" onClick={() => setMode('before')}>Before Contact (Flat Band)</button>
+      <ManusThreeColumnLayout
+        className="band-diagram-workspace"
+        left={(
+          <ManusSidePanel title="材料選擇">
+            <section>
+              <h3>接觸金屬</h3>
+              {metals.map((entry) => (
+                <ManusListRow
+                  active={entry.id === metalId}
+                  color={entry.color}
+                  key={entry.id}
+                  title={entry.displayName}
+                  meta={`φ=${formatParameterValue(resolveParameterNumber(entry.workFunction_eV) ?? 'unknown')} eV`}
+                  onClick={() => setMetalId(entry.id)}
+                />
+              ))}
+            </section>
+            <section>
+              <h3>半導體</h3>
+              {semiconductors.map((entry) => (
+                <ManusListRow
+                  active={entry.id === semiconductorId}
+                  color={entry.color}
+                  key={entry.id}
+                  title={entry.displayName}
+                  subtitle={`χ=${formatParameterValue(resolveParameterNumber(entry.electronAffinity_eV) ?? 'unknown')} eV`}
+                  meta={`Eg=${formatParameterValue(resolveParameterNumber(entry.bandGap_eV) ?? 'unknown')} eV`}
+                  onClick={() => setSemiconductorId(entry.id)}
+                />
+              ))}
+            </section>
+            <section>
+              <h3>顯示模式</h3>
+              <div className="segmented-vertical">
+                <button className={mode === 'after' ? 'active' : ''} type="button" onClick={() => setMode('after')}>After Contact (Band Bending)</button>
+                <button className={mode === 'before' ? 'active' : ''} type="button" onClick={() => setMode('before')}>Before Contact (Flat Band)</button>
+              </div>
+            </section>
+          </ManusSidePanel>
+        )}
+        center={(
+          <ManusChartCard title={`Energy Band Diagram: ${metal.displayName} / ${semiconductor.displayName}`} badge={<ManusStatusBadge tone="primary">{mode === 'after' ? 'after contact' : 'before contact'}</ManusStatusBadge>}>
+            <div className="band-diagram-preview" data-testid="band-diagram-preview">
+              <svg viewBox="0 0 680 640" role="img" aria-label="energy band diagram">
+                <defs>
+                  <linearGradient id="bandGrid" x1="0" x2="0" y1="0" y2="1">
+                    <stop offset="0" stopColor="oklch(0.18 0.035 250)" />
+                    <stop offset="1" stopColor="oklch(0.10 0.02 250)" />
+                  </linearGradient>
+                </defs>
+                <rect x="52" y="44" width="560" height="520" rx="8" fill="url(#bandGrid)" stroke="oklch(0.28 0.045 250)" strokeDasharray="4 6" />
+                {Array.from({ length: 11 }).map((_, index) => <line x1={72 + index * 52} x2={72 + index * 52} y1="48" y2="560" stroke="oklch(0.34 0.07 245 / 0.34)" strokeDasharray="4 6" key={`v${index}`} />)}
+                {Array.from({ length: 5 }).map((_, index) => <line x1="52" x2="612" y1={108 + index * 104} y2={108 + index * 104} stroke="oklch(0.34 0.07 245 / 0.34)" strokeDasharray="4 6" key={`h${index}`} />)}
+                <line x1="92" x2="284" y1="296" y2="296" stroke="oklch(0.78 0.15 195)" strokeWidth="4" />
+                <line x1="284" x2="284" y1="296" y2={mode === 'after' ? 156 : 296} stroke="oklch(0.78 0.15 195)" strokeWidth="4" />
+                <path d={mode === 'after' ? 'M284 156 C360 72 480 70 588 64' : 'M284 296 C380 296 480 296 588 296'} fill="none" stroke="oklch(0.78 0.15 195)" strokeWidth="4" />
+                <line x1="92" x2="284" y1="378" y2="378" stroke="oklch(0.72 0.16 290)" strokeWidth="4" />
+                <line x1="284" x2="284" y1="378" y2={mode === 'after' ? 526 : 378} stroke="oklch(0.72 0.16 290)" strokeWidth="4" />
+                <path d={mode === 'after' ? 'M284 526 C366 430 482 404 588 392' : 'M284 378 C380 378 480 378 588 378'} fill="none" stroke="oklch(0.72 0.16 290)" strokeWidth="4" />
+                <line x1="284" x2="588" y1="322" y2="322" stroke="#facc15" strokeWidth="3" strokeDasharray="6 7" />
+                <text x="44" y="590" fill="oklch(0.58 0.04 250)" fontSize="13">Position (a.u.)</text>
+                <text x="14" y="326" fill="oklch(0.58 0.04 250)" fontSize="13" transform="rotate(-90 14 326)">Energy (eV)</text>
+              </svg>
             </div>
-          </section>
-        </aside>
-        <ManusPreviewCard>
-          <div className="band-diagram-preview" data-testid="band-diagram-preview">
-            <header>
-              <strong>Energy Band Diagram: {metal.displayName} / {semiconductor.displayName}</strong>
-              <ManusStatusBadge tone="primary">{mode === 'after' ? 'after contact' : 'before contact'}</ManusStatusBadge>
-            </header>
-            <svg viewBox="0 0 680 640" role="img" aria-label="energy band diagram">
-              <defs>
-                <linearGradient id="bandGrid" x1="0" x2="0" y1="0" y2="1">
-                  <stop offset="0" stopColor="oklch(0.18 0.035 250)" />
-                  <stop offset="1" stopColor="oklch(0.10 0.02 250)" />
-                </linearGradient>
-              </defs>
-              <rect x="52" y="44" width="560" height="520" rx="8" fill="url(#bandGrid)" stroke="oklch(0.28 0.045 250)" strokeDasharray="4 6" />
-              {Array.from({ length: 11 }).map((_, index) => <line x1={72 + index * 52} x2={72 + index * 52} y1="48" y2="560" stroke="oklch(0.34 0.07 245 / 0.34)" strokeDasharray="4 6" key={`v${index}`} />)}
-              {Array.from({ length: 5 }).map((_, index) => <line x1="52" x2="612" y1={108 + index * 104} y2={108 + index * 104} stroke="oklch(0.34 0.07 245 / 0.34)" strokeDasharray="4 6" key={`h${index}`} />)}
-              <line x1="92" x2="284" y1="296" y2="296" stroke="oklch(0.78 0.15 195)" strokeWidth="4" />
-              <line x1="284" x2="284" y1="296" y2={mode === 'after' ? 156 : 296} stroke="oklch(0.78 0.15 195)" strokeWidth="4" />
-              <path d={mode === 'after' ? 'M284 156 C360 72 480 70 588 64' : 'M284 296 C380 296 480 296 588 296'} fill="none" stroke="oklch(0.78 0.15 195)" strokeWidth="4" />
-              <line x1="92" x2="284" y1="378" y2="378" stroke="oklch(0.72 0.16 290)" strokeWidth="4" />
-              <line x1="284" x2="284" y1="378" y2={mode === 'after' ? 526 : 378} stroke="oklch(0.72 0.16 290)" strokeWidth="4" />
-              <path d={mode === 'after' ? 'M284 526 C366 430 482 404 588 392' : 'M284 378 C380 378 480 378 588 378'} fill="none" stroke="oklch(0.72 0.16 290)" strokeWidth="4" />
-              <line x1="284" x2="588" y1="322" y2="322" stroke="#facc15" strokeWidth="3" strokeDasharray="6 7" />
-              <text x="44" y="590" fill="oklch(0.58 0.04 250)" fontSize="13">Position (a.u.)</text>
-              <text x="14" y="326" fill="oklch(0.58 0.04 250)" fontSize="13" transform="rotate(-90 14 326)">Energy (eV)</text>
-            </svg>
-          </div>
-        </ManusPreviewCard>
-        <aside className="band-parameter-panel">
-          <Card title="能帶參數">
-            <ParameterTable rows={[
-              { label: 'φ_Bn (n-type)', value: nBarrier, unit: 'eV', source: confidenceLabel(metal.workFunction_eV.confidence) },
-              { label: 'φ_Bp (p-type)', value: pBarrier, unit: 'eV', source: confidenceLabel(semiconductor.bandGap_eV.confidence) },
-              { label: `Metal: ${metal.displayName}`, value: metalPhi, unit: 'eV', source: confidenceLabel(metal.workFunction_eV.confidence), sourceIds: metal.workFunction_eV.sourceIds },
-              { label: `Semiconductor: ${semiconductor.displayName} χ`, value: affinity, unit: 'eV', source: confidenceLabel(semiconductor.electronAffinity_eV.confidence), sourceIds: semiconductor.electronAffinity_eV.sourceIds },
-              { label: `Semiconductor: ${semiconductor.displayName} Eg`, value: bandGap, unit: 'eV', source: confidenceLabel(semiconductor.bandGap_eV.confidence), sourceIds: semiconductor.bandGap_eV.sourceIds },
-            ]} references={project.references} />
-          </Card>
-          <ManusCallout tone="warning">
-            <strong>注意</strong>
-            <p>此為簡化能帶圖，未考慮 Fermi-level pinning、MIGS 效應與介面態密度。</p>
-          </ManusCallout>
-        </aside>
-      </div>
+          </ManusChartCard>
+        )}
+        right={(
+          <ManusAnalysisPanel title="能帶參數">
+            <div className="band-analysis-cards" data-testid="band-energy-panel">
+              <section>
+                <h3>Schottky Barrier</h3>
+                <Meta label="φ_Bn (n-type)" value={`${formatParameterValue(nBarrier ?? 'missing')} eV`} />
+                <Meta label="φ_Bp (p-type)" value={`${formatParameterValue(pBarrier ?? 'missing')} eV`} />
+              </section>
+              <section>
+                <h3>Metal: {metal.displayName}</h3>
+                <Meta label="Work Function" value={`${formatParameterValue(metalPhi ?? 'missing')} eV`} />
+              </section>
+              <section>
+                <h3>Semiconductor: {semiconductor.displayName}</h3>
+                <Meta label="Electron Affinity" value={`${formatParameterValue(affinity ?? 'missing')} eV`} />
+                <Meta label="Band Gap" value={`${formatParameterValue(bandGap ?? 'missing')} eV`} />
+              </section>
+              <ManusCallout tone="warning">
+                <strong>注意</strong>
+                <p>此為簡化能帶圖，未考慮 Fermi-level pinning、MIGS 效應與介面態密度。</p>
+              </ManusCallout>
+            </div>
+          </ManusAnalysisPanel>
+        )}
+      />
     </WorkspacePage>
   )
 }
@@ -821,15 +854,16 @@ export function ReferencesPage() {
                 <h2>文獻來源</h2>
                 <p>{project.references.length} papers</p>
               </div>
-              <button className="manus-button primary" type="button" onClick={() => setSelectedId(addReference().id)}>新增 reference</button>
+              <button className="panel-icon-button" type="button" onClick={() => setSelectedId(addReference().id)} aria-label="新增 reference"><Plus size={16} /></button>
             </div>
             {project.references.map((reference) => (
               <ManusListRow
                 active={reference.id === selected?.id}
+                icon={<BookOpen size={16} />}
                 key={reference.id}
                 title={reference.title}
                 subtitle={`${reference.authors} (${reference.year})`}
-                meta={reference.journal ?? reference.doi ?? 'manual note'}
+                meta={<>Score: {reference.reliabilityScore}/10</>}
                 badge={<ManusStatusBadge tone={reference.status === 'accepted' ? 'success' : 'primary'}>{reference.status}</ManusStatusBadge>}
                 onClick={() => setSelectedId(reference.id)}
               />
@@ -845,10 +879,10 @@ export function ReferencesPage() {
               icon={<BookOpen size={22} />}
             />
             <ManusMetadataGrid items={[
-              { label: 'DOI', value: selected.doi ?? 'not provided' },
-              { label: 'URL', value: selected.url ?? 'not provided' },
-              { label: 'Material', value: selected.material ?? 'multiple / TBD' },
-              { label: 'Extracted parameter', value: selected.parameterExtracted ?? 'review required' },
+              { label: 'DOI', value: selected.doi ? <a href={`https://doi.org/${selected.doi}`} target="_blank" rel="noreferrer">{selected.doi}</a> : 'not provided' },
+              { label: 'URL', value: selected.url ? <a href={selected.url} target="_blank" rel="noreferrer">open source</a> : 'not provided' },
+              { label: '相關材料', value: selected.material ?? 'multiple / TBD' },
+              { label: '提取參數', value: selected.parameterExtracted ?? 'review required' },
             ]} />
             <section className="reference-score-panel">
               <span>Reliability score</span>
@@ -863,7 +897,7 @@ export function ReferencesPage() {
               <strong>Used by</strong>
               {getReferenceUsage(project, selected.id).length ? getReferenceUsage(project, selected.id).map((usage) => <span key={`${usage.materialId}-${usage.parameterKey}`}>{usage.materialName} · {usage.parameterLabel}</span>) : <span>No material parameters linked yet</span>}
             </div>
-            <details className="secondary-editor" open>
+            <details className="secondary-editor">
               <summary>Edit reference</summary>
               <ReferenceEditor
                 reference={selected}
@@ -1088,7 +1122,7 @@ export function ResearchNotesPage() {
           <>
             <div className="split-panel-heading">
               <div><h2>研究假說</h2><p>{project.hypotheses.length} hypotheses</p></div>
-              <button aria-label="新增研究假說"><Plus size={18} /></button>
+              <button className="panel-icon-button" aria-label="新增研究假說"><Plus size={18} /></button>
             </div>
             {project.hypotheses.map((hypothesis) => (
               <ManusListRow
@@ -1096,8 +1130,8 @@ export function ResearchNotesPage() {
                 icon={<Lightbulb size={16} />}
                 key={hypothesis.id}
                 title={hypothesis.title}
-                subtitle={hypothesis.description}
-                meta={`${statusLabels[hypothesis.status]} · ${hypothesis.createdAt}`}
+                subtitle={<ManusStatusBadge tone={hypothesis.status === 'confirmed' ? 'success' : hypothesis.status === 'rejected' ? 'danger' : 'primary'}>{statusLabels[hypothesis.status]}</ManusStatusBadge>}
+                meta={hypothesis.createdAt}
                 onClick={() => setSelectedId(hypothesis.id)}
               />
             ))}
@@ -1116,13 +1150,12 @@ export function ResearchNotesPage() {
               <p>{selected.description}</p>
             </div>
             <div className="linked-panels">
-              <div><span>相關元件</span><strong>{project.devices.length} available</strong></div>
-              <div><span>相關文獻</span><strong>{project.references.length} references</strong></div>
+              <div><span>相關元件</span><strong>0 linked</strong></div>
+              <div><span>相關文獻</span><strong>0 linked</strong></div>
             </div>
-            <ManusCallout tone="neutral">
-              <strong>Evidence structure</strong>
+            <div className="research-empty-note">
               <p>把材料參數、製程 step、量測 dataset 與文獻來源連結到此假說後，可作為下一步 review queue。</p>
-            </ManusCallout>
+            </div>
             <div className="scroll-spacer" aria-hidden="true" />
           </section>
         )}

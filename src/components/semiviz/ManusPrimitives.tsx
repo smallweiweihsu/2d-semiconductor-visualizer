@@ -17,6 +17,99 @@ export function ManusSplitDetail({
   )
 }
 
+export function ManusThreeColumnLayout({
+  className = '',
+  left,
+  center,
+  right,
+}: {
+  className?: string
+  left: ReactNode
+  center: ReactNode
+  right: ReactNode
+}) {
+  return (
+    <div className={`manus-three-column ${className}`}>
+      <aside className="manus-three-left">{left}</aside>
+      <main className="manus-three-center">{center}</main>
+      <aside className="manus-three-right">{right}</aside>
+    </div>
+  )
+}
+
+export function ManusSidePanel({
+  title,
+  subtext,
+  children,
+}: {
+  title: ReactNode
+  subtext?: ReactNode
+  children: ReactNode
+}) {
+  return (
+    <div className="manus-side-panel">
+      <header>
+        <h2>{title}</h2>
+        {subtext ? <p>{subtext}</p> : null}
+      </header>
+      {children}
+    </div>
+  )
+}
+
+export function ManusChartCard({
+  title,
+  badge,
+  children,
+}: {
+  title: ReactNode
+  badge?: ReactNode
+  children: ReactNode
+}) {
+  return (
+    <section className="manus-chart-card">
+      <header>
+        <h2>{title}</h2>
+        {badge ? <span>{badge}</span> : null}
+      </header>
+      <div className="manus-chart-body">{children}</div>
+    </section>
+  )
+}
+
+export function ManusAnalysisPanel({ title, children }: { title: ReactNode; children: ReactNode }) {
+  return (
+    <div className="manus-analysis-panel">
+      <header><h2>{title}</h2></header>
+      {children}
+    </div>
+  )
+}
+
+export function ManusCompactField({
+  label,
+  value,
+  unit,
+  children,
+}: {
+  label: ReactNode
+  value?: ReactNode
+  unit?: ReactNode
+  children?: ReactNode
+}) {
+  return (
+    <label className="manus-compact-field">
+      <span>{label}</span>
+      {children ?? (
+        <strong>
+          {value}
+          {unit ? <em>{unit}</em> : null}
+        </strong>
+      )}
+    </label>
+  )
+}
+
 export function ManusListRow({
   active = false,
   color,
