@@ -4,6 +4,8 @@ import type { DeviceLayer, Material } from '../../types/semiviz'
 
 export type DeviceViewportMode = '3D' | 'TOP' | 'SIDE' | 'EXPLODED'
 export type OpacityMode = 'normal' | 'semi-transparent' | 'selected-only'
+export type DisplayMode = 'Render' | 'Inspect' | 'Debug'
+export const defaultDisplayMode: DisplayMode = 'Render'
 
 export interface DeviceMeshLayer {
   id: string
@@ -14,6 +16,7 @@ export interface DeviceMeshLayer {
   size: [number, number, number]
   opacity: number
   appearance: ReturnType<typeof getMaterialAppearance>
+  unlit?: boolean
   role: DeviceLayer['role']
   electricalRole: DeviceLayer['electricalRole']
   thickness_nm: number
@@ -24,8 +27,8 @@ export interface DeviceMeshLayer {
   glow: number
 }
 
-const sceneWidth = 7.8
-const sceneDepth = 3.6
+const sceneWidth = 8.8
+const sceneDepth = 4.2
 
 export function createDeviceMeshLayers({
   layers,
@@ -56,7 +59,7 @@ export function createDeviceMeshLayers({
     const source = layers.find((entry) => entry.id === layer.id)
     const material = source ? materials.find((entry) => entry.id === source.materialId) : undefined
     const rolePlacement = getRolePlacement(source)
-    const y = ((layer.visualY - minY) / 13) + (layer.visualThickness / 28) + rolePlacement.yLift
+    const y = ((layer.visualY - minY) / 24) + (layer.visualThickness / 38) + rolePlacement.yLift
     const zOffset = rolePlacement.z
     const baseOpacity = source ? clamp(source.opacity, 0.08, 1) : 1
     const appearance = getMaterialAppearance(material, source)
@@ -82,7 +85,8 @@ export function createDeviceMeshLayers({
       selectLayerId: layer.id,
       highlightColor: layer.isSelected ? '#67e8f9' : '#0f172a',
       labelVisible: layer.isSelected || isImportantLabel(source),
-      glow: layer.isSelected ? 1 : source?.electricalRole === 'channel' ? 0.45 : 0,
+      glow: layer.isSelected ? 1 : source?.electricalRole === 'channel' ? 0.72 : 0,
+      unlit: false,
     }
   })
 
@@ -98,8 +102,8 @@ export function createDeviceMeshLayers({
       name: 'Source contact',
       materialName: sourceMaterial?.displayName ?? substrateSource.materialId,
       color: appearance.color,
-      position: [-2.15, channel.position[1] + 0.13, 0],
-      size: [sceneWidth * 0.22, 0.22, sceneDepth * 0.48],
+      position: [-2.15, channel.position[1] + 0.12, 0],
+      size: [sceneWidth * 0.24, 0.2, sceneDepth * 0.5],
       opacity: getLayerOpacity(Math.min(substrateSource.opacity, appearance.opacity), selectedId === substrateSource.id, opacityMode, 'source'),
       appearance,
       role: 'source',
@@ -110,6 +114,41 @@ export function createDeviceMeshLayers({
       highlightColor: selectedId === substrateSource.id ? '#67e8f9' : '#0f172a',
       labelVisible: true,
       glow: selectedId === substrateSource.id ? 1 : 0,
+      unlit: false,
+    })
+  }
+
+  const channelLayer = layers.find((layer) => layer.electricalRole === 'channel' && layer.visible)
+  const channelMesh = meshLayers.find((mesh) => mesh.electricalRole === 'channel')
+  const channelMaterial = channelLayer ? materials.find((material) => material.id === channelLayer.materialId) : undefined
+
+  if (channelLayer && channelMesh) {
+    const appearance = {
+      ...getMaterialAppearance(channelMaterial, channelLayer),
+      color: '#8b5cf6',
+      emissive: '#c084fc',
+      emissiveIntensity: 1.2,
+      opacity: 1,
+      transparent: false,
+    }
+    meshLayers.push({
+      id: `${channelLayer.id}-visual-front-edge`,
+      name: 'WSe₂ channel edge',
+      materialName: channelMaterial?.displayName ?? channelLayer.materialId,
+      color: appearance.color,
+      position: [channelMesh.position[0], channelMesh.position[1] + 0.18, channelMesh.position[2] - 0.72],
+      size: [channelMesh.size[0] * 0.92, 0.065, 0.12],
+      opacity: 1,
+      appearance,
+      role: channelLayer.role,
+      electricalRole: 'channel',
+      thickness_nm: channelLayer.geometry.thickness_nm,
+      isSelected: selectedId === channelLayer.id,
+      selectLayerId: channelLayer.id,
+      highlightColor: selectedId === channelLayer.id ? '#67e8f9' : '#0f172a',
+      labelVisible: false,
+      glow: 0.85,
+      unlit: true,
     })
   }
 
@@ -117,16 +156,16 @@ export function createDeviceMeshLayers({
 }
 
 export function getCameraPreset(mode: DeviceViewportMode, radius: number): [number, number, number] {
-  if (mode === 'TOP') return [0, Math.max(5, radius * 1.28), 0.01]
-  if (mode === 'SIDE') return [Math.max(5, radius * 1.15), Math.max(1.3, radius * 0.16), 0.01]
-  return [Math.max(4, radius * 0.82), Math.max(2.7, radius * 0.52), Math.max(4, radius * 0.9)]
+  if (mode === 'TOP') return [0, Math.max(4.2, radius * 1.02), 0.01]
+  if (mode === 'SIDE') return [Math.max(4.4, radius * 0.92), Math.max(1.1, radius * 0.14), 0.01]
+  return [Math.max(3.5, radius * 0.62), Math.max(2.2, radius * 0.42), Math.max(3.6, radius * 0.68)]
 }
 
 export function getSceneBounds(meshLayers: DeviceMeshLayer[]) {
   const maxX = Math.max(1, ...meshLayers.map((layer) => Math.abs(layer.position[0]) + layer.size[0] / 2))
   const maxY = Math.max(1, ...meshLayers.map((layer) => layer.position[1] + layer.size[1] / 2))
   const maxZ = Math.max(1, ...meshLayers.map((layer) => Math.abs(layer.position[2]) + layer.size[2] / 2))
-  const radius = Math.max(5.5, maxX * 1.35, maxY * 2.2, maxZ * 1.8)
+  const radius = Math.max(4.4, maxX * 0.98, maxY * 1.12, maxZ * 1.18)
 
   return {
     center: [0, maxY / 2, 0] as [number, number, number],
@@ -156,21 +195,22 @@ function getLayerOpacity(baseOpacity: number, selected: boolean, opacityMode: Op
 
 function getRolePlacement(layer?: DeviceLayer) {
   const role = layer?.electricalRole
-  if (role === 'source') return { x: -2.15, z: 0, yLift: 0.05, offsetScale: 0.25 }
-  if (role === 'drain') return { x: 2.15, z: 0, yLift: 0.05, offsetScale: 0.25 }
-  if (role === 'contact') return { x: layer?.geometry.x_um && layer.geometry.x_um < 0 ? -2.15 : 2.15, z: 0, yLift: 0.05, offsetScale: 0.25 }
+  if (role === 'source') return { x: -2.15, z: 0, yLift: 0.03, offsetScale: 0.18 }
+  if (role === 'drain') return { x: 2.15, z: 0, yLift: 0.03, offsetScale: 0.18 }
+  if (role === 'contact') return { x: layer?.geometry.x_um && layer.geometry.x_um < 0 ? -2.15 : 2.15, z: 0, yLift: 0.03, offsetScale: 0.18 }
   if (role === 'gate') return { x: 0, z: 0, yLift: 0.08, offsetScale: 0.2 }
+  if (role === 'channel') return { x: 0, z: -0.72, yLift: 0.14, offsetScale: 0.18 }
   return { x: 0, z: clamp((layer?.geometry.y_um ?? 0) / 7, -0.8, 0.8), yLift: 0, offsetScale: 1 }
 }
 
 function getRoleSize(layer: DeviceLayer | undefined, visualWidth: number, visualThickness: number): [number, number, number] {
   const role = layer?.electricalRole
-  if (role === 'substrate') return [sceneWidth * 1.02, 0.42, sceneDepth * 1.25]
-  if (role === 'buffer') return [sceneWidth * 0.52, 0.13, sceneDepth * 0.58]
-  if (role === 'channel') return [sceneWidth * 0.66, 0.12, sceneDepth * 0.28]
-  if (role === 'source' || role === 'drain' || role === 'contact') return [sceneWidth * 0.22, 0.22, sceneDepth * 0.48]
-  if (role === 'gate_dielectric') return [sceneWidth * 0.72, 0.18, sceneDepth * 0.5]
-  if (role === 'gate') return [sceneWidth * 0.44, 0.2, sceneDepth * 0.4]
+  if (role === 'substrate') return [sceneWidth * 1.04, 0.4, sceneDepth * 1.18]
+  if (role === 'buffer') return [sceneWidth * 0.52, 0.11, sceneDepth * 0.52]
+  if (role === 'channel') return [sceneWidth * 0.72, 0.1, sceneDepth * 0.12]
+  if (role === 'source' || role === 'drain' || role === 'contact') return [sceneWidth * 0.24, 0.2, sceneDepth * 0.5]
+  if (role === 'gate_dielectric') return [sceneWidth * 0.74, 0.16, sceneDepth * 0.52]
+  if (role === 'gate') return [sceneWidth * 0.52, 0.18, sceneDepth * 0.42]
   if (role === 'passivation') return [sceneWidth * 0.82, 0.16, sceneDepth * 0.7]
   return [Math.max(0.45, visualWidth * sceneWidth), Math.max(0.1, visualThickness / 11), sceneDepth * 0.45]
 }

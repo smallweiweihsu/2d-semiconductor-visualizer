@@ -15,15 +15,15 @@ export function getMaterialAppearance(material: Material | undefined, layer?: De
   const category = material?.category ?? 'custom'
   const electricalRole = layer?.electricalRole
 
-  if (id === 'wse2') return appearance('#9b6dff', '#5b21b6', 0.28, 0.04, 0.46, 0.92)
+  if (id === 'wse2') return appearance('#7c3aed', '#a855f7', 0.9, 0.04, 0.34, 1)
   if (id === 'mos2') return appearance('#3b82f6', '#1d4ed8', 0.22, 0.04, 0.5, 0.92)
-  if (id === 'sb2o3') return appearance('#8ee7ff', '#0891b2', 0.18, 0.02, 0.18, 0.44)
+  if (id === 'sb2o3') return appearance('#8ee7ff', '#0891b2', 0.16, 0.02, 0.14, 0.28)
   if (id === 'hbn') return appearance('#dff7ff', '#67e8f9', 0.14, 0.01, 0.16, 0.38)
   if (id === 'wox') return appearance('#fb923c', '#c2410c', 0.14, 0.02, 0.32, 0.58)
   if (id === 'pd' || id === 'pt') return appearance('#d7dde7', '#94a3b8', 0.04, 0.82, 0.28, 0.98)
   if (id === 'ti' || id === 'nb') return appearance('#56606f', '#0f172a', 0.02, 0.78, 0.36, 0.98)
   if (id === 'in') return appearance('#b9d8ff', '#60a5fa', 0.08, 0.62, 0.26, 0.96)
-  if (id === 'sb-bulk' || electricalRole === 'substrate') return appearance('#263244', '#020617', 0.02, 0.18, 0.42, 1)
+  if (id === 'sb-bulk' || electricalRole === 'substrate') return appearance('#162033', '#020617', 0.01, 0.12, 0.48, 1)
   if (id === 'hfo2' || id === 'sio2') return appearance('#d9ecff', '#93c5fd', 0.12, 0.02, 0.2, 0.46)
 
   if (category === 'metal') return appearance('#cbd5e1', '#64748b', 0.04, 0.72, 0.32, 0.96)

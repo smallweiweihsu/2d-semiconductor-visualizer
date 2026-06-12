@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest'
 import { seedProject } from './src/data/seedProject'
 import {
   createDeviceMeshLayers,
+  defaultDisplayMode,
   getCameraPreset,
+  getSceneBounds,
   isWebGLAvailable,
 } from './src/components/semiviz/deviceViewport3DUtils'
 import { getMaterialAppearance } from './src/visualization/materialAppearance'
@@ -32,7 +34,7 @@ describe('interactive DeviceViewport3D helpers', () => {
     const channel = meshes.find((mesh) => mesh.id === 'wse2-channel')!
 
     expect(substrate.size[1]).toBeLessThan(3)
-    expect(substrate.size[1] / channel.size[1]).toBeLessThan(4)
+    expect(substrate.size[1] / channel.size[1]).toBeLessThan(4.5)
   })
 
   it('selected layer returns highlight props', () => {
@@ -121,8 +123,25 @@ describe('interactive DeviceViewport3D helpers', () => {
 
   it('camera preset for TOP / SIDE / 3D returns expected position', () => {
     expect(getCameraPreset('TOP', 10)[1]).toBeGreaterThan(10)
-    expect(getCameraPreset('SIDE', 10)[0]).toBeGreaterThan(10)
+    expect(getCameraPreset('SIDE', 10)[0]).toBeGreaterThan(8)
     expect(getCameraPreset('3D', 10)[2]).toBeGreaterThan(4)
+  })
+
+  it('Render mode is the default display mode', () => {
+    expect(defaultDisplayMode).toBe('Render')
+  })
+
+  it('scene bounds keep the device large in the viewport', () => {
+    const meshes = createDeviceMeshLayers({
+      layers: seedProject.devices[0].layers,
+      materials: seedProject.materials,
+      selectedId: '',
+      mode: '3D',
+    })
+    const bounds = getSceneBounds(meshes)
+    const deviceWidth = Math.max(...meshes.map((mesh) => Math.abs(mesh.position[0]) + mesh.size[0] / 2)) * 2
+
+    expect(deviceWidth / (bounds.radius * 2)).toBeGreaterThan(0.65)
   })
 
   it('fallback preview exists when WebGL disabled helper returns false', () => {

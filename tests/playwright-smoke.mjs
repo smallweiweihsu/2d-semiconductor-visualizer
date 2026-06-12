@@ -1,5 +1,5 @@
 import { spawn } from 'node:child_process'
-import { mkdtemp, writeFile } from 'node:fs/promises'
+import { mkdir, mkdtemp, stat, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { chromium } from 'playwright'
@@ -31,6 +31,8 @@ try {
   const browser = await chromium.launch({ headless: true })
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } })
   const tempDir = await mkdtemp(path.join(tmpdir(), 'semiviz-smoke-'))
+  const artifactDir = path.join(process.cwd(), 'test-artifacts')
+  await mkdir(artifactDir, { recursive: true })
   const warnings = []
 
   page.on('console', (message) => {
@@ -73,12 +75,26 @@ try {
   await page.getByRole('button', { name: 'EXPLODED' }).click()
   await expectVisible(page.locator('.view-tabs button.active', { hasText: 'EXPLODED' }), 'device-builder can switch view mode')
   await expectVisible(page.locator('[data-testid="device-viewport3d"] canvas'), 'interactive 3D viewport canvas renders')
-  await expectVisible(page.locator('.viewport-label').first(), 'readable 3D label pill renders')
+  const renderLabelStripCount = await page.locator('[data-testid="viewport-label-strip"]').count()
+  if (renderLabelStripCount !== 0) {
+    throw new Error('Render mode should not show label strip')
+  }
   const axesInitiallyActive = await page.getByRole('button', { name: 'Show axes' }).evaluate((button) => button.classList.contains('primary'))
   if (axesInitiallyActive) {
     throw new Error('Show axes should be off by default')
   }
-  await page.locator('.viewport-select select').selectOption('selected-only')
+  const viewportScreenshot = path.join(artifactDir, 'device-builder-render-viewport.png')
+  await page.locator('.large-device-stage').screenshot({ path: viewportScreenshot })
+  const screenshotInfo = await stat(viewportScreenshot)
+  if (screenshotInfo.size < 12000) {
+    throw new Error('device viewport screenshot is too small or blank')
+  }
+  await page.locator('.viewport-select', { hasText: 'Display' }).locator('select').selectOption('Inspect')
+  await page.getByRole('button', { name: 'WSe₂ 通道 semiconductor · 1 nm channel' }).click()
+  await expectVisible(page.locator('.viewport-tooltip', { hasText: 'WSe₂ 通道' }), 'Inspect mode shows selected layer tooltip')
+  await page.locator('.viewport-select', { hasText: 'Display' }).locator('select').selectOption('Debug')
+  await expectVisible(page.locator('[data-testid="viewport-label-strip"]'), 'Debug mode can show label strip')
+  await page.locator('.viewport-select', { hasText: 'Opacity mode' }).locator('select').selectOption('selected-only')
   await page.evaluate(() => {
     const buttons = document.querySelectorAll<HTMLButtonElement>('.viewport-controls button')
     buttons[0]?.click()
