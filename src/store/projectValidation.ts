@@ -1,5 +1,7 @@
 import { seedProject } from '../data/seedProject'
 import { normalizeSimulationConfig } from './layerOperations'
+import { normalizeMaterialParameter } from './materialParameterUtils'
+import { inferStackOrder, withNormalizedStackOrder } from '../visualization/viewportGeometry'
 import type {
   CarrierType,
   DeviceLayer,
@@ -60,7 +62,7 @@ export function normalizeImportedProject(input: unknown): ProjectImportResult {
       materials,
       processes: normalizeOptionalArray<ProcessFlow>(input.processes, seedProject.processes),
       measurements: normalizeOptionalArray<MeasurementData>(input.measurements, seedProject.measurements),
-      references: normalizeOptionalArray<LiteratureSource>(input.references, seedProject.references),
+      references: normalizeReferences(input.references),
       hypotheses: normalizeOptionalArray<ResearchHypothesis>(input.hypotheses, seedProject.hypotheses),
     },
   }
@@ -82,8 +84,8 @@ function normalizeDevice(input: unknown, index: number): DeviceStructure {
   const id = typeof record.id === 'string' && record.id ? record.id : `imported-device-${index + 1}`
   const now = new Date().toISOString().slice(0, 10)
   const layers = Array.isArray(record.layers)
-    ? record.layers.map((layer, layerIndex) => normalizeLayer(layer, layerIndex))
-    : structuredClone(fallback.layers)
+    ? withNormalizedStackOrder(record.layers.map((layer, layerIndex) => normalizeLayer(layer, layerIndex)))
+    : withNormalizedStackOrder(structuredClone(fallback.layers))
 
   return {
     id,
@@ -112,6 +114,9 @@ function normalizeLayer(input: unknown, index: number): DeviceLayer {
     materialId: typeof record.materialId === 'string' && record.materialId ? record.materialId : seedProject.materials[0].id,
     role,
     electricalRole: normalizeElectricalRole(record.electricalRole, role),
+    stackOrder: typeof record.stackOrder === 'number'
+      ? record.stackOrder
+      : inferStackOrder({ role, electricalRole: normalizeElectricalRole(record.electricalRole, role) } as DeviceLayer, index),
     geometry: isRecord(record.geometry)
       ? {
           length_um: toNumber(record.geometry.length_um),
@@ -143,7 +148,38 @@ function normalizeMaterial(input: unknown): Material {
     name: typeof record.name === 'string' && record.name ? record.name : fallback.name,
     displayName: typeof record.displayName === 'string' && record.displayName ? record.displayName : fallback.displayName,
     carrierType: normalizeCarrierType(record.carrierType),
+    bandGap_eV: normalizeMaterialParameter(record.bandGap_eV, 'bandGap_eV'),
+    electronAffinity_eV: normalizeMaterialParameter(record.electronAffinity_eV, 'electronAffinity_eV'),
+    workFunction_eV: normalizeMaterialParameter(record.workFunction_eV, 'workFunction_eV'),
+    dielectricConstant: normalizeMaterialParameter(record.dielectricConstant, 'dielectricConstant'),
+    mobility_cm2Vs: normalizeMaterialParameter(record.mobility_cm2Vs, 'mobility_cm2Vs'),
+    resistivity_ohm_m: normalizeMaterialParameter(record.resistivity_ohm_m, 'resistivity_ohm_m'),
+    latticeConstant_A: normalizeMaterialParameter(record.latticeConstant_A, 'latticeConstant_A'),
+    defaultThickness_nm: normalizeMaterialParameter(record.defaultThickness_nm, 'defaultThickness_nm'),
   }
+}
+
+function normalizeReferences(value: unknown): LiteratureSource[] {
+  const source = Array.isArray(value) && value.length ? value : seedProject.references
+  return source.map((entry, index) => {
+    const record = isRecord(entry) ? entry : {}
+    return {
+      id: typeof record.id === 'string' && record.id ? record.id : `ref-${index + 1}`,
+      title: typeof record.title === 'string' ? record.title : 'Untitled reference',
+      authors: typeof record.authors === 'string' ? record.authors : '',
+      year: typeof record.year === 'number' ? record.year : new Date().getFullYear(),
+      journal: typeof record.journal === 'string' ? record.journal : undefined,
+      doi: typeof record.doi === 'string' ? record.doi : undefined,
+      url: typeof record.url === 'string' ? record.url : undefined,
+      material: typeof record.material === 'string' ? record.material : undefined,
+      parameterExtracted: typeof record.parameterExtracted === 'string' ? record.parameterExtracted : undefined,
+      reliabilityScore: typeof record.reliabilityScore === 'number' ? record.reliabilityScore : 5,
+      status: record.status === 'candidate' || record.status === 'reviewed' || record.status === 'accepted' || record.status === 'rejected'
+        ? record.status
+        : 'candidate',
+      notes: typeof record.notes === 'string' ? record.notes : '',
+    }
+  })
 }
 
 function normalizeElectricalRole(value: unknown, role: DeviceLayerRole): ElectricalRole {

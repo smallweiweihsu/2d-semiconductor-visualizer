@@ -51,6 +51,27 @@ try {
   await page.goto(`${baseUrl}/device-builder`, { waitUntil: 'networkidle' })
   await page.getByRole('button', { name: 'EXPLODED' }).click()
   await expectVisible(page.locator('.view-tabs button.active', { hasText: 'EXPLODED' }), 'device-builder can switch view mode')
+  const viewportContainsStack = await page.evaluate(() => {
+    const stage = document.querySelector('.large-device-stage')?.getBoundingClientRect()
+    const stack = document.querySelector('.layer-stack-graphic')?.getBoundingClientRect()
+    if (!stage || !stack) return false
+    return stack.left >= stage.left && stack.right <= stage.right && stack.top >= stage.top && stack.bottom <= stage.bottom
+  })
+  if (!viewportContainsStack) {
+    throw new Error('device-builder stack viewport overflows stage')
+  }
+  await page.getByRole('button', { name: 'WSe₂ 通道 semiconductor · 1 nm channel' }).click()
+  await expectVisible(page.getByText('z_nm seems absolute; consider using relative stack order instead.'), 'large absolute z warning appears')
+  await page.getByRole('button', { name: 'Normalize z positions' }).click()
+  await page.waitForFunction(() => {
+    const raw = window.localStorage.getItem('semiviz-project-v1')
+    return raw?.includes('"z_nm":20') && raw?.includes('"z_nm":50')
+  })
+  await page.reload({ waitUntil: 'networkidle' })
+  const zStillReasonable = await page.evaluate(() => window.localStorage.getItem('semiviz-project-v1')?.includes('"z_nm":20'))
+  if (!zStillReasonable) {
+    throw new Error('normalized z positions did not persist after refresh')
+  }
 
   await page.getByRole('button', { name: '新增 layer' }).click()
   await page.getByLabel('layer name').fill('Smoke Gate Oxide')
@@ -63,6 +84,35 @@ try {
   await expectVisible(page.locator('.pane-list').getByText('Smoke Gate Oxide'), 'edited layer persists after refresh')
   await page.goto(`${baseUrl}/iv-simulator`, { waitUntil: 'networkidle' })
   await expectVisible(page.getByText('HfO₂'), 'I-V simulator reads configured gate dielectric layer')
+
+  await page.goto(`${baseUrl}/references`, { waitUntil: 'networkidle' })
+  await page.getByRole('button', { name: '新增 reference' }).click()
+  await page.getByLabel('Title').fill('Smoke Mobility Source')
+  await page.getByLabel('Authors').fill('Manual QA')
+  await page.getByLabel('DOI').fill('manual-smoke-doi')
+  await page.waitForFunction(() => window.localStorage.getItem('semiviz-project-v1')?.includes('Smoke Mobility Source'))
+
+  await page.goto(`${baseUrl}/materials`, { waitUntil: 'networkidle' })
+  await page.getByRole('button', { name: 'WSe₂二維過渡金屬硫族化物，常用於場效電晶體' }).click()
+  await page.getByLabel('mobility_cm2Vs confidence').selectOption('estimated')
+  await page.getByRole('spinbutton', { name: 'Value', exact: true }).fill('88')
+  await page.getByLabel('mobility_cm2Vs source reference').selectOption({ label: 'Smoke Mobility Source' })
+  await page.waitForFunction(() => window.localStorage.getItem('semiviz-project-v1')?.includes('manual-smoke-doi'))
+  await page.reload({ waitUntil: 'networkidle' })
+  await expectVisible(page.locator('.linked-source-list', { hasText: 'Smoke Mobility Source · manual-smoke-doi' }), 'material mobility source persists after refresh')
+
+  await page.goto(`${baseUrl}/iv-simulator`, { waitUntil: 'networkidle' })
+  await expectVisible(page.getByText('Smoke Mobility Source · manual-smoke-doi'), 'I-V simulator shows mobility source')
+  await expectVisible(page.locator('.parameter-table', { hasText: 'estimated' }), 'I-V simulator shows mobility confidence')
+
+  await page.goto(`${baseUrl}/materials`, { waitUntil: 'networkidle' })
+  await page.getByRole('button', { name: 'WSe₂二維過渡金屬硫族化物，常用於場效電晶體' }).click()
+  await page.getByLabel('mobility_cm2Vs confidence').selectOption('unknown')
+  await page.waitForFunction(() => window.localStorage.getItem('semiviz-project-v1')?.includes('"confidence":"unknown"'))
+  await page.goto(`${baseUrl}/iv-simulator`, { waitUntil: 'networkidle' })
+  await expectVisible(page.locator('.disabled-chart').first(), 'unknown mobility disables chart')
+  await page.getByText('Use fallback values for prototype preview', { exact: true }).click()
+  await expectVisible(page.locator('svg.recharts-surface').first(), 'fallback preview restores chart')
 
   await page.goto(`${baseUrl}/device-builder`, { waitUntil: 'networkidle' })
   await page.getByRole('button', { name: '新增元件' }).click()

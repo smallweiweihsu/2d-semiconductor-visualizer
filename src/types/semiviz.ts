@@ -23,6 +23,8 @@ export type MaterialCategory =
   | 'custom'
 
 export type ParameterConfidence = 'known' | 'estimated' | 'unknown'
+export type ParameterBadge = ParameterConfidence | 'fallback' | 'conflict'
+export type ParameterValueType = 'scalar' | 'range' | 'text' | 'unknown'
 export type CarrierType = 'n' | 'p' | 'ambipolar' | 'unknown'
 export type ElectricalRole =
   | 'channel'
@@ -82,6 +84,7 @@ export interface DeviceLayer {
   materialId: string
   role: DeviceLayerRole
   electricalRole: ElectricalRole
+  stackOrder?: number
   geometry: LayerGeometry
   voltageMode: VoltageMode
   voltageLabel?: string
@@ -113,10 +116,49 @@ export interface SimulationConfig {
 }
 
 export interface MaterialParameter {
-  value: number | string | null
+  key: string
+  label: string
+  value?: number | string | null
   unit?: string
   confidence: ParameterConfidence
+  sourceIds: string[]
+  notes?: string
+  conditions: ParameterConditions
+  valueType: ParameterValueType
+  range?: ParameterRange
+  selectedValue?: number | string | null
+  lastReviewedAt?: string
+  candidates?: ParameterCandidate[]
   note?: string
+}
+
+export interface ParameterConditions {
+  temperature_K?: number
+  substrate?: string
+  thickness_nm?: number
+  phase?: string
+  measurementMethod?: string
+  environment?: string
+}
+
+export interface ParameterRange {
+  min?: number
+  max?: number
+  typical?: number
+}
+
+export interface ParameterCandidate {
+  id: string
+  value?: number | string | null
+  unit?: string
+  confidence: ParameterConfidence
+  sourceId?: string
+  sourceIds?: string[]
+  conditions?: ParameterConditions
+  notes?: string
+  valueType: ParameterValueType
+  range?: ParameterRange
+  selected?: boolean
 }
 
 export interface Material {
@@ -132,6 +174,7 @@ export interface Material {
   workFunction_eV: MaterialParameter
   dielectricConstant: MaterialParameter
   mobility_cm2Vs: MaterialParameter
+  resistivity_ohm_m: MaterialParameter
   latticeConstant_A: MaterialParameter
   defaultThickness_nm: MaterialParameter
   notes: string[]
@@ -178,11 +221,14 @@ export interface LiteratureSource {
   title: string
   authors: string
   year: number
+  journal?: string
   doi?: string
+  url?: string
   material?: string
   parameterExtracted?: string
   reliabilityScore: number
   status: LiteratureStatus
+  notes?: string
 }
 
 export interface ResearchHypothesis {

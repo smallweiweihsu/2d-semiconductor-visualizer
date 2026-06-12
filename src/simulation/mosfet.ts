@@ -6,6 +6,7 @@ import type {
   MaterialParameter,
   ParameterConfidence,
 } from '../types/semiviz'
+import { resolveMaterialParameter, type ResolvedMaterialParameter } from '../store/materialParameterUtils'
 
 export const epsilon0_Fm = 8.8541878128e-12
 export type SimulationStatus =
@@ -26,6 +27,13 @@ export const prototypeFallbackValues = {
 export interface ParameterValue {
   value?: number
   confidence?: ParameterConfidence
+  sourceIds?: string[]
+  unit?: string
+  notes?: string
+  conditions?: ResolvedMaterialParameter['conditions']
+  missingReason?: string
+  conflict?: boolean
+  valueType?: ResolvedMaterialParameter['valueType']
 }
 
 export interface ExtractedDeviceParameters {
@@ -64,7 +72,11 @@ export interface ResolvedModelParameter {
   label: string
   value: number | CarrierType
   unit: string
-  source: 'extracted' | 'estimated' | 'fallback'
+  source: 'extracted' | 'estimated' | 'fallback' | 'conflict'
+  sourceIds?: string[]
+  notes?: string
+  conditions?: ResolvedMaterialParameter['conditions']
+  detectionSource?: 'configured' | 'auto-detected' | 'fallback'
 }
 
 export interface SimulationModelResolution {
@@ -131,7 +143,7 @@ export function extractDeviceParameters(
 
   const contactWorkFunctions = contactMaterials
     .map((material) => parseMaterialParameter(material.workFunction_eV))
-    .filter((meta): meta is Required<ParameterValue> => meta.value !== undefined && meta.confidence !== undefined)
+    .filter(hasNumericParameterValue)
   const dielectricConstant = parseMaterialParameter(dielectricMaterial?.dielectricConstant)
   const mobility = parseMaterialParameter(channelMaterial?.mobility_cm2Vs)
   const bandGap = parseMaterialParameter(channelMaterial?.bandGap_eV)
@@ -212,8 +224,8 @@ export function resolveSimulationModel(
   const length_um = resolveNumberParameter('length_um', 'L', parameters.length_um, '', 'µm', options.useFallback, resolved, missing)
   const width_um = resolveNumberParameter('width_um', 'W', parameters.width_um, '', 'µm', options.useFallback, resolved, missing)
   const tox_nm = resolveNumberParameter('tox_nm', 'tox', parameters.tox_nm, '', 'nm', options.useFallback, resolved, missing)
-  const dielectricConstant = resolveNumberParameter('dielectricConstant', 'k', parameters.dielectricConstant, confidenceSource(parameters.dielectricConstantMeta), '', options.useFallback, resolved, missing)
-  const mobility_cm2Vs = resolveNumberParameter('mobility_cm2Vs', 'mobility', parameters.mobility_cm2Vs, confidenceSource(parameters.mobilityMeta), 'cm²/V·s', options.useFallback, resolved, missing)
+  const dielectricConstant = resolveNumberParameter('dielectricConstant', 'k', parameters.dielectricConstant, confidenceSource(parameters.dielectricConstantMeta), '', options.useFallback, resolved, missing, parameters.dielectricConstantMeta, parameters.detection.gateDielectric)
+  const mobility_cm2Vs = resolveNumberParameter('mobility_cm2Vs', 'mobility', parameters.mobility_cm2Vs, confidenceSource(parameters.mobilityMeta), 'cm²/V·s', options.useFallback, resolved, missing, parameters.mobilityMeta, parameters.detection.channel)
 
   if (missing.length && !options.useFallback) {
     return {
@@ -320,24 +332,22 @@ export function scaleCurrent(value_A: number, unit: 'A' | 'uA' | 'nA') {
   return value_A
 }
 
-export function parseMaterialParameter(parameter?: MaterialParameter) {
-  if (!parameter || parameter.value === null) {
+export function parseMaterialParameter(parameter?: MaterialParameter): ParameterValue {
+  if (!parameter) {
     return {}
   }
 
-  if (typeof parameter.value === 'number') {
-    return { value: parameter.value, confidence: parameter.confidence }
-  }
-
-  const values = parameter.value.match(/\d*\.?\d+/g)?.map(Number).filter(Number.isFinite)
-
-  if (!values?.length) {
-    return {}
-  }
-
+  const resolved = resolveMaterialParameter(parameter)
   return {
-    value: values.length === 1 ? values[0] : average(values),
-    confidence: parameter.confidence,
+    value: resolved.value,
+    confidence: resolved.confidence === 'conflict' ? 'estimated' : resolved.confidence,
+    sourceIds: resolved.sourceIds,
+    unit: resolved.unit,
+    notes: resolved.notes,
+    conditions: resolved.conditions,
+    missingReason: resolved.missingReason,
+    conflict: resolved.conflict,
+    valueType: resolved.valueType,
   }
 }
 
@@ -388,6 +398,8 @@ function resolveNumberParameter(
   useFallback: boolean,
   resolved: ResolvedModelParameter[],
   missing: string[],
+  meta?: ParameterValue,
+  detectionSource?: 'configured' | 'auto-detected' | 'missing',
 ) {
   if (value !== undefined) {
     resolved.push({
@@ -395,14 +407,18 @@ function resolveNumberParameter(
       label,
       value,
       unit,
-      source: source === 'estimated' ? 'estimated' : 'extracted',
+      source: source === 'estimated' || source === 'conflict' ? source : 'extracted',
+      sourceIds: meta?.sourceIds,
+      notes: meta?.notes,
+      conditions: meta?.conditions,
+      detectionSource: detectionSource === 'configured' || detectionSource === 'auto-detected' ? detectionSource : undefined,
     })
     return value
   }
 
   if (useFallback) {
     const fallbackValue = prototypeFallbackValues[key]
-    resolved.push({ key, label, value: fallbackValue, unit, source: 'fallback' })
+    resolved.push({ key, label, value: fallbackValue, unit, source: 'fallback', detectionSource: 'fallback' })
     return fallbackValue as number
   }
 
@@ -414,7 +430,11 @@ function confidenceSource(meta?: ParameterValue): ResolvedModelParameter['source
   return meta?.confidence === 'estimated' ? 'estimated' : ''
 }
 
-function combineParameterValues(values: Required<ParameterValue>[]): ParameterValue {
+function hasNumericParameterValue(value: ParameterValue): value is ParameterValue & { value: number; confidence: ParameterConfidence } {
+  return value.value !== undefined && value.confidence !== undefined
+}
+
+function combineParameterValues(values: Array<ParameterValue & { value: number; confidence: ParameterConfidence }>): ParameterValue {
   return {
     value: average(values.map((value) => value.value)),
     confidence: values.some((value) => value.confidence === 'estimated') ? 'estimated' : 'known',

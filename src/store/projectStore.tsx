@@ -9,7 +9,7 @@ import {
 } from 'react'
 import { seedProject } from '../data/seedProject'
 import { normalizeImportedProject, normalizeStoredProject } from './projectValidation'
-import type { DeviceStructure, SemivizProject } from '../types/semiviz'
+import type { DeviceStructure, LiteratureSource, Material, SemivizProject } from '../types/semiviz'
 
 const storageKey = 'semiviz-project-v1'
 
@@ -18,6 +18,9 @@ interface ProjectStoreValue {
   activeDevice: DeviceStructure
   addDevice: (name: string, description: string) => DeviceStructure
   updateActiveDevice: (updater: (device: DeviceStructure) => DeviceStructure) => void
+  updateMaterial: (materialId: string, updater: (material: Material) => Material) => void
+  addReference: () => LiteratureSource
+  updateReference: (referenceId: string, updater: (reference: LiteratureSource) => LiteratureSource) => void
   setActiveDeviceId: (deviceId: string) => void
   replaceProject: (project: unknown) => { ok: boolean; error?: string }
   exportProject: () => void
@@ -89,6 +92,39 @@ export function ProjectStoreProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
+  const updateMaterial = useCallback((materialId: string, updater: (material: Material) => Material) => {
+    setProject((current) => ({
+      ...current,
+      materials: current.materials.map((material) => material.id === materialId ? updater(material) : material),
+    }))
+  }, [])
+
+  const addReference = useCallback(() => {
+    const nextReference: LiteratureSource = {
+      id: `ref-${Date.now()}`,
+      title: 'New reference',
+      authors: '',
+      year: new Date().getFullYear(),
+      status: 'candidate',
+      reliabilityScore: 5,
+      notes: '',
+    }
+
+    setProject((current) => ({
+      ...current,
+      references: [nextReference, ...current.references],
+    }))
+
+    return nextReference
+  }, [])
+
+  const updateReference = useCallback((referenceId: string, updater: (reference: LiteratureSource) => LiteratureSource) => {
+    setProject((current) => ({
+      ...current,
+      references: current.references.map((reference) => reference.id === referenceId ? updater(reference) : reference),
+    }))
+  }, [])
+
   const replaceProject = useCallback((nextProject: unknown) => {
     const result = normalizeImportedProject(nextProject)
 
@@ -114,8 +150,19 @@ export function ProjectStoreProvider({ children }: { children: ReactNode }) {
   }, [project])
 
   const value = useMemo(
-    () => ({ project, activeDevice, addDevice, updateActiveDevice, setActiveDeviceId, replaceProject, exportProject }),
-    [activeDevice, addDevice, exportProject, project, replaceProject, setActiveDeviceId, updateActiveDevice],
+    () => ({
+      project,
+      activeDevice,
+      addDevice,
+      updateActiveDevice,
+      updateMaterial,
+      addReference,
+      updateReference,
+      setActiveDeviceId,
+      replaceProject,
+      exportProject,
+    }),
+    [activeDevice, addDevice, addReference, exportProject, project, replaceProject, setActiveDeviceId, updateActiveDevice, updateMaterial, updateReference],
   )
 
   return (

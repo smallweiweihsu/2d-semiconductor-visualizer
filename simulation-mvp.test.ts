@@ -16,10 +16,10 @@ describe('Simulation MVP device extraction', () => {
     expect(extracted.channelLayer?.role).toBe('semiconductor')
     expect(extracted.length_um).toBe(5)
     expect(extracted.width_um).toBe(2)
-    expect(extracted.mobility_cm2Vs).toBeCloseTo(125.5)
-    expect(extracted.bandGap_eV).toBeCloseTo(1.45)
-    expect(extracted.electronAffinity_eV).toBeCloseTo(3.85)
-    expect(extracted.contactWorkFunction_eV).toBeGreaterThan(4.5)
+    expect(extracted.mobility_cm2Vs).toBeUndefined()
+    expect(extracted.bandGap_eV).toBeUndefined()
+    expect(extracted.electronAffinity_eV).toBeUndefined()
+    expect(extracted.contactWorkFunction_eV).toBeUndefined()
   })
 
   it('calculateCox converts nm to m', () => {
@@ -173,7 +173,7 @@ describe('Simulation MVP device extraction', () => {
     const extracted = extractDeviceParameters(device, seedProject.materials)
 
     expect(extracted.dielectricLayer?.id).toBe('hfo2-gate-dielectric')
-    expect(extracted.dielectricConstant).toBeCloseTo(22.5)
+    expect(extracted.dielectricConstant).toBeUndefined()
   })
 })
 

@@ -8,6 +8,7 @@ import {
 } from './src/store/layerOperations'
 import { normalizeImportedProject } from './src/store/projectValidation'
 import { extractDeviceParameters } from './src/simulation/mosfet'
+import { sortLayersForList } from './src/visualization/viewportGeometry'
 
 describe('Device Builder layer operations', () => {
   it('updateLayerGeometry updates only the selected layer geometry', () => {
@@ -40,8 +41,8 @@ describe('Device Builder layer operations', () => {
     const movedUp = reorderLayer(device, 'wse2-channel', 'up')
     const movedDown = reorderLayer(movedUp, 'wse2-channel', 'down')
 
-    expect(movedUp.layers[1].id).toBe('wse2-channel')
-    expect(movedDown.layers[2].id).toBe('wse2-channel')
+    expect(sortLayersForList(movedUp.layers)[2].id).toBe('wse2-channel')
+    expect(sortLayersForList(movedDown.layers)[3].id).toBe('wse2-channel')
   })
 
   it('normalizes simulationConfig and removes missing layer ids', () => {

@@ -1,5 +1,6 @@
 import { ArrowDown, ArrowUp, Copy, Plus, Trash2 } from 'lucide-react'
 import { findMaterial } from './materialUtils'
+import { sortLayersForList } from '../../visualization/viewportGeometry'
 import type { DeviceLayer, DeviceStructure, Material } from '../../types/semiviz'
 
 export function LayerStackPanel({
@@ -21,6 +22,7 @@ export function LayerStackPanel({
   onDuplicate: (layerId: string) => void
   onMove: (layerId: string, direction: 'up' | 'down') => void
 }) {
+  const displayLayers = sortLayersForList(device.layers)
   return (
     <>
       <div className="builder-toolbar">
@@ -29,13 +31,14 @@ export function LayerStackPanel({
           新增 layer
         </button>
       </div>
-      {device.layers.length ? device.layers.map((layer, index) => (
+      <p className="stack-order-hint">Layer list is displayed top-to-bottom.</p>
+      {displayLayers.length ? displayLayers.map((layer, index) => (
         <LayerRow
           layer={layer}
           materials={materials}
           selected={layer.id === selectedId}
           canMoveUp={index > 0}
-          canMoveDown={index < device.layers.length - 1}
+          canMoveDown={index < displayLayers.length - 1}
           key={layer.id}
           onSelect={onSelect}
           onDelete={onDelete}

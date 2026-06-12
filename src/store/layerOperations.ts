@@ -1,4 +1,5 @@
 import { seedProject } from '../data/seedProject'
+import { assignStackOrder, sortLayersForList, withNormalizedStackOrder } from '../visualization/viewportGeometry'
 import type { DeviceLayer, DeviceStructure, SimulationConfig } from '../types/semiviz'
 
 export type LayerPatch = Partial<Omit<DeviceLayer, 'geometry'>> & {
@@ -10,7 +11,7 @@ export function addLayer(device: DeviceStructure, layer?: Partial<DeviceLayer>) 
   return {
     device: touchDevice({
       ...device,
-      layers: [...device.layers, nextLayer],
+      layers: withNormalizedStackOrder([...device.layers, nextLayer]),
       simulationConfig: normalizeSimulationConfig(device.simulationConfig, [...device.layers, nextLayer]),
     }),
     layer: nextLayer,
@@ -43,7 +44,7 @@ export function deleteLayer(device: DeviceStructure, layerId: string) {
   const layers = device.layers.filter((layer) => layer.id !== layerId)
   return touchDevice({
     ...device,
-    layers,
+    layers: withNormalizedStackOrder(layers),
     simulationConfig: normalizeSimulationConfig(device.simulationConfig, layers),
   })
 }
@@ -60,7 +61,7 @@ export function duplicateLayer(device: DeviceStructure, layerId: string) {
     id: undefined,
     name: `${device.layers[index].name} copy`,
   })
-  const layers = [...device.layers.slice(0, index + 1), copy, ...device.layers.slice(index + 1)]
+  const layers = withNormalizedStackOrder([...device.layers.slice(0, index + 1), copy, ...device.layers.slice(index + 1)])
 
   return {
     device: touchDevice({
@@ -73,18 +74,19 @@ export function duplicateLayer(device: DeviceStructure, layerId: string) {
 }
 
 export function reorderLayer(device: DeviceStructure, layerId: string, direction: 'up' | 'down') {
-  const index = device.layers.findIndex((layer) => layer.id === layerId)
+  const visibleList = sortLayersForList(device.layers)
+  const index = visibleList.findIndex((layer) => layer.id === layerId)
   const targetIndex = direction === 'up' ? index - 1 : index + 1
 
-  if (index < 0 || targetIndex < 0 || targetIndex >= device.layers.length) {
+  if (index < 0 || targetIndex < 0 || targetIndex >= visibleList.length) {
     return device
   }
 
-  const layers = [...device.layers]
+  const layers = [...visibleList]
   const [layer] = layers.splice(index, 1)
   layers.splice(targetIndex, 0, layer)
 
-  return touchDevice({ ...device, layers })
+  return touchDevice({ ...device, layers: assignStackOrder([...layers].reverse()) })
 }
 
 export function updateSimulationConfig(
@@ -124,6 +126,7 @@ function createLayer(layer?: Partial<DeviceLayer>): DeviceLayer {
     materialId: layer?.materialId ?? fallback.materialId,
     role: layer?.role ?? 'custom',
     electricalRole: layer?.electricalRole ?? 'unknown',
+    stackOrder: layer?.stackOrder,
     geometry: {
       length_um: layer?.geometry?.length_um ?? fallback.geometry.length_um,
       width_um: layer?.geometry?.width_um ?? fallback.geometry.width_um,

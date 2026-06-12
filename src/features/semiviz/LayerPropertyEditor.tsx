@@ -4,10 +4,14 @@ import type { DeviceLayer, Material } from '../../types/semiviz'
 export function LayerPropertyEditor({
   layer,
   materials,
+  geometryWarning,
+  onNormalizeZ,
   onChange,
 }: {
   layer: DeviceLayer
   materials: Material[]
+  geometryWarning?: string
+  onNormalizeZ: () => void
   onChange: (patch: Partial<Omit<DeviceLayer, 'geometry'>> & { geometry?: Partial<DeviceLayer['geometry']> }) => void
 }) {
   return (
@@ -40,8 +44,10 @@ export function LayerPropertyEditor({
         <NumberField label="thickness_nm" value={layer.geometry.thickness_nm} onChange={(value) => onChange({ geometry: { thickness_nm: value } })} />
         <NumberField label="x_um" value={layer.geometry.x_um} onChange={(value) => onChange({ geometry: { x_um: value } })} />
         <NumberField label="y_um" value={layer.geometry.y_um} onChange={(value) => onChange({ geometry: { y_um: value } })} />
-        <NumberField label="z_nm" value={layer.geometry.z_nm ?? 0} onChange={(value) => onChange({ geometry: { z_nm: value } })} />
+        <NumberField label="relative z offset (nm)" value={layer.geometry.z_nm ?? 0} onChange={(value) => onChange({ geometry: { z_nm: value } })} />
       </div>
+      {geometryWarning ? <div className="geometry-warning">{geometryWarning}</div> : null}
+      <button className="manus-button ghost" type="button" onClick={onNormalizeZ}>Normalize z positions</button>
       <label>
         voltageMode
         <select value={layer.voltageMode} onChange={(event) => onChange({ voltageMode: event.target.value as DeviceLayer['voltageMode'] })}>

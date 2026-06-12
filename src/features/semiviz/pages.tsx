@@ -31,6 +31,11 @@ import { LayerStackPanel } from './LayerStackPanel'
 import { findMaterial } from './materialUtils'
 import { SimulationConfigEditor } from './SimulationConfigEditor'
 import {
+  getGeometryWarning,
+  normalizeDeviceZPositions,
+  normalizeViewportLayers,
+} from '../../visualization/viewportGeometry'
+import {
   calculateCox,
   calculateOutputCurve,
   calculateTransferCurve,
@@ -49,11 +54,19 @@ import {
 } from '../../store/layerOperations'
 import { useProjectStore } from '../../store/projectStore'
 import type {
+  CarrierType,
   DeviceLayer,
   HypothesisStatus,
+  LiteratureSource,
+  LiteratureStatus,
   Material,
+  MaterialCategory,
+  MaterialParameter,
+  ParameterCandidate,
+  ParameterConfidence,
   ProcessType,
 } from '../../types/semiviz'
+import { getMaterialParameters, getReferenceUsage } from '../../store/materialParameterUtils'
 
 const heroImage =
   'https://d2xsxph8kpxj0f.cloudfront.net/310519663719279500/Cfdeom2BqRqeA6yyQXzySn/hero-semiconductor-3d-NhSiKiaawo3GDQQmrbNUaz.webp'
@@ -91,6 +104,11 @@ const simulationStatusLabels = {
   fallback_preview: 'fallback preview',
   blocked_missing_parameters: 'blocked: missing parameters',
 }
+
+const materialCategories: MaterialCategory[] = ['metal', 'two_d_semiconductor', 'dielectric', 'oxide', 'bulk_conductor', 'substrate', 'custom']
+const carrierTypes: CarrierType[] = ['n', 'p', 'ambipolar', 'unknown']
+const confidenceOptions: ParameterConfidence[] = ['known', 'estimated', 'unknown']
+const referenceStatusOptions: LiteratureStatus[] = ['candidate', 'reviewed', 'accepted', 'rejected']
 
 export function DashboardPage() {
   const { project, activeDevice } = useProjectStore()
@@ -247,7 +265,7 @@ export function DeviceBuilderPage() {
         </div>
         <div className={`large-device-stage ${viewMode.toLowerCase()}`}>
           {activeDevice.layers.length
-            ? <LayerStackGraphic layers={activeDevice.layers} selectedId={selected?.id ?? ''} />
+            ? <LayerStackGraphic layers={activeDevice.layers} selectedId={selected?.id ?? ''} viewMode={viewMode} />
             : <EmptyState text="此 active device 尚未定義 layer stack。" />}
         </div>
       </Card>
@@ -262,6 +280,8 @@ export function DeviceBuilderPage() {
             <LayerPropertyEditor
               layer={selected}
               materials={project.materials}
+              geometryWarning={getGeometryWarning(selected)}
+              onNormalizeZ={() => updateActiveDevice((device) => normalizeDeviceZPositions(device))}
               onChange={(patch) => updateActiveDevice((device) => updateLayer(device, selected.id, patch))}
             />
             <SimulationConfigEditor
@@ -396,12 +416,15 @@ export function IVSimulatorPage() {
               value: parameter.value,
               unit: parameter.unit,
               source: parameter.source,
+              sourceIds: parameter.sourceIds,
+              notes: parameter.notes,
+              conditions: parameter.conditions,
             })),
             { label: 'Cox', value: cox, unit: 'F/m²', source: cox === undefined ? 'missing' : 'derived' },
-            { label: 'Eg', value: extracted.bandGap_eV, unit: 'eV', source: confidenceLabel(extracted.bandGapMeta?.confidence) },
-            { label: 'χ', value: extracted.electronAffinity_eV, unit: 'eV', source: confidenceLabel(extracted.electronAffinityMeta?.confidence) },
-            { label: 'contact φ', value: extracted.contactWorkFunction_eV, unit: 'eV', source: confidenceLabel(extracted.contactWorkFunctionMeta?.confidence) },
-          ]} />
+            { label: 'Eg', value: extracted.bandGap_eV, unit: 'eV', source: confidenceLabel(extracted.bandGapMeta?.confidence), sourceIds: extracted.bandGapMeta?.sourceIds, conditions: extracted.bandGapMeta?.conditions },
+            { label: 'χ', value: extracted.electronAffinity_eV, unit: 'eV', source: confidenceLabel(extracted.electronAffinityMeta?.confidence), sourceIds: extracted.electronAffinityMeta?.sourceIds, conditions: extracted.electronAffinityMeta?.conditions },
+            { label: 'contact φ', value: extracted.contactWorkFunction_eV, unit: 'eV', source: confidenceLabel(extracted.contactWorkFunctionMeta?.confidence), sourceIds: extracted.contactWorkFunctionMeta?.sourceIds, conditions: extracted.contactWorkFunctionMeta?.conditions },
+          ]} references={project.references} />
         </Card>
         <Card title="Missing parameter warnings">
           {simulation.warnings.length ? (
@@ -487,19 +510,56 @@ export function BandDiagramPage() {
 }
 
 export function MaterialsPage() {
-  const { project } = useProjectStore()
+  const { project, updateMaterial } = useProjectStore()
   const [query, setQuery] = useState('')
+  const [selectedId, setSelectedId] = useState(project.materials[0]?.id ?? '')
+  const [selectedParameterKey, setSelectedParameterKey] = useState('mobility_cm2Vs')
   const filtered = project.materials.filter((material) => material.displayName.toLowerCase().includes(query.toLowerCase()) || material.name.toLowerCase().includes(query.toLowerCase()))
+  const selected = project.materials.find((material) => material.id === selectedId) ?? filtered[0] ?? project.materials[0]
+  const selectedParameter = selected ? getMaterialParameter(selected, selectedParameterKey) : undefined
+  const linkedReferences = selectedParameter?.sourceIds
+    .map((sourceId) => project.references.find((reference) => reference.id === sourceId))
+    .filter((reference): reference is LiteratureSource => Boolean(reference)) ?? []
 
   return (
     <WorkspacePage title="Materials" icon={<Database size={18} />}>
       <div className="library-grid">
         <Card title="材料資料庫">
           <input className="manus-field" placeholder="搜尋材料" value={query} onChange={(event) => setQuery(event.target.value)} />
-          {filtered.map((material) => <MaterialRow key={material.id} material={material} />)}
+          {filtered.map((material) => (
+            <button className={material.id === selected?.id ? 'material-select-row active' : 'material-select-row'} key={material.id} onClick={() => setSelectedId(material.id)}>
+              <span style={{ backgroundColor: material.color }} />
+              <div><strong>{material.displayName}</strong><small>{material.description}</small></div>
+            </button>
+          ))}
         </Card>
-        <Card title="參數信心">
-          <PlaceholderGrid items={filtered.slice(0, 6).map((material) => `${material.displayName} · ${material.workFunction_eV.confidence}`)} />
+        <Card title="Material detail">
+          {selected ? (
+            <div className="material-detail-editor">
+              <div className="form-grid-2">
+                <label>Name<input value={selected.name} onChange={(event) => updateMaterial(selected.id, (material) => ({ ...material, name: event.target.value }))} /></label>
+                <label>Display name<input value={selected.displayName} onChange={(event) => updateMaterial(selected.id, (material) => ({ ...material, displayName: event.target.value }))} /></label>
+                <label>Category<select value={selected.category} onChange={(event) => updateMaterial(selected.id, (material) => ({ ...material, category: event.target.value as MaterialCategory }))}>{materialCategories.map((category) => <option value={category} key={category}>{category}</option>)}</select></label>
+                <label>Carrier type<select value={selected.carrierType} onChange={(event) => updateMaterial(selected.id, (material) => ({ ...material, carrierType: event.target.value as CarrierType }))}>{carrierTypes.map((type) => <option value={type} key={type}>{type}</option>)}</select></label>
+                <label>Color<input value={selected.color} onChange={(event) => updateMaterial(selected.id, (material) => ({ ...material, color: event.target.value }))} /></label>
+              </div>
+              <label>Description<textarea value={selected.description} onChange={(event) => updateMaterial(selected.id, (material) => ({ ...material, description: event.target.value }))} /></label>
+              <label>
+                Parameter
+                <select value={selectedParameterKey} onChange={(event) => setSelectedParameterKey(event.target.value)}>
+                  {getMaterialParameters(selected).map(([key, parameter]) => <option value={key} key={key}>{parameter.label}</option>)}
+                </select>
+              </label>
+              {selectedParameter ? (
+                <ParameterEditor
+                  parameter={selectedParameter}
+                  references={project.references}
+                  linkedReferences={linkedReferences}
+                  onChange={(parameter) => updateMaterial(selected.id, (material) => ({ ...material, [selectedParameterKey]: parameter } as Material))}
+                />
+              ) : null}
+            </div>
+          ) : <EmptyState text="選擇 material 後可編輯參數。" />}
         </Card>
       </div>
     </WorkspacePage>
@@ -507,18 +567,32 @@ export function MaterialsPage() {
 }
 
 export function ReferencesPage() {
-  const { project } = useProjectStore()
+  const { project, addReference, updateReference } = useProjectStore()
+  const [selectedId, setSelectedId] = useState(project.references[0]?.id ?? '')
+  const selected = project.references.find((reference) => reference.id === selectedId) ?? project.references[0]
 
   return (
     <WorkspacePage title="References" icon={<BookOpen size={18} />}>
-      <Card title="文獻來源">
-        {project.references.map((reference) => (
-          <div className="paper-row" key={reference.id}>
-            <strong>{reference.title}</strong>
-            <span>{reference.authors} ({reference.year}) · score {reference.reliabilityScore}/10</span>
-          </div>
-        ))}
-      </Card>
+      <div className="library-grid">
+        <Card title="文獻來源">
+          <button className="manus-button primary" type="button" onClick={() => setSelectedId(addReference().id)}>新增 reference</button>
+          {project.references.map((reference) => (
+            <button className={reference.id === selected?.id ? 'paper-select-row active' : 'paper-select-row'} key={reference.id} onClick={() => setSelectedId(reference.id)}>
+              <strong>{reference.title}</strong>
+              <span>{reference.authors} ({reference.year}) · score {reference.reliabilityScore}/10</span>
+            </button>
+          ))}
+        </Card>
+        <Card title="Reference detail">
+          {selected ? (
+            <ReferenceEditor
+              reference={selected}
+              usages={getReferenceUsage(project, selected.id)}
+              onChange={(reference) => updateReference(selected.id, () => reference)}
+            />
+          ) : <EmptyState text="新增或選擇 reference。" />}
+        </Card>
+      </div>
     </WorkspacePage>
   )
 }
@@ -651,18 +725,22 @@ function DisabledChart({ missing }: { missing: string[] }) {
   )
 }
 
-function LayerStackGraphic({ layers, selectedId }: { layers: DeviceLayer[]; selectedId: string }) {
+function LayerStackGraphic({ layers, selectedId, viewMode }: { layers: DeviceLayer[]; selectedId: string; viewMode: string }) {
   const { project } = useProjectStore()
+  const normalized = normalizeViewportLayers(layers, project.materials, selectedId, viewMode === 'EXPLODED')
 
   return (
-    <div className="layer-stack-graphic">
-      {layers.map((layer, index) => (
+    <div className={`layer-stack-graphic normalized-${viewMode.toLowerCase()}`}>
+      {normalized.map((layer) => (
         <span
-          className={layer.id === selectedId ? 'selected' : ''}
+          className={layer.isSelected ? 'selected' : ''}
           key={layer.id}
           style={{
-            '--layer-color': findMaterial(project.materials, layer.materialId).color,
-            '--layer-index': index,
+            '--layer-color': layer.color,
+            '--layer-y': `${layer.visualY}px`,
+            '--layer-thickness': `${layer.visualThickness}px`,
+            '--layer-width': `${layer.visualWidth * 100}%`,
+            '--layer-offset-x': `${layer.visualOffsetX * 100}%`,
           } as React.CSSProperties}
         >
           {layer.name}
@@ -712,19 +790,28 @@ function Chart({
 
 function ParameterTable({
   rows,
+  references = [],
 }: {
   rows: Array<{
     label: string
     value: number | string | undefined
     unit: string
     source: string
+    sourceIds?: string[]
+    notes?: string
+    conditions?: object
   }>
+  references?: LiteratureSource[]
 }) {
   return (
     <div className="parameter-table">
-      {rows.map(({ label, value, unit, source }) => (
+      {rows.map(({ label, value, unit, source, sourceIds, conditions }) => (
         <div key={label}>
-          <span>{label}</span>
+          <span>
+            {label}
+            {sourceIds?.length ? <small>{formatSourceSummary(sourceIds, references)}</small> : null}
+            {conditions ? <small>{formatConditions(conditions)}</small> : null}
+          </span>
           <strong>
             {value === undefined ? 'missing' : `${formatParameterValue(value)} ${unit}`}
             <em className={`source-${source}`}>{source}</em>
@@ -733,6 +820,150 @@ function ParameterTable({
       ))}
     </div>
   )
+}
+
+function ParameterEditor({
+  parameter,
+  references,
+  linkedReferences,
+  onChange,
+}: {
+  parameter: MaterialParameter
+  references: LiteratureSource[]
+  linkedReferences: LiteratureSource[]
+  onChange: (parameter: MaterialParameter) => void
+}) {
+  const sourceValue = parameter.sourceIds[0] ?? ''
+
+  return (
+    <div className="parameter-editor">
+      <div className="parameter-editor-heading">
+        <strong>{parameter.label}</strong>
+        <ConfidenceBadge confidence={parameter.confidence} conflict={Boolean(parameter.candidates?.length && hasCandidateConflict(parameter))} />
+      </div>
+      <div className="form-grid-2">
+        <label>
+          Value type
+          <select value={parameter.valueType} onChange={(event) => onChange({ ...parameter, valueType: event.target.value as MaterialParameter['valueType'] })}>
+            <option value="scalar">scalar</option>
+            <option value="range">range</option>
+            <option value="text">text</option>
+            <option value="unknown">unknown</option>
+          </select>
+        </label>
+        <label>
+          Confidence
+          <select aria-label={`${parameter.key} confidence`} value={parameter.confidence} onChange={(event) => onChange({ ...parameter, confidence: event.target.value as ParameterConfidence })}>
+            {confidenceOptions.map((confidence) => <option value={confidence} key={confidence}>{confidence}</option>)}
+          </select>
+        </label>
+        <label>Value<input type="number" value={typeof parameter.value === 'number' ? parameter.value : ''} onChange={(event) => onChange({ ...parameter, value: event.target.value === '' ? null : Number(event.target.value), valueType: 'scalar' })} /></label>
+        <label>Unit<input value={parameter.unit ?? ''} onChange={(event) => onChange({ ...parameter, unit: event.target.value })} /></label>
+        <label>Range min<input type="number" value={parameter.range?.min ?? ''} onChange={(event) => onChange({ ...parameter, valueType: 'range', range: { ...parameter.range, min: event.target.value === '' ? undefined : Number(event.target.value) } })} /></label>
+        <label>Range max<input type="number" value={parameter.range?.max ?? ''} onChange={(event) => onChange({ ...parameter, valueType: 'range', range: { ...parameter.range, max: event.target.value === '' ? undefined : Number(event.target.value) } })} /></label>
+        <label>Typical<input type="number" value={parameter.range?.typical ?? ''} onChange={(event) => onChange({ ...parameter, valueType: 'range', range: { ...parameter.range, typical: event.target.value === '' ? undefined : Number(event.target.value) } })} /></label>
+        <label>Selected value<input type="number" value={typeof parameter.selectedValue === 'number' ? parameter.selectedValue : ''} onChange={(event) => onChange({ ...parameter, selectedValue: event.target.value === '' ? null : Number(event.target.value) })} /></label>
+        <label>Substrate<input value={parameter.conditions.substrate ?? ''} onChange={(event) => onChange({ ...parameter, conditions: { ...parameter.conditions, substrate: event.target.value } })} /></label>
+        <label>Temperature K<input type="number" value={parameter.conditions.temperature_K ?? ''} onChange={(event) => onChange({ ...parameter, conditions: { ...parameter.conditions, temperature_K: event.target.value === '' ? undefined : Number(event.target.value) } })} /></label>
+        <label>Measurement method<input value={parameter.conditions.measurementMethod ?? ''} onChange={(event) => onChange({ ...parameter, conditions: { ...parameter.conditions, measurementMethod: event.target.value } })} /></label>
+        <label>Environment<input value={parameter.conditions.environment ?? ''} onChange={(event) => onChange({ ...parameter, conditions: { ...parameter.conditions, environment: event.target.value } })} /></label>
+      </div>
+      <label>
+        Source reference
+        <select aria-label={`${parameter.key} source reference`} value={sourceValue} onChange={(event) => onChange({ ...parameter, sourceIds: event.target.value ? [event.target.value] : [] })}>
+          <option value="">No source</option>
+          {references.map((reference) => <option value={reference.id} key={reference.id}>{reference.title}</option>)}
+        </select>
+      </label>
+      <label>Notes<textarea value={parameter.notes ?? ''} onChange={(event) => onChange({ ...parameter, notes: event.target.value })} /></label>
+      <div className="linked-source-list">
+        {linkedReferences.length ? linkedReferences.map((reference) => (
+          <span key={reference.id}>{reference.title}{reference.doi ? ` · ${reference.doi}` : ''}</span>
+        )) : <span>No linked references</span>}
+      </div>
+      <CandidateEditor parameter={parameter} onChange={onChange} />
+    </div>
+  )
+}
+
+function CandidateEditor({ parameter, onChange }: { parameter: MaterialParameter; onChange: (parameter: MaterialParameter) => void }) {
+  function updateCandidate(candidateId: string, patch: Partial<ParameterCandidate>) {
+    onChange({
+      ...parameter,
+      candidates: (parameter.candidates ?? []).map((candidate) => candidate.id === candidateId ? { ...candidate, ...patch } : candidate),
+    })
+  }
+
+  return (
+    <div className="candidate-editor">
+      <div>
+        <strong>Candidate values</strong>
+        <button className="manus-button ghost" type="button" onClick={() => onChange({
+          ...parameter,
+          candidates: [
+            ...(parameter.candidates ?? []),
+            {
+              id: `${parameter.key}-candidate-${Date.now()}`,
+              value: null,
+              unit: parameter.unit,
+              confidence: 'estimated',
+              valueType: 'scalar',
+              sourceIds: parameter.sourceIds,
+              conditions: {},
+              notes: '',
+              selected: false,
+            },
+          ],
+        })}>新增 candidate</button>
+      </div>
+      {(parameter.candidates ?? []).map((candidate) => (
+        <div className="candidate-row" key={candidate.id}>
+          <label className="toggle-field compact">
+            <input type="radio" checked={candidate.selected === true} onChange={() => onChange({ ...parameter, candidates: (parameter.candidates ?? []).map((entry) => ({ ...entry, selected: entry.id === candidate.id })) })} />
+            selected
+          </label>
+          <input aria-label={`${candidate.id} value`} type="number" value={typeof candidate.value === 'number' ? candidate.value : ''} onChange={(event) => updateCandidate(candidate.id, { value: event.target.value === '' ? null : Number(event.target.value), valueType: 'scalar' })} />
+          <select value={candidate.confidence} onChange={(event) => updateCandidate(candidate.id, { confidence: event.target.value as ParameterConfidence })}>
+            {confidenceOptions.map((confidence) => <option value={confidence} key={confidence}>{confidence}</option>)}
+          </select>
+        </div>
+      ))}
+    </div>
+  )
+}
+
+function ReferenceEditor({
+  reference,
+  usages,
+  onChange,
+}: {
+  reference: LiteratureSource
+  usages: ReturnType<typeof getReferenceUsage>
+  onChange: (reference: LiteratureSource) => void
+}) {
+  return (
+    <div className="reference-editor">
+      <label>Title<input value={reference.title} onChange={(event) => onChange({ ...reference, title: event.target.value })} /></label>
+      <div className="form-grid-2">
+        <label>Authors<input value={reference.authors} onChange={(event) => onChange({ ...reference, authors: event.target.value })} /></label>
+        <label>Year<input type="number" value={reference.year} onChange={(event) => onChange({ ...reference, year: Number(event.target.value) })} /></label>
+        <label>Journal<input value={reference.journal ?? ''} onChange={(event) => onChange({ ...reference, journal: event.target.value })} /></label>
+        <label>DOI<input value={reference.doi ?? ''} onChange={(event) => onChange({ ...reference, doi: event.target.value })} /></label>
+        <label>URL<input value={reference.url ?? ''} onChange={(event) => onChange({ ...reference, url: event.target.value })} /></label>
+        <label>Status<select value={reference.status} onChange={(event) => onChange({ ...reference, status: event.target.value as LiteratureStatus })}>{referenceStatusOptions.map((status) => <option value={status} key={status}>{status}</option>)}</select></label>
+        <label>Reliability score<input type="number" min={0} max={10} value={reference.reliabilityScore} onChange={(event) => onChange({ ...reference, reliabilityScore: Number(event.target.value) })} /></label>
+      </div>
+      <label>Notes<textarea value={reference.notes ?? ''} onChange={(event) => onChange({ ...reference, notes: event.target.value })} /></label>
+      <div className="linked-source-list">
+        <strong>Used by</strong>
+        {usages.length ? usages.map((usage) => <span key={`${usage.materialId}-${usage.parameterKey}`}>{usage.materialName} · {usage.parameterLabel}</span>) : <span>No material parameters linked yet</span>}
+      </div>
+    </div>
+  )
+}
+
+function ConfidenceBadge({ confidence, conflict = false }: { confidence: ParameterConfidence | 'fallback'; conflict?: boolean }) {
+  return <span className={`confidence-badge confidence-${conflict ? 'conflict' : confidence}`}>{conflict ? 'conflict' : confidence}</span>
 }
 
 function PlaceholderGrid({ items }: { items: string[] }) {
@@ -779,4 +1010,35 @@ function createOutputGateValues(carrierType: string, vth: number) {
 
 function formatGateSeries(vg: number) {
   return `Vg ${vg.toFixed(1)}V`
+}
+
+function getMaterialParameter(material: Material, key: string): MaterialParameter | undefined {
+  return getMaterialParameters(material).find(([parameterKey]) => parameterKey === key)?.[1]
+}
+
+function hasCandidateConflict(parameter: MaterialParameter) {
+  const candidates = parameter.candidates ?? []
+  if (candidates.length < 2) return false
+  const values = candidates
+    .map((candidate) => typeof candidate.value === 'number' ? candidate.value : candidate.range?.typical)
+    .filter((value): value is number => value !== undefined && value > 0)
+  if (values.length >= 2 && Math.max(...values) / Math.min(...values) > 2) return true
+  return new Set(candidates.map((candidate) => candidate.confidence)).size > 1
+}
+
+function formatSourceSummary(sourceIds: string[], references: LiteratureSource[]) {
+  return sourceIds
+    .map((sourceId) => {
+      const reference = references.find((entry) => entry.id === sourceId)
+      return reference ? `${reference.title}${reference.doi ? ` · ${reference.doi}` : ''}` : sourceId
+    })
+    .join(', ')
+}
+
+function formatConditions(conditions: object) {
+  const summary = Object.entries(conditions)
+    .filter(([, value]) => value !== undefined && value !== '')
+    .map(([key, value]) => `${key}: ${value}`)
+    .join(' · ')
+  return summary
 }

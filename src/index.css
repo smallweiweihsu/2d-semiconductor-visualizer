@@ -830,30 +830,56 @@ a {
 }
 
 .layer-stack-graphic span {
-  --layer-index: 0;
   --layer-color: #22d3ee;
+  --layer-y: 0px;
+  --layer-thickness: 12px;
+  --layer-width: 80%;
+  --layer-offset-x: 0%;
   position: absolute;
-  left: 8%;
-  right: 8%;
-  top: calc(210px - var(--layer-index) * 28px);
-  height: 26px;
+  left: calc((100% - var(--layer-width)) / 2 + var(--layer-offset-x));
+  top: calc(270px - var(--layer-y));
+  width: var(--layer-width);
+  height: var(--layer-thickness);
   border-radius: 6px;
   background: linear-gradient(90deg, color-mix(in srgb, var(--layer-color), white 24%), var(--layer-color));
   color: oklch(0.08 0.015 250);
   font-size: 11px;
   font-weight: 800;
   text-align: center;
-  line-height: 26px;
+  line-height: var(--layer-thickness);
   box-shadow: 0 14px 28px color-mix(in srgb, var(--layer-color), transparent 76%);
   transform: rotateX(58deg) rotateZ(-8deg);
+  outline-offset: 2px;
 }
 
-.large-device-stage.exploded .layer-stack-graphic span {
-  top: calc(245px - var(--layer-index) * 42px);
+.layer-stack-graphic.normalized-top span {
+  top: calc(50% + var(--layer-offset-x));
+  height: max(18px, var(--layer-thickness));
+  opacity: 0.78;
+  transform: translateY(-50%);
+}
+
+.layer-stack-graphic.normalized-side span {
+  transform: none;
 }
 
 .layer-stack-graphic span.selected {
   outline: 2px solid var(--primary);
+}
+
+.geometry-warning {
+  border: 1px solid oklch(0.72 0.15 55 / 0.4);
+  border-radius: 8px;
+  background: oklch(0.72 0.15 55 / 0.08);
+  color: var(--orange);
+  padding: 10px;
+  font-size: 12px;
+}
+
+.stack-order-hint {
+  margin: 0 0 10px;
+  color: var(--muted);
+  font-size: 11px;
 }
 
 .selected-material {
@@ -980,6 +1006,16 @@ a {
 .parameter-table span {
   color: var(--muted);
   font-size: 12px;
+}
+
+.parameter-table span small {
+  display: block;
+  max-width: 340px;
+  margin-top: 4px;
+  overflow: hidden;
+  color: oklch(0.74 0.025 250);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .parameter-table strong {
@@ -1217,6 +1253,139 @@ a {
 .material-row small {
   color: var(--muted);
   font-size: 12px;
+}
+
+.material-select-row,
+.paper-select-row {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 12px;
+  border: 0;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
+  color: var(--foreground);
+  padding: 12px 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.paper-select-row {
+  display: grid;
+  gap: 4px;
+}
+
+.material-select-row.active,
+.paper-select-row.active {
+  color: var(--primary);
+}
+
+.material-select-row > span {
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+}
+
+.material-detail-editor,
+.parameter-editor,
+.reference-editor,
+.candidate-editor {
+  display: grid;
+  gap: 12px;
+}
+
+.material-detail-editor label,
+.parameter-editor label,
+.reference-editor label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.material-detail-editor input,
+.material-detail-editor select,
+.material-detail-editor textarea,
+.parameter-editor input,
+.parameter-editor select,
+.parameter-editor textarea,
+.reference-editor input,
+.reference-editor select,
+.reference-editor textarea,
+.candidate-row input,
+.candidate-row select {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: oklch(0.11 0.015 250);
+  color: var(--foreground);
+  padding: 8px 10px;
+  outline: 0;
+}
+
+.material-detail-editor textarea,
+.parameter-editor textarea,
+.reference-editor textarea {
+  min-height: 76px;
+  resize: vertical;
+}
+
+.parameter-editor-heading,
+.candidate-editor > div:first-child {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.confidence-badge {
+  border-radius: 999px;
+  padding: 3px 8px;
+  font-size: 10px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.confidence-known {
+  background: oklch(0.7 0.15 160 / 0.16);
+  color: var(--green);
+}
+
+.confidence-estimated {
+  background: oklch(0.85 0.16 90 / 0.16);
+  color: #facc15;
+}
+
+.confidence-unknown {
+  background: oklch(0.62 0.2 25 / 0.16);
+  color: #f87171;
+}
+
+.confidence-fallback {
+  background: oklch(0.72 0.15 55 / 0.16);
+  color: var(--orange);
+}
+
+.confidence-conflict {
+  background: oklch(0.7 0.15 290 / 0.16);
+  color: var(--purple);
+}
+
+.linked-source-list {
+  display: grid;
+  gap: 6px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.candidate-row {
+  display: grid;
+  grid-template-columns: 96px 1fr 128px;
+  gap: 8px;
+  align-items: end;
 }
 
 .placeholder-grid {

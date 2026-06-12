@@ -26,16 +26,16 @@ export const materialColors = {
 }
 
 export const materials: Material[] = [
-  material('wse2', 'WSe2', 'WSe₂', 'two_d_semiconductor', 'p', '二維過渡金屬硫族化物，常用於場效電晶體', materialColors.wse2, range('1.2-1.7', 'eV'), range('3.7-4.0', 'eV'), unknown('eV'), unknown(), range('1-250', 'cm²/V·s'), estimated(3.28, 'Å'), estimated(0.7, 'nm'), ['層數、缺陷、接觸金屬與製程會強烈影響電性']),
-  material('mos2', 'MoS2', 'MoS₂', 'two_d_semiconductor', 'n', '常見二維 TMD 半導體', materialColors.mos2, range('1.2-1.9', 'eV'), range('4.0-4.3', 'eV'), unknown('eV'), unknown(), range('1-200', 'cm²/V·s'), estimated(3.16, 'Å'), estimated(0.65, 'nm'), ['二維 TMD 代表材料']),
-  material('hbn', 'hBN', 'hBN', 'dielectric', 'unknown', '二維絕緣層，原子級平坦封裝層', materialColors.hbn, range('5.5-6.0', 'eV'), unknown('eV'), unknown('eV'), range('3-4'), unknown('cm²/V·s'), estimated(2.5, 'Å'), estimated(0.33, 'nm'), ['可作為介電/絕緣二維層']),
-  material('sb-bulk', 'Sb', 'Sb', 'bulk_conductor', 'unknown', '銻塊材，可作為底部平台與源極', materialColors.sb, known(0, 'eV'), unknown('eV'), range('4.5-4.7', 'eV'), unknown(), unknown('cm²/V·s'), unknown('Å'), known(500000, 'nm'), ['表面可能形成 Sb₂O₃']),
-  material('sb2o3', 'Sb2O3', 'Sb₂O₃', 'oxide', 'unknown', '銻氧化物，局部氧化層或閘極介電層候選', materialColors.sb2o3, unknown('eV'), unknown('eV'), unknown('eV'), unknown(), unknown('cm²/V·s'), unknown('Å'), estimated(10, 'nm'), ['許多參數需標為未知']),
-  material('wox', 'WOx', 'WOx', 'oxide', 'unknown', '鎢氧化物，WSe₂ 氧化產物', materialColors.wox, unknown('eV'), unknown('eV'), unknown('eV'), unknown(), unknown('cm²/V·s'), unknown('Å'), unknown('nm'), ['化學計量可能變動']),
-  material('pd', 'Pd', 'Pd', 'metal', 'unknown', '鈀接觸金屬，高功函數', materialColors.pd, known(0, 'eV'), unknown('eV'), range('5.1-5.6', 'eV'), unknown(), unknown('cm²/V·s'), known(3.89, 'Å'), estimated(30, 'nm'), ['高功函數金屬，常用於 p-type 接觸']),
-  material('ti', 'Ti', 'Ti', 'metal', 'unknown', '鈦接觸金屬，低功函數', materialColors.ti, known(0, 'eV'), unknown('eV'), range('4.3-4.4', 'eV'), unknown(), unknown('cm²/V·s'), known(2.95, 'Å'), estimated(5, 'nm'), ['常用於 n-type 接觸或黏附層']),
-  material('in', 'In', 'In', 'metal', 'unknown', '銦接觸金屬，軟金屬', materialColors.in, known(0, 'eV'), unknown('eV'), range('4.1-4.2', 'eV'), unknown(), unknown('cm²/V·s'), unknown('Å'), estimated(20, 'nm'), ['軟金屬，可能減少對 Sb₂O₃ 的衝擊']),
-  material('hfo2', 'HfO2', 'HfO₂', 'dielectric', 'unknown', '高介電常數材料，閘極介電層', materialColors.hfo2, range('5.5-6.0', 'eV'), unknown('eV'), unknown('eV'), range('20-25'), unknown('cm²/V·s'), unknown('Å'), estimated(10, 'nm'), ['高 k 介電層常用材料']),
+  material('wse2', 'WSe2', 'WSe₂', 'two_d_semiconductor', 'p', '二維過渡金屬硫族化物，常用於場效電晶體', materialColors.wse2, range('1.2-1.7', 'eV'), range('3.7-4.0', 'eV'), unknown('eV'), unknown(), range('1-250', 'cm²/V·s'), unknown('Ω·m'), estimated(3.28, 'Å'), estimated(0.7, 'nm'), ['層數、缺陷、接觸金屬與製程會強烈影響電性']),
+  material('mos2', 'MoS2', 'MoS₂', 'two_d_semiconductor', 'n', '常見二維 TMD 半導體', materialColors.mos2, range('1.2-1.9', 'eV'), range('4.0-4.3', 'eV'), unknown('eV'), unknown(), range('1-200', 'cm²/V·s'), unknown('Ω·m'), estimated(3.16, 'Å'), estimated(0.65, 'nm'), ['二維 TMD 代表材料']),
+  material('hbn', 'hBN', 'hBN', 'dielectric', 'unknown', '二維絕緣層，原子級平坦封裝層', materialColors.hbn, range('5.5-6.0', 'eV'), unknown('eV'), unknown('eV'), range('3-4'), unknown('cm²/V·s'), unknown('Ω·m'), estimated(2.5, 'Å'), estimated(0.33, 'nm'), ['可作為介電/絕緣二維層']),
+  material('sb-bulk', 'Sb', 'Sb', 'bulk_conductor', 'unknown', '銻塊材，可作為底部平台與源極', materialColors.sb, known(0, 'eV'), unknown('eV'), range('4.5-4.7', 'eV'), unknown(), unknown('cm²/V·s'), unknown('Ω·m'), unknown('Å'), known(500000, 'nm'), ['表面可能形成 Sb₂O₃']),
+  material('sb2o3', 'Sb2O3', 'Sb₂O₃', 'oxide', 'unknown', '銻氧化物，局部氧化層或閘極介電層候選', materialColors.sb2o3, unknown('eV'), unknown('eV'), unknown('eV'), unknown(), unknown('cm²/V·s'), unknown('Ω·m'), unknown('Å'), estimated(10, 'nm'), ['許多參數需標為未知']),
+  material('wox', 'WOx', 'WOx', 'oxide', 'unknown', '鎢氧化物，WSe₂ 氧化產物', materialColors.wox, unknown('eV'), unknown('eV'), unknown('eV'), unknown(), unknown('cm²/V·s'), unknown('Ω·m'), unknown('Å'), unknown('nm'), ['化學計量可能變動']),
+  material('pd', 'Pd', 'Pd', 'metal', 'unknown', '鈀接觸金屬，高功函數', materialColors.pd, known(0, 'eV'), unknown('eV'), range('5.1-5.6', 'eV'), unknown(), unknown('cm²/V·s'), unknown('Ω·m'), known(3.89, 'Å'), estimated(30, 'nm'), ['高功函數金屬，常用於 p-type 接觸']),
+  material('ti', 'Ti', 'Ti', 'metal', 'unknown', '鈦接觸金屬，低功函數', materialColors.ti, known(0, 'eV'), unknown('eV'), range('4.3-4.4', 'eV'), unknown(), unknown('cm²/V·s'), unknown('Ω·m'), known(2.95, 'Å'), estimated(5, 'nm'), ['常用於 n-type 接觸或黏附層']),
+  material('in', 'In', 'In', 'metal', 'unknown', '銦接觸金屬，軟金屬', materialColors.in, known(0, 'eV'), unknown('eV'), range('4.1-4.2', 'eV'), unknown(), unknown('cm²/V·s'), unknown('Ω·m'), unknown('Å'), estimated(20, 'nm'), ['軟金屬，可能減少對 Sb₂O₃ 的衝擊']),
+  material('hfo2', 'HfO2', 'HfO₂', 'dielectric', 'unknown', '高介電常數材料，閘極介電層', materialColors.hfo2, range('5.5-6.0', 'eV'), unknown('eV'), unknown('eV'), range('20-25'), unknown('cm²/V·s'), unknown('Ω·m'), unknown('Å'), estimated(10, 'nm'), ['高 k 介電層常用材料']),
 ]
 
 export const sbBulkWse2Layers: DeviceLayer[] = [
@@ -130,11 +130,29 @@ function material(
   workFunction_eV: MaterialParameter,
   dielectricConstant: MaterialParameter,
   mobility_cm2Vs: MaterialParameter,
+  resistivity_ohm_m: MaterialParameter,
   latticeConstant_A: MaterialParameter,
   defaultThickness_nm: MaterialParameter,
   notes: string[],
 ): Material {
-  return { id, name, displayName, category, carrierType, description, color, bandGap_eV, electronAffinity_eV, workFunction_eV, dielectricConstant, mobility_cm2Vs, latticeConstant_A, defaultThickness_nm, notes }
+  return {
+    id,
+    name,
+    displayName,
+    category,
+    carrierType,
+    description,
+    color,
+    bandGap_eV: parameter('bandGap_eV', 'band gap', bandGap_eV),
+    electronAffinity_eV: parameter('electronAffinity_eV', 'electron affinity', electronAffinity_eV),
+    workFunction_eV: parameter('workFunction_eV', 'work function', workFunction_eV),
+    dielectricConstant: parameter('dielectricConstant', 'dielectric constant', dielectricConstant),
+    mobility_cm2Vs: parameter('mobility_cm2Vs', 'mobility', mobility_cm2Vs),
+    resistivity_ohm_m: parameter('resistivity_ohm_m', 'resistivity', resistivity_ohm_m),
+    latticeConstant_A: parameter('latticeConstant_A', 'lattice constant', latticeConstant_A),
+    defaultThickness_nm: parameter('defaultThickness_nm', 'default thickness', defaultThickness_nm),
+    notes,
+  }
 }
 
 function layer(
@@ -150,7 +168,19 @@ function layer(
   opacity: number,
   notes: string,
 ): DeviceLayer {
-  return { id, name, materialId, role, electricalRole, geometry, voltageMode, voltageLabel, voltageValue_V, visible: true, opacity, notes }
+  const stackOrder: Record<ElectricalRole, number> = {
+    substrate: 0,
+    buffer: 10,
+    channel: 20,
+    source: 30,
+    drain: 30,
+    contact: 30,
+    gate_dielectric: 40,
+    gate: 50,
+    passivation: 60,
+    unknown: 25,
+  }
+  return { id, name, materialId, role, electricalRole, stackOrder: stackOrder[electricalRole], geometry, voltageMode, voltageLabel, voltageValue_V, visible: true, opacity, notes }
 }
 
 function step(id: string, order: number, type: ProcessType, notes: string, expectedResult: string): ProcessStep {
@@ -158,11 +188,11 @@ function step(id: string, order: number, type: ProcessType, notes: string, expec
 }
 
 function known(value: number | string, unit?: string, note?: string): MaterialParameter {
-  return { value, unit, confidence: 'known', note }
+  return baseParameter(value, unit, 'known', note)
 }
 
 function estimated(value: number | string, unit?: string, note?: string): MaterialParameter {
-  return { value, unit, confidence: 'estimated', note }
+  return baseParameter(value, unit, 'estimated', note)
 }
 
 function range(value: string, unit?: string, note?: string): MaterialParameter {
@@ -170,5 +200,55 @@ function range(value: string, unit?: string, note?: string): MaterialParameter {
 }
 
 function unknown(unit?: string, note = '需要文獻參數'): MaterialParameter {
-  return { value: null, unit, confidence: 'unknown', note }
+  return baseParameter(null, unit, 'unknown', note)
+}
+
+function parameter(key: string, label: string, materialParameter: MaterialParameter): MaterialParameter {
+  const rangeMatch = typeof materialParameter.value === 'string'
+    ? materialParameter.value.match(/\d*\.?\d+/g)?.map(Number)
+    : undefined
+  const parsedRange = rangeMatch && rangeMatch.length >= 2
+    ? { min: rangeMatch[0], max: rangeMatch[1] }
+    : undefined
+
+  return {
+    ...materialParameter,
+    key,
+    label,
+    sourceIds: materialParameter.sourceIds ?? [],
+    notes: materialParameter.notes ?? materialParameter.note ?? '',
+    conditions: materialParameter.conditions ?? {},
+    valueType: materialParameter.value === null
+      ? 'unknown'
+      : parsedRange
+        ? 'range'
+        : typeof materialParameter.value === 'number'
+          ? 'scalar'
+          : 'text',
+    range: parsedRange,
+    selectedValue: materialParameter.selectedValue ?? null,
+    candidates: materialParameter.candidates ?? [],
+  }
+}
+
+function baseParameter(
+  value: number | string | null,
+  unit: string | undefined,
+  confidence: MaterialParameter['confidence'],
+  note?: string,
+): MaterialParameter {
+  return {
+    key: '',
+    label: '',
+    value,
+    unit,
+    confidence,
+    sourceIds: [],
+    notes: note ?? '',
+    note,
+    conditions: {},
+    valueType: value === null ? 'unknown' : typeof value === 'number' ? 'scalar' : 'text',
+    selectedValue: null,
+    candidates: [],
+  }
 }
