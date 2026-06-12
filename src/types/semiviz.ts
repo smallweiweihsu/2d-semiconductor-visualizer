@@ -23,6 +23,18 @@ export type MaterialCategory =
   | 'custom'
 
 export type ParameterConfidence = 'known' | 'estimated' | 'unknown'
+export type CarrierType = 'n' | 'p' | 'ambipolar' | 'unknown'
+export type ElectricalRole =
+  | 'channel'
+  | 'source'
+  | 'drain'
+  | 'gate'
+  | 'gate_dielectric'
+  | 'buffer'
+  | 'substrate'
+  | 'passivation'
+  | 'contact'
+  | 'unknown'
 
 export type ProcessType =
   | 'exfoliation'
@@ -69,6 +81,7 @@ export interface DeviceLayer {
   name: string
   materialId: string
   role: DeviceLayerRole
+  electricalRole: ElectricalRole
   geometry: LayerGeometry
   voltageMode: VoltageMode
   voltageLabel?: string
@@ -83,6 +96,7 @@ export interface DeviceStructure {
   templateId?: string
   name: string
   description: string
+  carrierType?: CarrierType
   layers: DeviceLayer[]
   tags: string[]
   createdAt: string
@@ -101,6 +115,7 @@ export interface Material {
   name: string
   displayName: string
   category: MaterialCategory
+  carrierType: CarrierType
   description: string
   color: string
   bandGap_eV: MaterialParameter

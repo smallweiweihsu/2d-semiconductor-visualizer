@@ -1,10 +1,37 @@
-import type { DeviceLayer, DeviceStructure, Material, MaterialParameter } from '../types/semiviz'
+import type {
+  CarrierType,
+  DeviceLayer,
+  DeviceStructure,
+  Material,
+  MaterialParameter,
+  ParameterConfidence,
+} from '../types/semiviz'
 
 export const epsilon0_Fm = 8.8541878128e-12
+export type SimulationStatus =
+  | 'ready'
+  | 'ready_with_estimates'
+  | 'fallback_preview'
+  | 'blocked_missing_parameters'
+
+export const prototypeFallbackValues = {
+  carrierType: 'n' as CarrierType,
+  length_um: 1,
+  width_um: 1,
+  tox_nm: 20,
+  dielectricConstant: 3.9,
+  mobility_cm2Vs: 80,
+}
+
+export interface ParameterValue {
+  value?: number
+  confidence?: ParameterConfidence
+}
 
 export interface ExtractedDeviceParameters {
   deviceId: string
   deviceName: string
+  carrierType: CarrierType
   channelLayer?: DeviceLayer
   dielectricLayer?: DeviceLayer
   contactLayers: DeviceLayer[]
@@ -15,14 +42,36 @@ export interface ExtractedDeviceParameters {
   width_um?: number
   tox_nm?: number
   dielectricConstant?: number
+  dielectricConstantMeta?: ParameterValue
   mobility_cm2Vs?: number
+  mobilityMeta?: ParameterValue
   bandGap_eV?: number
+  bandGapMeta?: ParameterValue
   electronAffinity_eV?: number
+  electronAffinityMeta?: ParameterValue
   contactWorkFunction_eV?: number
+  contactWorkFunctionMeta?: ParameterValue
   missing: string[]
 }
 
+export interface ResolvedModelParameter {
+  key: 'carrierType' | 'length_um' | 'width_um' | 'tox_nm' | 'dielectricConstant' | 'mobility_cm2Vs'
+  label: string
+  value: number | CarrierType
+  unit: string
+  source: 'extracted' | 'estimated' | 'fallback'
+}
+
+export interface SimulationModelResolution {
+  status: SimulationStatus
+  input?: TransferCurveInput
+  parameters: ResolvedModelParameter[]
+  missing: string[]
+  warnings: string[]
+}
+
 export interface TransferCurveInput {
+  carrierType: CarrierType
   mobility_cm2Vs: number
   dielectricConstant: number
   tox_nm: number
@@ -52,10 +101,13 @@ export function extractDeviceParameters(
   activeDevice: DeviceStructure,
   materials: Material[],
 ): ExtractedDeviceParameters {
-  const channelLayer = activeDevice.layers.find((layer) => layer.role === 'semiconductor')
-  const dielectricLayer = activeDevice.layers.find((layer) => layer.role === 'dielectric' || layer.role === 'oxide')
+  const channelLayer = findElectricalLayer(activeDevice.layers, ['channel'])
+    ?? activeDevice.layers.find((layer) => layer.role === 'semiconductor')
+  const dielectricLayer = findElectricalLayer(activeDevice.layers, ['gate_dielectric'])
+    ?? activeDevice.layers.find((layer) => layer.role === 'dielectric')
   const contactLayers = activeDevice.layers.filter((layer) =>
-    ['source', 'drain', 'contact'].includes(layer.role),
+    ['source', 'drain', 'contact'].includes(layer.electricalRole)
+    || (layer.electricalRole === 'unknown' && ['source', 'drain', 'contact'].includes(layer.role)),
   )
   const channelMaterial = channelLayer ? findMaterial(materials, channelLayer.materialId) : undefined
   const dielectricMaterial = dielectricLayer ? findMaterial(materials, dielectricLayer.materialId) : undefined
@@ -65,11 +117,18 @@ export function extractDeviceParameters(
 
   const contactWorkFunctions = contactMaterials
     .map((material) => parseMaterialParameter(material.workFunction_eV))
-    .filter((value): value is number => value !== undefined)
+    .filter((meta): meta is Required<ParameterValue> => meta.value !== undefined && meta.confidence !== undefined)
   const dielectricConstant = parseMaterialParameter(dielectricMaterial?.dielectricConstant)
+  const mobility = parseMaterialParameter(channelMaterial?.mobility_cm2Vs)
+  const bandGap = parseMaterialParameter(channelMaterial?.bandGap_eV)
+  const electronAffinity = parseMaterialParameter(channelMaterial?.electronAffinity_eV)
+  const contactWorkFunction = contactWorkFunctions.length
+    ? combineParameterValues(contactWorkFunctions)
+    : undefined
   const extracted: ExtractedDeviceParameters = {
     deviceId: activeDevice.id,
     deviceName: activeDevice.name,
+    carrierType: activeDevice.carrierType ?? channelMaterial?.carrierType ?? 'unknown',
     channelLayer,
     dielectricLayer,
     contactLayers,
@@ -79,11 +138,16 @@ export function extractDeviceParameters(
     length_um: positiveNumber(channelLayer?.geometry.length_um),
     width_um: positiveNumber(channelLayer?.geometry.width_um),
     tox_nm: positiveNumber(dielectricLayer?.geometry.thickness_nm),
-    dielectricConstant,
-    mobility_cm2Vs: parseMaterialParameter(channelMaterial?.mobility_cm2Vs),
-    bandGap_eV: parseMaterialParameter(channelMaterial?.bandGap_eV),
-    electronAffinity_eV: parseMaterialParameter(channelMaterial?.electronAffinity_eV),
-    contactWorkFunction_eV: contactWorkFunctions.length ? average(contactWorkFunctions) : undefined,
+    dielectricConstant: dielectricConstant.value,
+    dielectricConstantMeta: dielectricConstant,
+    mobility_cm2Vs: mobility.value,
+    mobilityMeta: mobility,
+    bandGap_eV: bandGap.value,
+    bandGapMeta: bandGap,
+    electronAffinity_eV: electronAffinity.value,
+    electronAffinityMeta: electronAffinity,
+    contactWorkFunction_eV: contactWorkFunction?.value,
+    contactWorkFunctionMeta: contactWorkFunction,
     missing: [],
   }
 
@@ -94,7 +158,8 @@ export function extractDeviceParameters(
 export function detectMissingParameters(parameters: ExtractedDeviceParameters) {
   const missing: string[] = []
 
-  if (!parameters.channelLayer) missing.push('channel layer role=semiconductor')
+  if (!parameters.channelLayer) missing.push('channel layer electricalRole=channel')
+  if (parameters.carrierType === 'unknown') missing.push('carrierType')
   if (!parameters.length_um) missing.push('channel length_um')
   if (!parameters.width_um) missing.push('channel width_um')
   if (!parameters.mobility_cm2Vs) missing.push('channel mobility_cm2Vs')
@@ -107,6 +172,67 @@ export function detectMissingParameters(parameters: ExtractedDeviceParameters) {
   if (!parameters.contactWorkFunction_eV) missing.push('contact workFunction_eV')
 
   return missing
+}
+
+export function resolveSimulationModel(
+  parameters: ExtractedDeviceParameters,
+  options: {
+    useFallback: boolean
+    vd: number
+    vgMin: number
+    vgMax: number
+    vth: number
+    rc_ohm: number
+    leakage_A: number
+  },
+): SimulationModelResolution {
+  const resolved: ResolvedModelParameter[] = []
+  const warnings: string[] = []
+  const missing: string[] = []
+  const carrierType = resolveCarrierType(parameters.carrierType, options.useFallback, resolved, missing)
+  const length_um = resolveNumberParameter('length_um', 'L', parameters.length_um, '', 'µm', options.useFallback, resolved, missing)
+  const width_um = resolveNumberParameter('width_um', 'W', parameters.width_um, '', 'µm', options.useFallback, resolved, missing)
+  const tox_nm = resolveNumberParameter('tox_nm', 'tox', parameters.tox_nm, '', 'nm', options.useFallback, resolved, missing)
+  const dielectricConstant = resolveNumberParameter('dielectricConstant', 'k', parameters.dielectricConstant, confidenceSource(parameters.dielectricConstantMeta), '', options.useFallback, resolved, missing)
+  const mobility_cm2Vs = resolveNumberParameter('mobility_cm2Vs', 'mobility', parameters.mobility_cm2Vs, confidenceSource(parameters.mobilityMeta), 'cm²/V·s', options.useFallback, resolved, missing)
+
+  if (missing.length && !options.useFallback) {
+    return {
+      status: 'blocked_missing_parameters',
+      parameters: resolved,
+      missing,
+      warnings,
+    }
+  }
+
+  if (options.useFallback && resolved.some((parameter) => parameter.source === 'fallback')) {
+    warnings.push('Prototype preview using fallback values, not calibrated.')
+  }
+
+  const input = {
+    carrierType,
+    mobility_cm2Vs,
+    dielectricConstant,
+    tox_nm,
+    width_um,
+    length_um,
+    vd: options.vd,
+    vgMin: options.vgMin,
+    vgMax: options.vgMax,
+    vth: options.vth,
+    rc_ohm: options.rc_ohm,
+    leakage_A: options.leakage_A,
+  }
+
+  if (resolved.some((parameter) => parameter.source === 'fallback')) {
+    return { status: 'fallback_preview', input, parameters: resolved, missing, warnings }
+  }
+
+  if (resolved.some((parameter) => parameter.source === 'estimated')) {
+    return { status: 'ready_with_estimates', input, parameters: resolved, missing, warnings }
+  }
+
+  return { status: 'ready', input, parameters: resolved, missing, warnings }
 }
 
 export function calculateCox(dielectricConstant: number, tox_nm: number) {
@@ -147,7 +273,7 @@ export function calculateOutputCurve(
 }
 
 export function calculateDrainCurrent(input: TransferCurveInput & { vg: number; vd: number }) {
-  const vov = input.vg - input.vth
+  const vov = calculateOverdrive(input.carrierType, input.vg, input.vth)
 
   if (vov <= 0) {
     return { id_A: input.leakage_A, region: 'off' as const }
@@ -177,20 +303,107 @@ export function scaleCurrent(value_A: number, unit: 'A' | 'uA' | 'nA') {
 
 export function parseMaterialParameter(parameter?: MaterialParameter) {
   if (!parameter || parameter.value === null) {
-    return undefined
+    return {}
   }
 
   if (typeof parameter.value === 'number') {
-    return parameter.value
+    return { value: parameter.value, confidence: parameter.confidence }
   }
 
   const values = parameter.value.match(/\d*\.?\d+/g)?.map(Number).filter(Number.isFinite)
 
   if (!values?.length) {
-    return undefined
+    return {}
   }
 
-  return values.length === 1 ? values[0] : average(values)
+  return {
+    value: values.length === 1 ? values[0] : average(values),
+    confidence: parameter.confidence,
+  }
+}
+
+function calculateOverdrive(carrierType: CarrierType, vg: number, vth: number) {
+  const threshold = Math.abs(vth)
+
+  if (carrierType === 'p') {
+    return -vg - threshold
+  }
+
+  if (carrierType === 'ambipolar') {
+    return Math.max(vg - threshold, -vg - threshold)
+  }
+
+  if (carrierType === 'n') {
+    return vg - threshold
+  }
+
+  return Number.NEGATIVE_INFINITY
+}
+
+function resolveCarrierType(
+  value: CarrierType,
+  useFallback: boolean,
+  resolved: ResolvedModelParameter[],
+  missing: string[],
+) {
+  if (value !== 'unknown') {
+    resolved.push({ key: 'carrierType', label: 'carrier type', value, unit: '', source: 'extracted' })
+    return value
+  }
+
+  if (useFallback) {
+    resolved.push({ key: 'carrierType', label: 'carrier type', value: prototypeFallbackValues.carrierType, unit: '', source: 'fallback' })
+    return prototypeFallbackValues.carrierType
+  }
+
+  missing.push('carrierType')
+  return 'unknown'
+}
+
+function resolveNumberParameter(
+  key: ResolvedModelParameter['key'],
+  label: string,
+  value: number | undefined,
+  source: ResolvedModelParameter['source'] | '',
+  unit: string,
+  useFallback: boolean,
+  resolved: ResolvedModelParameter[],
+  missing: string[],
+) {
+  if (value !== undefined) {
+    resolved.push({
+      key,
+      label,
+      value,
+      unit,
+      source: source === 'estimated' ? 'estimated' : 'extracted',
+    })
+    return value
+  }
+
+  if (useFallback) {
+    const fallbackValue = prototypeFallbackValues[key]
+    resolved.push({ key, label, value: fallbackValue, unit, source: 'fallback' })
+    return fallbackValue as number
+  }
+
+  missing.push(label)
+  return 0
+}
+
+function confidenceSource(meta?: ParameterValue): ResolvedModelParameter['source'] | '' {
+  return meta?.confidence === 'estimated' ? 'estimated' : ''
+}
+
+function combineParameterValues(values: Required<ParameterValue>[]): ParameterValue {
+  return {
+    value: average(values.map((value) => value.value)),
+    confidence: values.some((value) => value.confidence === 'estimated') ? 'estimated' : 'known',
+  }
+}
+
+function findElectricalLayer(layers: DeviceLayer[], roles: DeviceLayer['electricalRole'][]) {
+  return layers.find((layer) => roles.includes(layer.electricalRole))
 }
 
 function applyContactResistance(id_A: number, rc_ohm: number, vd: number) {

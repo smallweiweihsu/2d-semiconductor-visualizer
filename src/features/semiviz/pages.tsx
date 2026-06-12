@@ -31,6 +31,8 @@ import {
   calculateOutputCurve,
   calculateTransferCurve,
   extractDeviceParameters,
+  prototypeFallbackValues,
+  resolveSimulationModel,
   scaleCurrent,
 } from '../../simulation/mosfet'
 import { useProjectStore } from '../../store/projectStore'
@@ -69,6 +71,13 @@ const statusLabels: Record<HypothesisStatus, string> = {
   testing: '測試中',
   confirmed: '已確認',
   rejected: '已否定',
+}
+
+const simulationStatusLabels = {
+  ready: 'ready',
+  ready_with_estimates: 'ready with estimates',
+  fallback_preview: 'fallback preview',
+  blocked_missing_parameters: 'blocked: missing parameters',
 }
 
 export function DashboardPage() {
@@ -277,42 +286,57 @@ export function IVSimulatorPage() {
   const [rc, setRc] = useState(1000)
   const [leakageFloor, setLeakageFloor] = useState(1e-12)
   const [currentUnit, setCurrentUnit] = useState<'A' | 'uA' | 'nA'>('uA')
-  const mobilityOverride = mobilityOverrides[activeDevice.id] ?? extracted.mobility_cm2Vs ?? 80
-  const modelInput = useMemo(() => ({
-    mobility_cm2Vs: mobilityOverride,
-    dielectricConstant: extracted.dielectricConstant ?? 3.9,
-    tox_nm: extracted.tox_nm ?? 20,
-    width_um: extracted.width_um ?? 1,
-    length_um: extracted.length_um ?? 1,
-    vd,
-    vgMin,
-    vgMax,
-    vth,
-    rc_ohm: rc,
-    leakage_A: leakageFloor,
-  }), [extracted.dielectricConstant, extracted.length_um, extracted.tox_nm, extracted.width_um, leakageFloor, mobilityOverride, rc, vd, vgMax, vgMin, vth])
+  const [useFallbackValues, setUseFallbackValues] = useState(false)
+  const mobilityOverride = mobilityOverrides[activeDevice.id]
+  const extractedForModel = useMemo(
+    () => ({
+      ...extracted,
+      mobility_cm2Vs: mobilityOverride ?? extracted.mobility_cm2Vs,
+    }),
+    [extracted, mobilityOverride],
+  )
+  const simulation = useMemo(
+    () => resolveSimulationModel(extractedForModel, {
+      useFallback: useFallbackValues,
+      vd,
+      vgMin,
+      vgMax,
+      vth,
+      rc_ohm: rc,
+      leakage_A: leakageFloor,
+    }),
+    [extractedForModel, leakageFloor, rc, useFallbackValues, vd, vgMax, vgMin, vth],
+  )
   const transferData = useMemo(
-    () => calculateTransferCurve(modelInput).map((point) => ({
+    () => simulation.input ? calculateTransferCurve(simulation.input).map((point) => ({
       vg: point.vg,
       id: scaleCurrent(point.id_A, currentUnit),
       region: point.region,
-    })),
-    [currentUnit, modelInput],
+    })) : [],
+    [currentUnit, simulation.input],
+  )
+  const outputGateValues = useMemo(
+    () => simulation.input ? createOutputGateValues(simulation.input.carrierType, vth) : [],
+    [simulation.input, vth],
   )
   const outputData = useMemo(
-    () => calculateOutputCurve({
-      ...modelInput,
+    () => simulation.input ? calculateOutputCurve({
+      ...simulation.input,
       vdMax: Math.max(0.2, vd * 2),
-      vgValues: [vth + 0.5, vth + 1, vth + 1.5],
-    }).map((point) => ({
-      ...point,
-      'Vg+0.5': scaleCurrent(point[`Vg=${Number((vth + 0.5).toFixed(1))}V`] ?? 0, currentUnit),
-      'Vg+1.0': scaleCurrent(point[`Vg=${Number((vth + 1).toFixed(1))}V`] ?? 0, currentUnit),
-      'Vg+1.5': scaleCurrent(point[`Vg=${Number((vth + 1.5).toFixed(1))}V`] ?? 0, currentUnit),
-    })),
-    [currentUnit, modelInput, vd, vth],
+      vgValues: outputGateValues,
+    }).map((point) => {
+      const scaled = { vd: point.vd }
+      outputGateValues.forEach((vg) => {
+        Object.assign(scaled, {
+          [formatGateSeries(vg)]: scaleCurrent(point[`Vg=${Number(vg.toFixed(1))}V`] ?? 0, currentUnit),
+        })
+      })
+      return scaled
+    }) : [],
+    [currentUnit, outputGateValues, simulation.input, vd],
   )
-  const cox = calculateCox(modelInput.dielectricConstant, modelInput.tox_nm)
+  const cox = simulation.input ? calculateCox(simulation.input.dielectricConstant, simulation.input.tox_nm) : undefined
+  const chartDisabled = !simulation.input
 
   return (
     <WorkspacePage title="I–V Simulator" icon={<Activity size={18} />}>
@@ -324,37 +348,50 @@ export function IVSimulatorPage() {
             <Meta label="Channel" value={extracted.channelMaterial?.displayName ?? 'missing'} />
             <Meta label="Gate dielectric" value={extracted.dielectricMaterial?.displayName ?? 'missing'} />
             <Meta label="Contacts" value={extracted.contactMaterials.map((material) => material.displayName).join(', ') || 'missing'} />
+            <Meta label="Carrier type" value={extracted.carrierType} />
+            <div className={`status-pill status-${simulation.status}`}>{simulationStatusLabels[simulation.status]}</div>
           </div>
         </Card>
         <Card title="Extracted parameters">
           <ParameterTable rows={[
-            ['L', extracted.length_um, 'µm'],
-            ['W', extracted.width_um, 'µm'],
-            ['tox', extracted.tox_nm, 'nm'],
-            ['k', extracted.dielectricConstant, ''],
-            ['Cox', cox, 'F/m²'],
-            ['mobility', extracted.mobility_cm2Vs, 'cm²/V·s'],
-            ['Eg', extracted.bandGap_eV, 'eV'],
-            ['χ', extracted.electronAffinity_eV, 'eV'],
-            ['contact φ', extracted.contactWorkFunction_eV, 'eV'],
+            ...simulation.parameters.map((parameter) => ({
+              label: parameter.label,
+              value: parameter.value,
+              unit: parameter.unit,
+              source: parameter.source,
+            })),
+            { label: 'Cox', value: cox, unit: 'F/m²', source: cox === undefined ? 'missing' : 'derived' },
+            { label: 'Eg', value: extracted.bandGap_eV, unit: 'eV', source: confidenceLabel(extracted.bandGapMeta?.confidence) },
+            { label: 'χ', value: extracted.electronAffinity_eV, unit: 'eV', source: confidenceLabel(extracted.electronAffinityMeta?.confidence) },
+            { label: 'contact φ', value: extracted.contactWorkFunction_eV, unit: 'eV', source: confidenceLabel(extracted.contactWorkFunctionMeta?.confidence) },
           ]} />
         </Card>
         <Card title="Missing parameter warnings">
-          {extracted.missing.length ? (
+          {simulation.warnings.length ? (
+            <div className="prototype-warning">
+              <AlertTriangle size={14} />
+              {simulation.warnings[0]}
+            </div>
+          ) : null}
+          {extracted.missing.length || simulation.missing.length ? (
             <div className="warning-list">
-              {extracted.missing.map((item) => <div key={item}><AlertTriangle size={14} />{item}</div>)}
+              {[...new Set([...extracted.missing, ...simulation.missing])].map((item) => <div key={item}><AlertTriangle size={14} />{item}</div>)}
             </div>
           ) : <EmptyState text="Active device 已具備 MVP 模型需要的主要參數。" />}
         </Card>
         <Card title="Model controls">
+          <label className="toggle-field">
+            <input type="checkbox" checked={useFallbackValues} onChange={(event) => setUseFallbackValues(event.target.checked)} />
+            Use fallback values for prototype preview
+          </label>
           <RangeInput label="Vd" value={vd} min={0.05} max={5} step={0.05} unit="V" onChange={setVd} />
           <RangeInput label="Vg min" value={vgMin} min={-5} max={vgMax - 0.1} step={0.1} unit="V" onChange={setVgMin} />
           <RangeInput label="Vg max" value={vgMax} min={vgMin + 0.1} max={5} step={0.1} unit="V" onChange={setVgMax} />
           <RangeInput label="Vth override" value={vth} min={-3} max={3} step={0.05} unit="V" onChange={setVth} />
           <RangeInput
             label="Mobility override"
-            value={mobilityOverride}
-            min={1}
+            value={mobilityOverride ?? extracted.mobility_cm2Vs ?? prototypeFallbackValues.mobility_cm2Vs}
+            min={0}
             max={300}
             step={1}
             unit="cm²/V·s"
@@ -372,19 +409,25 @@ export function IVSimulatorPage() {
           </label>
         </Card>
         <Card title="Id-Vg Transfer Curve">
-          <Chart data={transferData} xKey="vg" unit={currentUnit} lines={[{ key: 'id', color: 'oklch(0.78 0.15 195)' }]} />
+          {chartDisabled ? <DisabledChart missing={simulation.missing} /> : (
+            <>
+              {simulation.status === 'fallback_preview' ? <div className="prototype-warning"><AlertTriangle size={14} />Prototype preview using fallback values, not calibrated.</div> : null}
+              <Chart data={transferData} xKey="vg" unit={currentUnit} lines={[{ key: 'id', color: 'oklch(0.78 0.15 195)' }]} />
+            </>
+          )}
         </Card>
         <Card title="Id-Vd Output Curve">
-          <Chart
-            data={outputData}
-            xKey="vd"
-            unit={currentUnit}
-            lines={[
-              { key: 'Vg+0.5', color: 'oklch(0.78 0.15 195)' },
-              { key: 'Vg+1.0', color: 'oklch(0.7 0.15 160)' },
-              { key: 'Vg+1.5', color: 'oklch(0.7 0.15 290)' },
-            ]}
-          />
+          {chartDisabled ? <DisabledChart missing={simulation.missing} /> : (
+            <Chart
+              data={outputData}
+              xKey="vd"
+              unit={currentUnit}
+              lines={outputGateValues.map((vg, index) => ({
+                key: formatGateSeries(vg),
+                color: ['oklch(0.78 0.15 195)', 'oklch(0.7 0.15 160)', 'oklch(0.7 0.15 290)'][index] ?? 'oklch(0.78 0.15 195)',
+              }))}
+            />
+          )}
         </Card>
         <Card title="Model assumptions">
           <div className="assumption-list">
@@ -561,6 +604,16 @@ function EmptyState({ text }: { text: string }) {
   return <div className="empty-state">{text}</div>
 }
 
+function DisabledChart({ missing }: { missing: string[] }) {
+  return (
+    <div className="disabled-chart">
+      <AlertTriangle size={18} />
+      <strong>Simulation disabled</strong>
+      <span>{missing.length ? `Missing: ${missing.join(', ')}` : 'Enable fallback preview to inspect a non-calibrated prototype curve.'}</span>
+    </div>
+  )
+}
+
 function LayerStackGraphic({ layers, selectedId }: { layers: DeviceLayer[]; selectedId: string }) {
   const { project } = useProjectStore()
 
@@ -620,13 +673,25 @@ function Chart({
   )
 }
 
-function ParameterTable({ rows }: { rows: Array<[string, number | undefined, string]> }) {
+function ParameterTable({
+  rows,
+}: {
+  rows: Array<{
+    label: string
+    value: number | string | undefined
+    unit: string
+    source: string
+  }>
+}) {
   return (
     <div className="parameter-table">
-      {rows.map(([label, value, unit]) => (
+      {rows.map(({ label, value, unit, source }) => (
         <div key={label}>
           <span>{label}</span>
-          <strong>{value === undefined ? 'missing' : `${formatNumber(value)} ${unit}`}</strong>
+          <strong>
+            {value === undefined ? 'missing' : `${formatParameterValue(value)} ${unit}`}
+            <em className={`source-${source}`}>{source}</em>
+          </strong>
         </div>
       ))}
     </div>
@@ -651,4 +716,34 @@ function formatNumber(value: number) {
   }
 
   return Number(value.toPrecision(4)).toString()
+}
+
+function formatParameterValue(value: number | string) {
+  return typeof value === 'number' ? formatNumber(value) : value
+}
+
+function confidenceLabel(confidence: string | undefined) {
+  if (confidence === 'known' || confidence === 'estimated') {
+    return confidence
+  }
+
+  return 'missing'
+}
+
+function createOutputGateValues(carrierType: string, vth: number) {
+  const threshold = Math.abs(vth)
+
+  if (carrierType === 'p') {
+    return [-(threshold + 0.5), -(threshold + 1), -(threshold + 1.5)]
+  }
+
+  if (carrierType === 'ambipolar') {
+    return [-(threshold + 1), threshold + 1, threshold + 1.5]
+  }
+
+  return [threshold + 0.5, threshold + 1, threshold + 1.5]
+}
+
+function formatGateSeries(vg: number) {
+  return `Vg ${vg.toFixed(1)}V`
 }

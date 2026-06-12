@@ -844,12 +844,116 @@ a {
   gap: 10px;
 }
 
+.prototype-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  border: 1px solid oklch(0.72 0.15 55 / 0.35);
+  border-radius: 8px;
+  background: oklch(0.72 0.15 55 / 0.08);
+  color: var(--orange);
+  padding: 10px 12px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
 .warning-list > div {
   display: flex;
   align-items: center;
   gap: 8px;
   color: var(--orange);
   font-size: 13px;
+}
+
+.status-pill {
+  justify-self: start;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 5px 10px;
+  font-family: "JetBrains Mono", monospace;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.status-ready {
+  border-color: oklch(0.7 0.15 160 / 0.45);
+  color: var(--green);
+}
+
+.status-ready_with_estimates {
+  border-color: oklch(0.78 0.15 195 / 0.45);
+  color: var(--primary);
+}
+
+.status-fallback_preview,
+.status-blocked_missing_parameters {
+  border-color: oklch(0.72 0.15 55 / 0.45);
+  color: var(--orange);
+}
+
+.toggle-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 18px;
+  color: var(--foreground);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.toggle-field input {
+  accent-color: var(--primary);
+}
+
+.parameter-table em {
+  display: inline-flex;
+  margin-left: 8px;
+  border-radius: 999px;
+  background: var(--secondary);
+  color: var(--muted);
+  padding: 2px 6px;
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 10px;
+  font-style: normal;
+}
+
+.parameter-table .source-fallback,
+.parameter-table .source-missing {
+  background: oklch(0.72 0.15 55 / 0.12);
+  color: var(--orange);
+}
+
+.parameter-table .source-estimated {
+  background: oklch(0.78 0.15 195 / 0.12);
+  color: var(--primary);
+}
+
+.disabled-chart {
+  display: grid;
+  min-height: 320px;
+  place-items: center;
+  align-content: center;
+  gap: 10px;
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+  background: oklch(0.13 0.02 250);
+  color: var(--muted);
+  padding: 24px;
+  text-align: center;
+}
+
+.disabled-chart svg {
+  color: var(--orange);
+}
+
+.disabled-chart strong {
+  color: var(--foreground);
+}
+
+.disabled-chart span {
+  max-width: 560px;
+  font-size: 12px;
 }
 
 .process-row > span {
