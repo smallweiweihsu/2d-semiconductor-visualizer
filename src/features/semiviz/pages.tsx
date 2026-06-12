@@ -26,6 +26,10 @@ import {
   YAxis,
 } from 'recharts'
 import { DevicePreview } from '../../components/semiviz/DevicePreview'
+import { LayerPropertyEditor } from './LayerPropertyEditor'
+import { LayerStackPanel } from './LayerStackPanel'
+import { findMaterial } from './materialUtils'
+import { SimulationConfigEditor } from './SimulationConfigEditor'
 import {
   calculateCox,
   calculateOutputCurve,
@@ -35,6 +39,14 @@ import {
   resolveSimulationModel,
   scaleCurrent,
 } from '../../simulation/mosfet'
+import {
+  addLayer,
+  deleteLayer,
+  duplicateLayer,
+  reorderLayer,
+  updateLayer,
+  updateSimulationConfig,
+} from '../../store/layerOperations'
 import { useProjectStore } from '../../store/projectStore'
 import type {
   DeviceLayer,
@@ -171,11 +183,31 @@ export function DashboardPage() {
 }
 
 export function DeviceBuilderPage() {
-  const { project, activeDevice, setActiveDeviceId } = useProjectStore()
+  const { project, activeDevice, setActiveDeviceId, updateActiveDevice } = useProjectStore()
   const [selectedId, setSelectedId] = useState(activeDevice.layers[2]?.id ?? activeDevice.layers[0]?.id ?? '')
   const [viewMode, setViewMode] = useState('3D')
   const selected = activeDevice.layers.find((layer) => layer.id === selectedId) ?? activeDevice.layers[2] ?? activeDevice.layers[0]
   const material = selected ? findMaterial(project.materials, selected.materialId) : undefined
+
+  function handleAddLayer() {
+    const result = addLayer(activeDevice)
+    updateActiveDevice(() => result.device)
+    setSelectedId(result.layer.id)
+  }
+
+  function handleDuplicateLayer(layerId: string) {
+    const result = duplicateLayer(activeDevice, layerId)
+    updateActiveDevice(() => result.device)
+    if (result.layer) {
+      setSelectedId(result.layer.id)
+    }
+  }
+
+  function handleDeleteLayer(layerId: string) {
+    const nextDevice = deleteLayer(activeDevice, layerId)
+    updateActiveDevice(() => nextDevice)
+    setSelectedId(nextDevice.layers[0]?.id ?? '')
+  }
 
   return (
     <div className="manus-page three-pane-page">
@@ -193,12 +225,16 @@ export function DeviceBuilderPage() {
           <strong>{activeDevice.name}</strong>
           <span>{activeDevice.layers.length ? 'Sb / WSe₂ / top gate / Sb₂O₃' : '尚無 layer，請匯入或新增 layer。'}</span>
         </div>
-        {activeDevice.layers.length ? activeDevice.layers.map((layer) => (
-          <button className={selected && layer.id === selected.id ? 'layer-row active' : 'layer-row'} key={layer.id} onClick={() => setSelectedId(layer.id)}>
-            <span style={{ backgroundColor: findMaterial(project.materials, layer.materialId).color }} />
-            <div><strong>{layer.name}</strong><small>{layer.role} · {layer.geometry.thickness_nm} nm</small></div>
-          </button>
-        )) : <EmptyState text="尚無 layer，請匯入或新增 layer。" />}
+        <LayerStackPanel
+          device={activeDevice}
+          materials={project.materials}
+          selectedId={selected?.id ?? ''}
+          onSelect={setSelectedId}
+          onAdd={handleAddLayer}
+          onDelete={handleDeleteLayer}
+          onDuplicate={handleDuplicateLayer}
+          onMove={(layerId, direction) => updateActiveDevice((device) => reorderLayer(device, layerId, direction))}
+        />
       </Card>
 
       <Card className="viewport-card" title="3D Viewport">
@@ -223,15 +259,15 @@ export function DeviceBuilderPage() {
               <span style={{ backgroundColor: material.color }} />
               <div><h2>{selected.name}</h2><p>{material.displayName} · {selected.role}</p></div>
             </div>
-            <div className="property-grid">
-              <Meta label="Length" value={`${selected.geometry.length_um} µm`} />
-              <Meta label="Width" value={`${selected.geometry.width_um} µm`} />
-              <Meta label="Thickness" value={`${selected.geometry.thickness_nm} nm`} />
-              <Meta label="X" value={`${selected.geometry.x_um} µm`} />
-              <Meta label="Y" value={`${selected.geometry.y_um} µm`} />
-              <Meta label="Voltage" value={selected.voltageLabel ?? '-'} />
-            </div>
-            <p className="soft-note">{selected.notes}</p>
+            <LayerPropertyEditor
+              layer={selected}
+              materials={project.materials}
+              onChange={(patch) => updateActiveDevice((device) => updateLayer(device, selected.id, patch))}
+            />
+            <SimulationConfigEditor
+              device={activeDevice}
+              onChange={(config) => updateActiveDevice((device) => updateSimulationConfig(device, config))}
+            />
           </>
         ) : <EmptyState text="選取 active device 後，這裡會顯示 layer 參數。" />}
       </Card>
@@ -348,6 +384,7 @@ export function IVSimulatorPage() {
             <Meta label="Channel" value={extracted.channelMaterial?.displayName ?? 'missing'} />
             <Meta label="Gate dielectric" value={extracted.dielectricMaterial?.displayName ?? 'missing'} />
             <Meta label="Contacts" value={extracted.contactMaterials.map((material) => material.displayName).join(', ') || 'missing'} />
+            <Meta label="Role detection" value={`channel ${extracted.detection.channel} · dielectric ${extracted.detection.gateDielectric}`} />
             <Meta label="Carrier type" value={extracted.carrierType} />
             <div className={`status-pill status-${simulation.status}`}>{simulationStatusLabels[simulation.status]}</div>
           </div>
@@ -704,10 +741,6 @@ function PlaceholderGrid({ items }: { items: string[] }) {
       {items.map((item) => <div key={item}><Box size={16} /><span>{item}</span></div>)}
     </div>
   )
-}
-
-function findMaterial(materials: Material[], id: string) {
-  return materials.find((material) => material.id === id) ?? materials[0]
 }
 
 function formatNumber(value: number) {

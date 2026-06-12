@@ -97,10 +97,19 @@ export interface DeviceStructure {
   name: string
   description: string
   carrierType?: CarrierType
+  simulationConfig?: SimulationConfig
   layers: DeviceLayer[]
   tags: string[]
   createdAt: string
   updatedAt: string
+}
+
+export interface SimulationConfig {
+  channelLayerId?: string
+  gateDielectricLayerId?: string
+  sourceLayerId?: string
+  drainLayerId?: string
+  gateLayerId?: string
 }
 
 export interface MaterialParameter {

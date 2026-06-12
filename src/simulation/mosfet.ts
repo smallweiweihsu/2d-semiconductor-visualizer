@@ -32,6 +32,11 @@ export interface ExtractedDeviceParameters {
   deviceId: string
   deviceName: string
   carrierType: CarrierType
+  detection: {
+    channel: 'configured' | 'auto-detected' | 'missing'
+    gateDielectric: 'configured' | 'auto-detected' | 'missing'
+    contacts: 'configured' | 'auto-detected' | 'missing'
+  }
   channelLayer?: DeviceLayer
   dielectricLayer?: DeviceLayer
   contactLayers: DeviceLayer[]
@@ -101,14 +106,23 @@ export function extractDeviceParameters(
   activeDevice: DeviceStructure,
   materials: Material[],
 ): ExtractedDeviceParameters {
-  const channelLayer = findElectricalLayer(activeDevice.layers, ['channel'])
+  const configuredChannelLayer = findLayerById(activeDevice.layers, activeDevice.simulationConfig?.channelLayerId)
+  const autoChannelLayer = findElectricalLayer(activeDevice.layers, ['channel'])
     ?? activeDevice.layers.find((layer) => layer.role === 'semiconductor')
-  const dielectricLayer = findElectricalLayer(activeDevice.layers, ['gate_dielectric'])
+  const channelLayer = configuredChannelLayer ?? autoChannelLayer
+  const configuredDielectricLayer = findLayerById(activeDevice.layers, activeDevice.simulationConfig?.gateDielectricLayerId)
+  const autoDielectricLayer = findElectricalLayer(activeDevice.layers, ['gate_dielectric'])
     ?? activeDevice.layers.find((layer) => layer.role === 'dielectric')
-  const contactLayers = activeDevice.layers.filter((layer) =>
+  const dielectricLayer = configuredDielectricLayer ?? autoDielectricLayer
+  const configuredContactLayers = [
+    findLayerById(activeDevice.layers, activeDevice.simulationConfig?.sourceLayerId),
+    findLayerById(activeDevice.layers, activeDevice.simulationConfig?.drainLayerId),
+  ].filter((layer): layer is DeviceLayer => Boolean(layer))
+  const autoContactLayers = activeDevice.layers.filter((layer) =>
     ['source', 'drain', 'contact'].includes(layer.electricalRole)
     || (layer.electricalRole === 'unknown' && ['source', 'drain', 'contact'].includes(layer.role)),
   )
+  const contactLayers = configuredContactLayers.length ? configuredContactLayers : autoContactLayers
   const channelMaterial = channelLayer ? findMaterial(materials, channelLayer.materialId) : undefined
   const dielectricMaterial = dielectricLayer ? findMaterial(materials, dielectricLayer.materialId) : undefined
   const contactMaterials = contactLayers
@@ -129,6 +143,11 @@ export function extractDeviceParameters(
     deviceId: activeDevice.id,
     deviceName: activeDevice.name,
     carrierType: activeDevice.carrierType ?? channelMaterial?.carrierType ?? 'unknown',
+    detection: {
+      channel: configuredChannelLayer ? 'configured' : channelLayer ? 'auto-detected' : 'missing',
+      gateDielectric: configuredDielectricLayer ? 'configured' : dielectricLayer ? 'auto-detected' : 'missing',
+      contacts: configuredContactLayers.length ? 'configured' : contactLayers.length ? 'auto-detected' : 'missing',
+    },
     channelLayer,
     dielectricLayer,
     contactLayers,
@@ -404,6 +423,10 @@ function combineParameterValues(values: Required<ParameterValue>[]): ParameterVa
 
 function findElectricalLayer(layers: DeviceLayer[], roles: DeviceLayer['electricalRole'][]) {
   return layers.find((layer) => roles.includes(layer.electricalRole))
+}
+
+function findLayerById(layers: DeviceLayer[], layerId?: string) {
+  return layerId ? layers.find((layer) => layer.id === layerId) : undefined
 }
 
 function applyContactResistance(id_A: number, rc_ohm: number, vd: number) {

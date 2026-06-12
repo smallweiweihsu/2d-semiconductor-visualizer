@@ -6,6 +6,8 @@ import { chromium } from 'playwright'
 
 const port = 5174
 const baseUrl = `http://127.0.0.1:${port}`
+const previewPort = 4174
+const previewUrl = `http://127.0.0.1:${previewPort}`
 const routes = [
   ['Dashboard', '/'],
   ['Device Builder', '/device-builder'],
@@ -20,9 +22,10 @@ const routes = [
 ]
 
 let server
+let previewServer
 
 try {
-  server = await startServer()
+  server = await startServer('dev', port)
   const browser = await chromium.launch({ headless: true })
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } })
   const warnings = []
@@ -49,6 +52,19 @@ try {
   await page.getByRole('button', { name: 'EXPLODED' }).click()
   await expectVisible(page.locator('.view-tabs button.active', { hasText: 'EXPLODED' }), 'device-builder can switch view mode')
 
+  await page.getByRole('button', { name: '新增 layer' }).click()
+  await page.getByLabel('layer name').fill('Smoke Gate Oxide')
+  await page.getByLabel('materialId').selectOption('hfo2')
+  await page.getByLabel('thickness_nm').fill('18')
+  await page.getByLabel('electricalRole').selectOption('gate_dielectric')
+  await page.getByLabel('Gate dielectric').selectOption({ label: 'Smoke Gate Oxide' })
+  await page.waitForFunction(() => window.localStorage.getItem('semiviz-project-v1')?.includes('Smoke Gate Oxide'))
+  await page.reload({ waitUntil: 'networkidle' })
+  await expectVisible(page.locator('.pane-list').getByText('Smoke Gate Oxide'), 'edited layer persists after refresh')
+  await page.goto(`${baseUrl}/iv-simulator`, { waitUntil: 'networkidle' })
+  await expectVisible(page.getByText('HfO₂'), 'I-V simulator reads configured gate dielectric layer')
+
+  await page.goto(`${baseUrl}/device-builder`, { waitUntil: 'networkidle' })
   await page.getByRole('button', { name: '新增元件' }).click()
   await page.getByLabel('元件名稱').fill('Smoke Test Device')
   await page.getByLabel('描述').fill('localStorage persistence check')
@@ -111,7 +127,40 @@ try {
   await page.goto(baseUrl, { waitUntil: 'networkidle' })
   await expectVisible(page.getByText('Imported JSON Device'), 'import JSON replaces project data')
   await page.goto(`${baseUrl}/device-builder`, { waitUntil: 'networkidle' })
-  await expectVisible(page.locator('.empty-state', { hasText: '尚無 layer，請匯入或新增 layer。' }).first(), 'empty-layer device shows empty state')
+  await expectVisible(page.locator('.empty-state', { hasText: '尚無 layer，請新增第一個 layer。' }).first(), 'empty-layer device shows empty state')
+
+  previewServer = await startServer('preview', previewPort)
+  const previewPage = await browser.newPage({ viewport: { width: 1280, height: 900 } })
+  await previewPage.goto(`${previewUrl}/iv-simulator`, { waitUntil: 'networkidle' })
+  await expectVisible(previewPage.getByRole('heading', { name: 'I–V Simulator' }), 'preview direct /iv-simulator route renders')
+  await previewPage.goto(`${previewUrl}/device-builder`, { waitUntil: 'networkidle' })
+  await expectVisible(previewPage.locator('.pane-list > header', { hasText: 'Layer Stack' }), 'preview direct /device-builder route renders')
+  await previewPage.goto(`${previewUrl}/research-notes`, { waitUntil: 'networkidle' })
+  await previewPage.reload({ waitUntil: 'networkidle' })
+  if (previewPage.url() !== `${previewUrl}/research-notes`) {
+    throw new Error('preview /research-notes refresh changed route')
+  }
+  await expectVisible(previewPage.getByRole('heading', { name: '研究假說' }), 'preview /research-notes refresh renders')
+  await previewPage.evaluate(() => {
+    window.localStorage.setItem('semiviz-project-v1', JSON.stringify({
+      activeDeviceId: 'deployment-device',
+      devices: [{
+        id: 'deployment-device',
+        name: 'Deployment Persistence Device',
+        description: 'preview persistence check',
+        tags: ['deployment'],
+        layers: [],
+        createdAt: '2026-06-12',
+        updatedAt: '2026-06-12',
+      }],
+      materials: [],
+    }))
+  })
+  await previewPage.reload({ waitUntil: 'networkidle' })
+  const previewStoragePersists = await previewPage.evaluate(() => window.localStorage.getItem('semiviz-project-v1')?.includes('Deployment Persistence Device'))
+  if (!previewStoragePersists) {
+    throw new Error('preview localStorage project did not persist after refresh')
+  }
 
   if (warnings.length) {
     throw new Error(`console errors:\n${warnings.join('\n')}`)
@@ -121,17 +170,18 @@ try {
   console.log('Playwright smoke test passed')
 } finally {
   server?.kill()
+  previewServer?.kill()
 }
 
-async function startServer() {
-  if (await isReachable()) {
+async function startServer(mode, targetPort) {
+  if (await isReachable(targetPort)) {
     return undefined
   }
 
   const command = process.platform === 'win32' ? 'cmd.exe' : 'npm'
   const args = process.platform === 'win32'
-    ? ['/d', '/s', '/c', `npm run dev -- --host 127.0.0.1 --port ${port}`]
-    : ['run', 'dev', '--', '--host', '127.0.0.1', '--port', String(port)]
+    ? ['/d', '/s', '/c', `npm run ${mode} -- --host 127.0.0.1 --port ${targetPort}`]
+    : ['run', mode, '--', '--host', '127.0.0.1', '--port', String(targetPort)]
   const child = spawn(command, args, {
     cwd: process.cwd(),
     stdio: 'ignore',
@@ -140,7 +190,7 @@ async function startServer() {
 
   const started = Date.now()
   while (Date.now() - started < 30000) {
-    if (await isReachable()) {
+    if (await isReachable(targetPort)) {
       return child
     }
     await new Promise((resolve) => setTimeout(resolve, 300))
@@ -150,9 +200,9 @@ async function startServer() {
   throw new Error('dev server did not start')
 }
 
-async function isReachable() {
+async function isReachable(targetPort) {
   try {
-    const response = await fetch(baseUrl)
+    const response = await fetch(`http://127.0.0.1:${targetPort}`)
     return response.ok
   } catch {
     return false

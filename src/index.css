@@ -589,6 +589,156 @@ a {
   cursor: pointer;
 }
 
+.builder-toolbar {
+  display: flex;
+  margin-bottom: 12px;
+}
+
+.layer-editor-row {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 8px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: oklch(0.13 0.02 250);
+  padding: 10px;
+}
+
+.layer-editor-row.active {
+  border-color: oklch(0.78 0.15 195 / 0.65);
+  background: oklch(0.78 0.15 195 / 0.1);
+}
+
+.layer-row-main {
+  display: flex;
+  width: 100%;
+  align-items: center;
+  gap: 10px;
+  border: 0;
+  background: transparent;
+  color: var(--foreground);
+  padding: 0;
+  text-align: left;
+  cursor: pointer;
+}
+
+.layer-row-main > span {
+  flex: 0 0 auto;
+  width: 12px;
+  height: 12px;
+  border-radius: 999px;
+}
+
+.layer-row-main div {
+  min-width: 0;
+}
+
+.layer-row-main strong,
+.layer-row-main small,
+.layer-row-main em {
+  display: block;
+}
+
+.layer-row-main strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+}
+
+.layer-row-main small {
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.layer-row-main em {
+  width: fit-content;
+  margin-top: 4px;
+  border-radius: 999px;
+  background: oklch(0.78 0.15 195 / 0.12);
+  color: var(--primary);
+  padding: 2px 7px;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 700;
+}
+
+.layer-row-tools {
+  display: flex;
+  gap: 6px;
+}
+
+.layer-row-tools button {
+  display: grid;
+  width: 28px;
+  height: 28px;
+  place-items: center;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: oklch(0.11 0.015 250);
+  color: var(--muted);
+  cursor: pointer;
+}
+
+.layer-row-tools button:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.layer-property-form,
+.simulation-config-editor {
+  display: grid;
+  gap: 12px;
+}
+
+.simulation-config-editor {
+  margin-top: 20px;
+  border-top: 1px solid var(--border);
+  padding-top: 16px;
+}
+
+.simulation-config-editor h3 {
+  margin: 0;
+  font-size: 13px;
+}
+
+.layer-property-form label,
+.simulation-config-editor label {
+  display: grid;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.layer-property-form input,
+.layer-property-form select,
+.layer-property-form textarea,
+.simulation-config-editor select {
+  width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: oklch(0.11 0.015 250);
+  color: var(--foreground);
+  padding: 8px 10px;
+  outline: 0;
+}
+
+.layer-property-form textarea {
+  min-height: 84px;
+  resize: vertical;
+}
+
+.form-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.toggle-field.compact {
+  margin-bottom: 0;
+  font-weight: 600;
+}
+
 .layer-row.active,
 .process-row.active {
   border-color: oklch(0.78 0.15 195 / 0.65);

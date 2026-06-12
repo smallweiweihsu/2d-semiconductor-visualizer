@@ -17,6 +17,7 @@ interface ProjectStoreValue {
   project: SemivizProject
   activeDevice: DeviceStructure
   addDevice: (name: string, description: string) => DeviceStructure
+  updateActiveDevice: (updater: (device: DeviceStructure) => DeviceStructure) => void
   setActiveDeviceId: (deviceId: string) => void
   replaceProject: (project: unknown) => { ok: boolean; error?: string }
   exportProject: () => void
@@ -35,15 +36,24 @@ export function ProjectStoreProvider({ children }: { children: ReactNode }) {
   const addDevice = useCallback((name: string, description: string) => {
     const source = seedProject.devices[0]
     const timestamp = new Date().toISOString()
+    const idSuffix = Date.now()
+    const layerIdMap = new Map(source.layers.map((layer) => [layer.id, `${layer.id}-${idSuffix}`]))
     const nextDevice: DeviceStructure = {
       ...source,
-      id: `device-${Date.now()}`,
+      id: `device-${idSuffix}`,
       name,
       description,
       tags: ['custom', 'localStorage', 'draft'],
       createdAt: timestamp.slice(0, 10),
       updatedAt: timestamp.slice(0, 10),
-      layers: source.layers.map((layer) => ({ ...layer, id: `${layer.id}-${Date.now()}` })),
+      simulationConfig: {
+        channelLayerId: mapLayerId(source.simulationConfig?.channelLayerId, layerIdMap),
+        gateDielectricLayerId: mapLayerId(source.simulationConfig?.gateDielectricLayerId, layerIdMap),
+        sourceLayerId: mapLayerId(source.simulationConfig?.sourceLayerId, layerIdMap),
+        drainLayerId: mapLayerId(source.simulationConfig?.drainLayerId, layerIdMap),
+        gateLayerId: mapLayerId(source.simulationConfig?.gateLayerId, layerIdMap),
+      },
+      layers: source.layers.map((layer) => ({ ...layer, id: layerIdMap.get(layer.id) ?? `${layer.id}-${idSuffix}` })),
     }
 
     setProject((current) => ({
@@ -62,6 +72,20 @@ export function ProjectStoreProvider({ children }: { children: ReactNode }) {
       }
 
       return { ...current, activeDeviceId: deviceId }
+    })
+  }, [])
+
+  const updateActiveDevice = useCallback((updater: (device: DeviceStructure) => DeviceStructure) => {
+    setProject((current) => {
+      const deviceIndex = current.devices.findIndex((device) => device.id === current.activeDeviceId)
+
+      if (deviceIndex < 0) {
+        return current
+      }
+
+      const devices = [...current.devices]
+      devices[deviceIndex] = updater(devices[deviceIndex])
+      return { ...current, devices }
     })
   }, [])
 
@@ -90,8 +114,8 @@ export function ProjectStoreProvider({ children }: { children: ReactNode }) {
   }, [project])
 
   const value = useMemo(
-    () => ({ project, activeDevice, addDevice, setActiveDeviceId, replaceProject, exportProject }),
-    [activeDevice, addDevice, exportProject, project, replaceProject, setActiveDeviceId],
+    () => ({ project, activeDevice, addDevice, updateActiveDevice, setActiveDeviceId, replaceProject, exportProject }),
+    [activeDevice, addDevice, exportProject, project, replaceProject, setActiveDeviceId, updateActiveDevice],
   )
 
   return (
@@ -99,6 +123,10 @@ export function ProjectStoreProvider({ children }: { children: ReactNode }) {
       {children}
     </ProjectStoreContext.Provider>
   )
+}
+
+function mapLayerId(layerId: string | undefined, layerIdMap: Map<string, string>) {
+  return layerId ? layerIdMap.get(layerId) : undefined
 }
 
 // eslint-disable-next-line react-refresh/only-export-components

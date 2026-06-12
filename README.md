@@ -83,6 +83,7 @@ http://localhost:5173/
 npm run build
 npm run lint
 npm test
+npm run test:smoke
 ```
 
 最近一次本機驗證結果：
@@ -93,6 +94,32 @@ npm test
 - Playwright smoke QA：首頁可正常渲染、Device Builder 導航可用、EXPLODED 模式可切換、手機版 Materials 頁面可正常顯示
 
 目前建置時會看到 Vite bundle size warning，原因是 Three.js 與 Recharts 都被打進主要 bundle。這對目前單入口原型是可接受的，之後可透過 route-level code splitting 改善。
+
+## 部署
+
+本專案是 Vite static frontend，不需要後端 server。預設 build output 是 `dist`。
+
+本機 build 與預覽：
+
+```bash
+npm run build
+npm run preview
+```
+
+Vercel 部署建議：
+
+- Connect GitHub repo：`smallweiweihsu/2d-semiconductor-visualizer`
+- Branch：`dev` 或 `main`
+- Build command：`npm run build`
+- Output directory：`dist`
+- SPA route fallback：repo 已加入 `vercel.json`，直接開 `/iv-simulator`、`/device-builder` 等 route 不會 404
+
+目前資料儲存在 browser `localStorage`：
+
+- 同一台電腦、同一個 browser profile 才會保留
+- 不會跨電腦或跨 browser 自動同步
+- 若未來要跨電腦同步，需要 Supabase、Postgres 或其他 backend
+- 目前跨電腦搬移資料的暫時方法是「匯出 JSON」與「匯入資料」
 
 ## 後續可添加內容
 
@@ -128,7 +155,7 @@ npm test
 
 ## 目前限制
 
-- 目前使用靜態 mock data，使用者操作不會永久保存。
-- 多數控制項仍是 prototype-level local state，還不是完整 CRUD 流程。
+- 目前使用 localStorage 保存 project，尚未跨裝置同步。
+- 多數控制項仍是 prototype-level local state，還不是完整後端 CRUD 流程。
 - 物理模型刻意簡化，未經實驗校準前不適合用於 publication-grade 定量分析。
 - 3D viewport 目前保留 CSS layer-stack fallback，以確保在不同 browser / driver 截圖環境下仍能看到元件結構。

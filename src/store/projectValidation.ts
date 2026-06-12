@@ -1,4 +1,5 @@
 import { seedProject } from '../data/seedProject'
+import { normalizeSimulationConfig } from './layerOperations'
 import type {
   CarrierType,
   DeviceLayer,
@@ -42,10 +43,10 @@ export function normalizeImportedProject(input: unknown): ProjectImportResult {
 
   const devices = input.devices.length
     ? input.devices.map((device, index) => normalizeDevice(device, index))
-    : seedProject.devices
+    : structuredClone(seedProject.devices)
   const materials = input.materials.length
     ? input.materials.map((material) => normalizeMaterial(material))
-    : seedProject.materials
+    : structuredClone(seedProject.materials)
   const activeDeviceId = typeof input.activeDeviceId === 'string'
     && devices.some((device) => device.id === input.activeDeviceId)
     ? input.activeDeviceId
@@ -80,6 +81,9 @@ function normalizeDevice(input: unknown, index: number): DeviceStructure {
   const fallback = seedProject.devices[0]
   const id = typeof record.id === 'string' && record.id ? record.id : `imported-device-${index + 1}`
   const now = new Date().toISOString().slice(0, 10)
+  const layers = Array.isArray(record.layers)
+    ? record.layers.map((layer, layerIndex) => normalizeLayer(layer, layerIndex))
+    : structuredClone(fallback.layers)
 
   return {
     id,
@@ -87,13 +91,14 @@ function normalizeDevice(input: unknown, index: number): DeviceStructure {
     name: typeof record.name === 'string' && record.name ? record.name : `Imported Device ${index + 1}`,
     description: typeof record.description === 'string' ? record.description : 'Imported project device',
     carrierType: normalizeCarrierType(record.carrierType),
+    simulationConfig: normalizeSimulationConfig(
+      isRecord(record.simulationConfig) ? record.simulationConfig : undefined,
+      layers,
+    ),
     tags: Array.isArray(record.tags) ? record.tags.filter((tag): tag is string => typeof tag === 'string') : [],
-    layers: Array.isArray(record.layers)
-      ? record.layers.map((layer, layerIndex) => normalizeLayer(layer, layerIndex))
-      : [],
+    layers,
     createdAt: typeof record.createdAt === 'string' ? record.createdAt : now,
     updatedAt: typeof record.updatedAt === 'string' ? record.updatedAt : now,
-    ...(record.layers === undefined && { layers: fallback.layers }),
   }
 }
 
@@ -204,7 +209,7 @@ function toNumber(value: unknown) {
 }
 
 function normalizeOptionalArray<T>(value: unknown, fallback: T[]) {
-  return Array.isArray(value) && value.length ? (value as T[]) : fallback
+  return Array.isArray(value) && value.length ? structuredClone(value as T[]) : structuredClone(fallback)
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

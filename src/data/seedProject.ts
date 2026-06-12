@@ -53,6 +53,13 @@ export const initialDeviceStructure: DeviceStructure = {
   name: 'Sb/WSe₂ 上閘極元件 v1',
   description: 'Sb 塊材底部源極 + WSe₂ 通道 + Pd 汲極 + Sb₂O₃ 介電 + 上閘極',
   carrierType: 'p',
+  simulationConfig: {
+    channelLayerId: 'wse2-channel',
+    gateDielectricLayerId: 'top-sb2o3',
+    sourceLayerId: 'sb-bulk-source',
+    drainLayerId: 'pd-drain',
+    gateLayerId: 'top-gate',
+  },
   layers: sbBulkWse2Layers,
   tags: ['Sb 塊材 / 底部源極', '局部 Sb₂O₃', 'WSe₂ 通道', 'Pd 汲極接觸', '上方 Sb₂O₃ 介電層', '上閘極'],
   createdAt: '2024-12-01',
