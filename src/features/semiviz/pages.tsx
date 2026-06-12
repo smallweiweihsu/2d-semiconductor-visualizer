@@ -1,4 +1,4 @@
-import { Component, lazy, Suspense, useMemo, useState, type CSSProperties, type ReactNode } from 'react'
+import { Component, lazy, Suspense, useMemo, useRef, useState, type ChangeEvent, type CSSProperties, type ReactNode } from 'react'
 import {
   Activity,
   AlertTriangle,
@@ -36,6 +36,18 @@ import {
   normalizeViewportLayers,
 } from '../../visualization/viewportGeometry'
 import {
+  createElectricalMeasurement,
+  inferColumnMappings,
+  parseDelimitedText,
+  type ColumnMappingState,
+  type ParsedCsvTable,
+} from '../../measurements/csvParser'
+import {
+  calculateElectricalMetrics,
+  getMeasurementOverlayWarnings,
+  toOverlaySeries,
+} from '../../measurements/electricalMetrics'
+import {
   calculateCox,
   calculateOutputCurve,
   calculateTransferCurve,
@@ -65,6 +77,8 @@ import type {
   ParameterCandidate,
   ParameterConfidence,
   ProcessType,
+  ElectricalMeasurementColumnRole,
+  ElectricalMeasurementPoint,
 } from '../../types/semiviz'
 import { getMaterialParameters, getReferenceUsage } from '../../store/materialParameterUtils'
 import type { DeviceViewportMode } from '../../components/semiviz/deviceViewport3DUtils'
@@ -114,6 +128,9 @@ const materialCategories: MaterialCategory[] = ['metal', 'two_d_semiconductor', 
 const carrierTypes: CarrierType[] = ['n', 'p', 'ambipolar', 'unknown']
 const confidenceOptions: ParameterConfidence[] = ['known', 'estimated', 'unknown']
 const referenceStatusOptions: LiteratureStatus[] = ['candidate', 'reviewed', 'accepted', 'rejected']
+const measurementColumnRoles: ElectricalMeasurementColumnRole[] = ['ignore', 'Vg', 'Vd', 'Id', 'Ig', 'time', 'sweepDirection', 'temperature']
+const voltageUnits = ['V', 'mV']
+const currentUnits = ['A', 'mA', 'uA', 'nA', 'pA']
 
 export function DashboardPage() {
   const { project, activeDevice } = useProjectStore()
@@ -369,6 +386,9 @@ export function IVSimulatorPage() {
   const [leakageFloor, setLeakageFloor] = useState(1e-12)
   const [currentUnit, setCurrentUnit] = useState<'A' | 'uA' | 'nA'>('uA')
   const [useFallbackValues, setUseFallbackValues] = useState(false)
+  const electricalMeasurements = project.measurements.filter((measurement) => measurement.electrical)
+  const [overlayMeasurementId, setOverlayMeasurementId] = useState('')
+  const overlayMeasurement = electricalMeasurements.find((measurement) => measurement.id === overlayMeasurementId)
   const mobilityOverride = mobilityOverrides[activeDevice.id]
   const extractedForModel = useMemo(
     () => ({
@@ -397,6 +417,9 @@ export function IVSimulatorPage() {
     })) : [],
     [currentUnit, simulation.input],
   )
+  const overlayData = toOverlaySeries(overlayMeasurement, currentUnit)
+  const transferWithOverlay = mergeTransferOverlay(transferData, overlayData)
+  const overlayWarnings = getMeasurementOverlayWarnings(overlayMeasurement, activeDevice.id, vd)
   const outputGateValues = useMemo(
     () => simulation.input ? createOutputGateValues(simulation.input.carrierType, vth) : [],
     [simulation.input, vth],
@@ -499,12 +522,28 @@ export function IVSimulatorPage() {
               <option value="nA">nA</option>
             </select>
           </label>
+          <label className="device-select-field">
+            Measurement overlay
+            <select value={overlayMeasurementId} onChange={(event) => setOverlayMeasurementId(event.target.value)}>
+              <option value="">none</option>
+              {electricalMeasurements.map((measurement) => <option value={measurement.id} key={measurement.id}>{measurement.sampleName}</option>)}
+            </select>
+          </label>
+          {overlayWarnings.length ? <div className="warning-list">{overlayWarnings.map((warning) => <div key={warning}><AlertTriangle size={14} />{warning}</div>)}</div> : null}
         </Card>
         <Card title="Id-Vg Transfer Curve">
           {chartDisabled ? <DisabledChart missing={simulation.missing} /> : (
             <>
               {simulation.status === 'fallback_preview' ? <div className="prototype-warning"><AlertTriangle size={14} />Prototype preview using fallback values, not calibrated.</div> : null}
-              <Chart data={transferData} xKey="vg" unit={currentUnit} lines={[{ key: 'id', color: 'oklch(0.78 0.15 195)' }]} />
+              <Chart
+                data={transferWithOverlay}
+                xKey="vg"
+                unit={currentUnit}
+                lines={[
+                  { key: 'id', color: 'oklch(0.78 0.15 195)' },
+                  ...(overlayMeasurement ? [{ key: 'measuredId', color: 'oklch(0.74 0.18 55)' }] : []),
+                ]}
+              />
             </>
           )}
         </Card>
@@ -630,18 +669,93 @@ export function ReferencesPage() {
 }
 
 export function MeasurementsPage() {
-  const { project } = useProjectStore()
+  const { project, activeDevice, addMeasurement } = useProjectStore()
+  const inputRef = useRef<HTMLInputElement>(null)
+  const [table, setTable] = useState<ParsedCsvTable>()
+  const [sourceName, setSourceName] = useState('')
+  const [mappings, setMappings] = useState<ColumnMappingState>({})
+  const selected = project.measurements.find((measurement) => measurement.electrical) ?? project.measurements[0]
+  const metrics = calculateElectricalMetrics(selected)
+
+  async function handleFile(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.currentTarget.files?.[0]
+    if (!file) return
+    const parsed = parseDelimitedText(await file.text())
+    setSourceName(file.name)
+    setTable(parsed)
+    setMappings(inferColumnMappings(parsed.headers))
+    event.currentTarget.value = ''
+  }
+
+  function saveImport() {
+    if (!table) return
+    addMeasurement(createElectricalMeasurement({
+      table,
+      mappings,
+      activeDeviceId: activeDevice.id,
+      activeDeviceName: activeDevice.name,
+      sourceName,
+    }))
+    setTable(undefined)
+  }
 
   return (
     <WorkspacePage title="Measurements" icon={<FlaskConical size={18} />}>
-      <Card title="量測資料">
-        {project.measurements.map((measurement) => (
-          <div className="split-row" key={measurement.id}>
-            <div><strong>{measurement.deviceName}</strong><span>{measurement.type} · {measurement.tool}</span></div>
-            <time>{measurement.date}</time>
+      <input ref={inputRef} className="sr-only" type="file" accept=".csv,.txt,text/csv,text/plain" onChange={(event) => { void handleFile(event) }} />
+      <div className="measurements-grid">
+        <Card title="CSV / TXT import">
+          <button className="manus-button primary" type="button" onClick={() => inputRef.current?.click()}>Import electrical CSV</button>
+          {table ? (
+            <div className="import-preview">
+              <strong>{sourceName}</strong>
+              <div className="mapping-grid">
+                {table.headers.map((header) => (
+                  <div className="mapping-row" key={header}>
+                    <span>{header}</span>
+                    <select value={mappings[header]?.role ?? 'ignore'} onChange={(event) => setMappings((current) => ({ ...current, [header]: { ...current[header], role: event.target.value as ElectricalMeasurementColumnRole } }))}>
+                      {measurementColumnRoles.map((role) => <option value={role} key={role}>{role}</option>)}
+                    </select>
+                    <select value={mappings[header]?.unit ?? ''} onChange={(event) => setMappings((current) => ({ ...current, [header]: { ...current[header], unit: event.target.value } }))}>
+                      <option value="">unit</option>
+                      {[...voltageUnits, ...currentUnits].map((unit) => <option value={unit} key={unit}>{unit}</option>)}
+                    </select>
+                  </div>
+                ))}
+              </div>
+              <button className="manus-button primary" type="button" onClick={saveImport}>Save measurement</button>
+            </div>
+          ) : <EmptyState text="匯入 Id-Vg / Id-Vd CSV 或 TXT 後可設定欄位對應與單位。" />}
+        </Card>
+        <Card title="Measurement datasets">
+          {project.measurements.map((measurement) => (
+            <div className="split-row" key={measurement.id}>
+              <div><strong>{measurement.sampleName}</strong><span>{measurement.type} · {measurement.tool} · {measurement.electrical?.measurementKind ?? 'metadata'}</span></div>
+              <time>{measurement.date}</time>
+            </div>
+          ))}
+        </Card>
+        <Card title="Electrical chart">
+          {selected?.electrical ? (
+            <Chart
+              data={selected.electrical.points.filter((point) => point.Vg !== undefined && point.Id !== undefined).map((point) => ({ vg: point.Vg!, id: (point.Id ?? 0) * 1e6 }))}
+              xKey="vg"
+              unit="uA"
+              lines={[{ key: 'id', color: 'oklch(0.78 0.15 195)' }]}
+            />
+          ) : <EmptyState text="尚未匯入 electrical dataset。" />}
+        </Card>
+        <Card title="Basic metrics">
+          <div className="metrics-grid">
+            <Meta label="points" value={`${metrics.pointCount}`} />
+            <Meta label="max |Id|" value={formatScientific(metrics.maxAbsId_A, 'A')} />
+            <Meta label="on/off" value={metrics.onOffRatio ? metrics.onOffRatio.toExponential(2) : 'n/a'} />
+            <Meta label="Vg range" value={metrics.vgRange ? `${metrics.vgRange[0]} to ${metrics.vgRange[1]} V` : 'n/a'} />
           </div>
-        ))}
-      </Card>
+        </Card>
+        <Card title="Raw table">
+          {selected?.electrical ? <RawMeasurementTable rows={selected.electrical.points.slice(0, 12)} /> : <EmptyState text="No rows yet." />}
+        </Card>
+      </div>
     </WorkspacePage>
   )
 }
@@ -851,6 +965,45 @@ function Chart({
       </LineChart>
     </ResponsiveContainer>
   )
+}
+
+function mergeTransferOverlay(
+  simulated: Array<{ vg: number; id: number; region: string }>,
+  measured: Array<{ vg: number; measuredId: number }>,
+) {
+  const rows = new Map<number, Record<string, number | string>>()
+  simulated.forEach((point) => rows.set(point.vg, { ...rows.get(point.vg), ...point }))
+  measured.forEach((point) => rows.set(point.vg, { ...rows.get(point.vg), ...point }))
+  return [...rows.values()].sort((a, b) => Number(a.vg) - Number(b.vg))
+}
+
+function RawMeasurementTable({ rows }: { rows: ElectricalMeasurementPoint[] }) {
+  return (
+    <div className="raw-table">
+      <table>
+        <thead><tr><th>Vg</th><th>Vd</th><th>Id</th><th>Ig</th><th>direction</th></tr></thead>
+        <tbody>
+          {rows.map((row, index) => (
+            <tr key={`${row.Vg}-${row.Vd}-${index}`}>
+              <td>{formatMaybe(row.Vg)}</td>
+              <td>{formatMaybe(row.Vd)}</td>
+              <td>{formatScientific(row.Id, 'A')}</td>
+              <td>{formatScientific(row.Ig, 'A')}</td>
+              <td>{row.sweepDirection ?? ''}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  )
+}
+
+function formatMaybe(value?: number) {
+  return value === undefined ? '' : Number(value.toPrecision(4)).toString()
+}
+
+function formatScientific(value: number | undefined, unit: string) {
+  return value === undefined ? 'n/a' : `${value.toExponential(2)} ${unit}`
 }
 
 function ParameterTable({

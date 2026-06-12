@@ -10,7 +10,7 @@ import {
 import { seedProject } from '../data/seedProject'
 import { currentStorageKey, readProjectFromStorage, resetProjectStorage } from './projectMigration'
 import { normalizeImportedProject } from './projectValidation'
-import type { DeviceStructure, LiteratureSource, Material, SemivizProject } from '../types/semiviz'
+import type { DeviceStructure, LiteratureSource, Material, MeasurementData, SemivizProject } from '../types/semiviz'
 
 const storageKey = currentStorageKey
 
@@ -22,6 +22,7 @@ interface ProjectStoreValue {
   updateMaterial: (materialId: string, updater: (material: Material) => Material) => void
   addReference: () => LiteratureSource
   updateReference: (referenceId: string, updater: (reference: LiteratureSource) => LiteratureSource) => void
+  addMeasurement: (measurement: MeasurementData) => void
   setActiveDeviceId: (deviceId: string) => void
   replaceProject: (project: unknown) => { ok: boolean; error?: string }
   resetProject: () => void
@@ -127,6 +128,13 @@ export function ProjectStoreProvider({ children }: { children: ReactNode }) {
     }))
   }, [])
 
+  const addMeasurement = useCallback((measurement: MeasurementData) => {
+    setProject((current) => ({
+      ...current,
+      measurements: [measurement, ...current.measurements],
+    }))
+  }, [])
+
   const replaceProject = useCallback((nextProject: unknown) => {
     const result = normalizeImportedProject(nextProject)
 
@@ -164,12 +172,13 @@ export function ProjectStoreProvider({ children }: { children: ReactNode }) {
       updateMaterial,
       addReference,
       updateReference,
+      addMeasurement,
       setActiveDeviceId,
       replaceProject,
       resetProject,
       exportProject,
     }),
-    [activeDevice, addDevice, addReference, exportProject, project, replaceProject, resetProject, setActiveDeviceId, updateActiveDevice, updateMaterial, updateReference],
+    [activeDevice, addDevice, addReference, addMeasurement, exportProject, project, replaceProject, resetProject, setActiveDeviceId, updateActiveDevice, updateMaterial, updateReference],
   )
 
   return (

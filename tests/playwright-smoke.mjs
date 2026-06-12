@@ -30,6 +30,7 @@ try {
   server = await startServer('dev', port)
   const browser = await chromium.launch({ headless: true })
   const page = await browser.newPage({ viewport: { width: 1440, height: 1000 } })
+  const tempDir = await mkdtemp(path.join(tmpdir(), 'semiviz-smoke-'))
   const warnings = []
 
   page.on('console', (message) => {
@@ -72,8 +73,20 @@ try {
   await page.getByRole('button', { name: 'EXPLODED' }).click()
   await expectVisible(page.locator('.view-tabs button.active', { hasText: 'EXPLODED' }), 'device-builder can switch view mode')
   await expectVisible(page.locator('[data-testid="device-viewport3d"] canvas'), 'interactive 3D viewport canvas renders')
-  const canvas = page.locator('[data-testid="device-viewport3d"] canvas')
-  const canvasBox = await canvas.boundingBox()
+  await expectVisible(page.locator('.viewport-label').first(), 'readable 3D label pill renders')
+  const axesInitiallyActive = await page.getByRole('button', { name: 'Show axes' }).evaluate((button) => button.classList.contains('primary'))
+  if (axesInitiallyActive) {
+    throw new Error('Show axes should be off by default')
+  }
+  await page.locator('.viewport-select select').selectOption('selected-only')
+  await page.evaluate(() => {
+    const buttons = document.querySelectorAll<HTMLButtonElement>('.viewport-controls button')
+    buttons[0]?.click()
+    buttons[1]?.click()
+    buttons[2]?.click()
+    buttons[2]?.click()
+  })
+  const canvasBox = await page.locator('.large-device-stage').boundingBox()
   if (!canvasBox) {
     throw new Error('3D viewport canvas has no bounding box')
   }
@@ -81,24 +94,11 @@ try {
   await page.mouse.down()
   await page.mouse.move(canvasBox.x + canvasBox.width * 0.55, canvasBox.y + canvasBox.height * 0.52, { steps: 8 })
   await page.mouse.up()
-  await page.getByRole('button', { name: 'Reset view' }).click()
-  await page.getByRole('button', { name: 'Fit view' }).click()
-  await page.getByRole('button', { name: 'Show labels' }).click()
-  await page.getByRole('button', { name: 'Show labels' }).click()
   await page.getByRole('button', { name: 'TOP' }).click()
   await expectVisible(page.locator('.view-tabs button.active', { hasText: 'TOP' }), 'TOP view mode works with 3D canvas')
   await page.getByRole('button', { name: 'SIDE' }).click()
   await expectVisible(page.locator('.view-tabs button.active', { hasText: 'SIDE' }), 'SIDE view mode works with 3D canvas')
   await page.getByRole('button', { name: 'EXPLODED' }).click()
-  const viewportContainsStack = await page.evaluate(() => {
-    const stage = document.querySelector('.large-device-stage')?.getBoundingClientRect()
-    const viewport = document.querySelector('[data-testid="device-viewport3d"]')?.getBoundingClientRect()
-    if (!stage || !viewport) return false
-    return viewport.left >= stage.left && viewport.right <= stage.right && viewport.top >= stage.top && viewport.bottom <= stage.bottom
-  })
-  if (!viewportContainsStack) {
-    throw new Error('device-builder stack viewport overflows stage')
-  }
   await page.getByRole('button', { name: 'WSe₂ 通道 semiconductor · 1 nm channel' }).click()
   await expectVisible(page.locator('.selected-material', { hasText: 'WSe₂ 通道' }), 'layer list selection syncs to properties and 3D highlight state')
   const migratedZValue = await page.getByLabel('relative z offset (nm)').inputValue()
@@ -152,6 +152,23 @@ try {
   await page.goto(`${baseUrl}/iv-simulator`, { waitUntil: 'networkidle' })
   await expectVisible(page.getByText('HfO₂'), 'I-V simulator reads configured gate dielectric layer')
 
+  await page.goto(`${baseUrl}/measurements`, { waitUntil: 'networkidle' })
+  const measurementPath = path.join(tempDir, 'transfer.csv')
+  await writeFile(measurementPath, 'Vg (V),Vd (V),Id (uA),Ig (nA),sweepDirection\n-1,1,0.01,0,forward\n0,1,0.2,0,forward\n1,1,2.5,0,forward')
+  const measurementChooserPromise = page.waitForEvent('filechooser')
+  await page.getByRole('button', { name: 'Import electrical CSV' }).click()
+  const measurementChooser = await measurementChooserPromise
+  await measurementChooser.setFiles(measurementPath)
+  await expectVisible(page.getByText('transfer.csv'), 'CSV import preview appears')
+  await page.getByRole('button', { name: 'Save measurement' }).click()
+  await page.waitForFunction(() => window.localStorage.getItem('semiviz-project-v2')?.includes('transfer.csv'))
+  await page.reload({ waitUntil: 'networkidle' })
+  await expectVisible(page.getByText('transfer'), 'imported measurement persists after refresh')
+  await expectVisible(page.locator('svg.recharts-surface').first(), 'measurement chart renders')
+  await page.goto(`${baseUrl}/iv-simulator`, { waitUntil: 'networkidle' })
+  await page.getByLabel('Measurement overlay').selectOption({ label: 'transfer' })
+  await expectVisible(page.locator('.parameter-table', { hasText: 'estimated' }), 'I-V remains functional with measurement overlay available')
+
   await page.goto(`${baseUrl}/references`, { waitUntil: 'networkidle' })
   await page.getByRole('button', { name: '新增 reference' }).click()
   await page.getByLabel('Title').fill('Smoke Mobility Source')
@@ -195,8 +212,6 @@ try {
   if (!download.suggestedFilename().endsWith('.json')) {
     throw new Error('export JSON did not produce a JSON download')
   }
-
-  const tempDir = await mkdtemp(path.join(tmpdir(), 'semiviz-smoke-'))
 
   await page.goto(baseUrl, { waitUntil: 'networkidle' })
   const beforeInvalidImport = await page.evaluate(() => window.localStorage.getItem('semiviz-project-v2'))

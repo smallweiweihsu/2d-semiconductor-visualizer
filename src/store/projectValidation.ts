@@ -62,7 +62,7 @@ export function normalizeImportedProject(input: unknown): ProjectImportResult {
       devices,
       materials,
       processes: normalizeOptionalArray<ProcessFlow>(input.processes, seedProject.processes),
-      measurements: normalizeOptionalArray<MeasurementData>(input.measurements, seedProject.measurements),
+      measurements: normalizeMeasurements(input.measurements),
       references: normalizeReferences(input.references),
       hypotheses: normalizeOptionalArray<ResearchHypothesis>(input.hypotheses, seedProject.hypotheses),
     },
@@ -181,6 +181,39 @@ function normalizeReferences(value: unknown): LiteratureSource[] {
       notes: typeof record.notes === 'string' ? record.notes : '',
     }
   })
+}
+
+function normalizeMeasurements(value: unknown): MeasurementData[] {
+  const source = Array.isArray(value) && value.length ? value : seedProject.measurements
+  return source.map((entry, index) => {
+    const record = isRecord(entry) ? entry : {}
+    return {
+      id: typeof record.id === 'string' ? record.id : `meas-${index + 1}`,
+      sampleName: typeof record.sampleName === 'string' ? record.sampleName : 'Imported measurement',
+      deviceName: typeof record.deviceName === 'string' ? record.deviceName : '',
+      deviceId: typeof record.deviceId === 'string' ? record.deviceId : undefined,
+      date: typeof record.date === 'string' ? record.date : new Date().toISOString().slice(0, 10),
+      type: normalizeMeasurementType(record.type),
+      tool: typeof record.tool === 'string' ? record.tool : undefined,
+      operator: typeof record.operator === 'string' ? record.operator : undefined,
+      notes: typeof record.notes === 'string' ? record.notes : undefined,
+      electrical: isRecord(record.electrical)
+        ? {
+            measurementKind: record.electrical.measurementKind === 'id_vg' || record.electrical.measurementKind === 'id_vd' ? record.electrical.measurementKind : 'unknown',
+            sourceName: typeof record.electrical.sourceName === 'string' ? record.electrical.sourceName : 'imported',
+            columns: Array.isArray(record.electrical.columns) ? structuredClone(record.electrical.columns) : [],
+            points: Array.isArray(record.electrical.points) ? structuredClone(record.electrical.points) : [],
+            units: { voltage: 'V', current: 'A' },
+          }
+        : undefined,
+    }
+  })
+}
+
+function normalizeMeasurementType(value: unknown): MeasurementData['type'] {
+  return value === 'electrical' || value === 'raman' || value === 'pl' || value === 'xps' || value === 'afm' || value === 'sem' || value === 'tem'
+    ? value
+    : 'electrical'
 }
 
 function normalizeElectricalRole(value: unknown, role: DeviceLayerRole): ElectricalRole {

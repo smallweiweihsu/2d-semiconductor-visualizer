@@ -209,11 +209,50 @@ export interface MeasurementData {
   id: string
   sampleName: string
   deviceName: string
+  deviceId?: string
   date: string
   type: MeasurementType
   tool?: string
   operator?: string
   notes?: string
+  electrical?: ElectricalMeasurementDataset
+}
+
+export interface ElectricalMeasurementDataset {
+  measurementKind: 'id_vg' | 'id_vd' | 'unknown'
+  sourceName: string
+  columns: ElectricalMeasurementColumn[]
+  points: ElectricalMeasurementPoint[]
+  units: {
+    voltage: 'V'
+    current: 'A'
+  }
+}
+
+export interface ElectricalMeasurementColumn {
+  source: string
+  mappedTo: ElectricalMeasurementColumnRole
+  unit?: string
+}
+
+export type ElectricalMeasurementColumnRole =
+  | 'ignore'
+  | 'Vg'
+  | 'Vd'
+  | 'Id'
+  | 'Ig'
+  | 'time'
+  | 'sweepDirection'
+  | 'temperature'
+
+export interface ElectricalMeasurementPoint {
+  Vg?: number
+  Vd?: number
+  Id?: number
+  Ig?: number
+  time?: number
+  sweepDirection?: string
+  temperature?: number
 }
 
 export interface LiteratureSource {

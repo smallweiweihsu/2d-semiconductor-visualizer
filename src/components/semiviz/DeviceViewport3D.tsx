@@ -1,4 +1,4 @@
-import { Edges, Html, OrbitControls, Text } from '@react-three/drei'
+import { ContactShadows, Html, OrbitControls, RoundedBox } from '@react-three/drei'
 import { Canvas, useThree } from '@react-three/fiber'
 import { RotateCcw, Scan, Tags, Waypoints } from 'lucide-react'
 import { Suspense, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
@@ -32,7 +32,7 @@ export function DeviceViewport3D({
   onSelectLayer,
 }: DeviceViewport3DProps) {
   const [showLabels, setShowLabels] = useState(true)
-  const [showAxes, setShowAxes] = useState(true)
+  const [showAxes, setShowAxes] = useState(false)
   const [opacityMode, setOpacityMode] = useState<OpacityMode>('normal')
   const [cameraAction, setCameraAction] = useState<'reset' | 'fit'>('reset')
   const [cameraKey, setCameraKey] = useState(0)
@@ -88,6 +88,18 @@ export function DeviceViewport3D({
       </div>
 
       <div className="viewport-canvas-wrap" data-testid="device-viewport3d">
+        <div className="viewport-label-strip">
+          {meshLayers.filter((layer) => layer.labelVisible).map((layer) => (
+            <button
+              className={layer.isSelected ? 'viewport-label selected' : 'viewport-label'}
+              key={layer.id}
+              type="button"
+              onClick={() => onSelectLayer(layer.selectLayerId)}
+            >
+              {layer.name}
+            </button>
+          ))}
+        </div>
         <Canvas
           camera={{ fov: 42, near: 0.01, far: 1000 }}
           dpr={[1, 1.75]}
@@ -95,9 +107,11 @@ export function DeviceViewport3D({
           onPointerMissed={() => setHoveredLayer(null)}
         >
           <color attach="background" args={['#07111f']} />
-          <ambientLight intensity={0.62} />
-          <directionalLight intensity={1.1} position={[6, 8, 6]} />
-          <pointLight intensity={0.75} position={[-5, 4, -4]} />
+          <fog attach="fog" args={['#07111f', 12, 26]} />
+          <ambientLight intensity={0.45} />
+          <directionalLight castShadow intensity={1.65} position={[5, 7, 5]} />
+          <pointLight color="#67e8f9" intensity={1.2} position={[-4, 3, -3]} />
+          <pointLight color="#8b5cf6" intensity={0.7} position={[4, 2, 4]} />
           <Suspense fallback={null}>
             <CameraRig
               action={cameraAction}
@@ -108,7 +122,7 @@ export function DeviceViewport3D({
             />
             {showAxes ? (
               <>
-                <gridHelper args={[Math.max(8, bounds.radius * 1.45), 12, '#334155', '#1e293b']} position={[0, -0.03, 0]} />
+                <gridHelper args={[Math.max(8, bounds.radius * 1.35), 10, '#1d4b5f', '#132231']} position={[0, -0.05, 0]} />
                 <axesHelper args={[2.4]} />
               </>
             ) : null}
@@ -123,6 +137,7 @@ export function DeviceViewport3D({
               />
             ))}
             {hoveredLayer ? <LayerTooltip layer={hoveredLayer} /> : null}
+            <ContactShadows opacity={0.28} scale={12} blur={2.6} far={5} position={[0, -0.04, 0]} color="#020617" />
           </Suspense>
         </Canvas>
       </div>
@@ -192,50 +207,65 @@ function LayerSlab({
         position={layer.position}
         onClick={(event) => {
           event.stopPropagation()
-          onSelect(layer.id)
+          onSelect(layer.selectLayerId)
         }}
-        onPointerOut={() => onHover(null)}
+        onPointerOut={(event) => {
+          event.stopPropagation()
+          document.body.style.cursor = ''
+          onHover(null)
+        }}
         onPointerOver={(event) => {
           event.stopPropagation()
+          document.body.style.cursor = 'pointer'
           onHover(layer)
         }}
       >
-        <boxGeometry args={layer.size} />
+        <RoundedBox args={layer.size} radius={getRadius(layer)} smoothness={6} />
         <meshStandardMaterial
-          color={layer.color}
-          emissive={layer.isSelected ? '#0e7490' : '#000000'}
-          emissiveIntensity={layer.isSelected ? 0.35 : 0}
-          metalness={layer.role === 'gate' || layer.role === 'source' || layer.role === 'drain' || layer.role === 'contact' ? 0.38 : 0.08}
+          color={layer.appearance.color}
+          emissive={layer.isSelected ? '#22d3ee' : layer.appearance.emissive}
+          emissiveIntensity={layer.isSelected ? 0.42 : layer.appearance.emissiveIntensity}
+          metalness={layer.appearance.metalness}
           opacity={layer.opacity}
-          roughness={0.55}
+          roughness={layer.appearance.roughness}
           transparent={layer.opacity < 0.98}
         />
       </mesh>
-      <mesh position={layer.position}>
-        <boxGeometry args={layer.size} />
-        <meshBasicMaterial transparent opacity={0} />
-        <Edges color={layer.highlightColor} linewidth={layer.isSelected ? 2 : 1} scale={1.004} />
-      </mesh>
-      {showLabel ? (
-        <Text
-          anchorX="left"
-          anchorY="middle"
-          color={layer.isSelected ? '#ffffff' : '#cbd5e1'}
-          fontSize={layer.isSelected ? 0.16 : 0.125}
-          maxWidth={2.2}
-          outlineColor="#020617"
-          outlineWidth={0.012}
+      {layer.glow > 0 ? (
+        <mesh position={layer.position} scale={[1.035, 1.18, 1.035]}>
+          <RoundedBox args={layer.size} radius={getRadius(layer) * 1.2} smoothness={6} />
+          <meshBasicMaterial color="#22d3ee" opacity={layer.isSelected ? 0.14 : 0.06} transparent depthWrite={false} />
+        </mesh>
+      ) : null}
+      {layer.isSelected ? (
+        <mesh position={layer.position} scale={[1.012, 1.08, 1.012]}>
+          <RoundedBox args={layer.size} radius={getRadius(layer) * 1.1} smoothness={6} />
+          <meshBasicMaterial color="#67e8f9" opacity={0.18} transparent depthWrite={false} />
+        </mesh>
+      ) : null}
+      {showLabel && layer.labelVisible ? (
+        <Html
+          center
+          distanceFactor={7.5}
           position={[
-            layer.position[0] + layer.size[0] / 2 + 0.18,
-            layer.position[1] + (index % 2) * 0.14,
-            layer.position[2] + layer.size[2] / 2 + 0.1,
+            layer.position[0] + layer.size[0] / 2 + 0.42,
+            layer.position[1] + 0.38 + (index % 3) * 0.12,
+            layer.position[2] + layer.size[2] / 2 + 0.2,
           ]}
+          transform
+          sprite
         >
-          {layer.name}
-        </Text>
+          <div className={layer.isSelected ? 'viewport-label selected' : 'viewport-label'}>{layer.name}</div>
+        </Html>
       ) : null}
     </group>
   )
+}
+
+function getRadius(layer: DeviceMeshLayer) {
+  if (layer.electricalRole === 'channel') return 0.025
+  if (layer.electricalRole === 'substrate') return 0.1
+  return 0.07
 }
 
 function LayerTooltip({ layer }: { layer: DeviceMeshLayer }) {

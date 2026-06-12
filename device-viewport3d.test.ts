@@ -5,6 +5,7 @@ import {
   getCameraPreset,
   isWebGLAvailable,
 } from './src/components/semiviz/deviceViewport3DUtils'
+import { getMaterialAppearance } from './src/visualization/materialAppearance'
 
 describe('interactive DeviceViewport3D helpers', () => {
   it('normalized layers can be converted to 3D mesh props', () => {
@@ -45,6 +46,46 @@ describe('interactive DeviceViewport3D helpers', () => {
 
     expect(selected.isSelected).toBe(true)
     expect(selected.highlightColor).toBe('#67e8f9')
+    expect(selected.glow).toBeGreaterThan(0)
+  })
+
+  it('places source and drain on opposite sides of channel', () => {
+    const meshes = createDeviceMeshLayers({
+      layers: seedProject.devices[0].layers,
+      materials: seedProject.materials,
+      selectedId: '',
+      mode: '3D',
+    })
+    const source = meshes.find((mesh) => mesh.electricalRole === 'source')!
+    const drain = meshes.find((mesh) => mesh.electricalRole === 'drain')!
+    const channel = meshes.find((mesh) => mesh.electricalRole === 'channel')!
+
+    expect(source.position[0]).toBeLessThan(channel.position[0])
+    expect(drain.position[0]).toBeGreaterThan(channel.position[0])
+  })
+
+  it('gate dielectric is above channel but below gate', () => {
+    const meshes = createDeviceMeshLayers({
+      layers: seedProject.devices[0].layers,
+      materials: seedProject.materials,
+      selectedId: '',
+      mode: '3D',
+    })
+
+    expect(meshes.find((mesh) => mesh.electricalRole === 'gate_dielectric')!.position[1]).toBeGreaterThan(meshes.find((mesh) => mesh.electricalRole === 'channel')!.position[1])
+    expect(meshes.find((mesh) => mesh.electricalRole === 'gate_dielectric')!.position[1]).toBeLessThan(meshes.find((mesh) => mesh.electricalRole === 'gate')!.position[1])
+  })
+
+  it('important labels include channel/source/drain/gate dielectric/gate but not buffer by default', () => {
+    const meshes = createDeviceMeshLayers({
+      layers: seedProject.devices[0].layers,
+      materials: seedProject.materials,
+      selectedId: '',
+      mode: '3D',
+    })
+
+    expect(meshes.filter((mesh) => mesh.labelVisible).map((mesh) => mesh.electricalRole)).toEqual(expect.arrayContaining(['channel', 'source', 'drain', 'gate_dielectric', 'gate']))
+    expect(meshes.find((mesh) => mesh.electricalRole === 'buffer')?.labelVisible).toBe(false)
   })
 
   it('exploded mode increases layer spacing', () => {
@@ -86,5 +127,13 @@ describe('interactive DeviceViewport3D helpers', () => {
 
   it('fallback preview exists when WebGL disabled helper returns false', () => {
     expect(isWebGLAvailable()).toBe(false)
+  })
+
+  it('material appearance returns translucent oxide and metallic contact', () => {
+    const sb2o3 = seedProject.materials.find((material) => material.id === 'sb2o3')!
+    const pd = seedProject.materials.find((material) => material.id === 'pd')!
+
+    expect(getMaterialAppearance(sb2o3).opacity).toBeLessThan(0.6)
+    expect(getMaterialAppearance(pd).metalness).toBeGreaterThan(0.7)
   })
 })
