@@ -1,5 +1,5 @@
 import { useRef, useState, type ChangeEvent, type FormEvent } from 'react'
-import { Download, Plus, Upload, X } from 'lucide-react'
+import { Download, Plus, RotateCcw, Upload, X } from 'lucide-react'
 import { useProjectStore } from '../../store/projectStore'
 import { parseProjectJson } from '../../store/projectValidation'
 
@@ -9,7 +9,7 @@ export function ProjectActions() {
   const [name, setName] = useState('New Device')
   const [description, setDescription] = useState('自訂二維半導體元件結構')
   const [importMessage, setImportMessage] = useState('')
-  const { addDevice, exportProject, replaceProject } = useProjectStore()
+  const { addDevice, exportProject, replaceProject, resetProject } = useProjectStore()
 
   function handleCreate(event: FormEvent) {
     event.preventDefault()
@@ -44,6 +44,17 @@ export function ProjectActions() {
     }
   }
 
+  function handleReset() {
+    const confirmed = window.confirm('This will reset localStorage project data to the latest seed data. Export JSON first if you want to keep your data.')
+
+    if (!confirmed) {
+      return
+    }
+
+    resetProject()
+    setImportMessage('已重設 local project')
+  }
+
   return (
     <>
       <input
@@ -65,6 +76,10 @@ export function ProjectActions() {
         <button className="manus-button ghost" onClick={exportProject}>
           <Download size={15} />
           匯出 JSON
+        </button>
+        <button className="manus-button ghost danger" onClick={handleReset}>
+          <RotateCcw size={15} />
+          Reset local project
         </button>
         <button className="manus-button primary" onClick={() => setIsModalOpen(true)}>
           <Plus size={15} />

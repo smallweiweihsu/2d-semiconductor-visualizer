@@ -240,6 +240,7 @@ export interface ResearchHypothesis {
 }
 
 export interface SemivizProject {
+  schemaVersion: string
   activeDeviceId: string
   devices: DeviceStructure[]
   materials: Material[]

@@ -26,13 +26,13 @@ export const materialColors = {
 }
 
 export const materials: Material[] = [
-  material('wse2', 'WSe2', 'WSe₂', 'two_d_semiconductor', 'p', '二維過渡金屬硫族化物，常用於場效電晶體', materialColors.wse2, range('1.2-1.7', 'eV'), range('3.7-4.0', 'eV'), unknown('eV'), unknown(), range('1-250', 'cm²/V·s'), unknown('Ω·m'), estimated(3.28, 'Å'), estimated(0.7, 'nm'), ['層數、缺陷、接觸金屬與製程會強烈影響電性']),
+  material('wse2', 'WSe2', 'WSe₂', 'two_d_semiconductor', 'p', '二維過渡金屬硫族化物，常用於場效電晶體', materialColors.wse2, prototypeSeed(1.4, 'eV'), prototypeSeed(3.9, 'eV'), unknown('eV'), unknown(), prototypeSeed(80, 'cm²/V·s'), unknown('Ω·m'), estimated(3.28, 'Å'), estimated(0.7, 'nm'), ['層數、缺陷、接觸金屬與製程會強烈影響電性']),
   material('mos2', 'MoS2', 'MoS₂', 'two_d_semiconductor', 'n', '常見二維 TMD 半導體', materialColors.mos2, range('1.2-1.9', 'eV'), range('4.0-4.3', 'eV'), unknown('eV'), unknown(), range('1-200', 'cm²/V·s'), unknown('Ω·m'), estimated(3.16, 'Å'), estimated(0.65, 'nm'), ['二維 TMD 代表材料']),
   material('hbn', 'hBN', 'hBN', 'dielectric', 'unknown', '二維絕緣層，原子級平坦封裝層', materialColors.hbn, range('5.5-6.0', 'eV'), unknown('eV'), unknown('eV'), range('3-4'), unknown('cm²/V·s'), unknown('Ω·m'), estimated(2.5, 'Å'), estimated(0.33, 'nm'), ['可作為介電/絕緣二維層']),
-  material('sb-bulk', 'Sb', 'Sb', 'bulk_conductor', 'unknown', '銻塊材，可作為底部平台與源極', materialColors.sb, known(0, 'eV'), unknown('eV'), range('4.5-4.7', 'eV'), unknown(), unknown('cm²/V·s'), unknown('Ω·m'), unknown('Å'), known(500000, 'nm'), ['表面可能形成 Sb₂O₃']),
-  material('sb2o3', 'Sb2O3', 'Sb₂O₃', 'oxide', 'unknown', '銻氧化物，局部氧化層或閘極介電層候選', materialColors.sb2o3, unknown('eV'), unknown('eV'), unknown('eV'), unknown(), unknown('cm²/V·s'), unknown('Ω·m'), unknown('Å'), estimated(10, 'nm'), ['許多參數需標為未知']),
+  material('sb-bulk', 'Sb', 'Sb', 'bulk_conductor', 'unknown', '銻塊材，可作為底部平台與源極', materialColors.sb, known(0, 'eV'), unknown('eV'), prototypeSeed(4.6, 'eV'), unknown(), unknown('cm²/V·s'), unknown('Ω·m'), unknown('Å'), known(500000, 'nm'), ['表面可能形成 Sb₂O₃']),
+  material('sb2o3', 'Sb2O3', 'Sb₂O₃', 'oxide', 'unknown', '銻氧化物，局部氧化層或閘極介電層候選', materialColors.sb2o3, unknown('eV'), unknown('eV'), unknown('eV'), prototypeSeed(4), unknown('cm²/V·s'), unknown('Ω·m'), unknown('Å'), estimated(10, 'nm'), ['許多參數需標為未知']),
   material('wox', 'WOx', 'WOx', 'oxide', 'unknown', '鎢氧化物，WSe₂ 氧化產物', materialColors.wox, unknown('eV'), unknown('eV'), unknown('eV'), unknown(), unknown('cm²/V·s'), unknown('Ω·m'), unknown('Å'), unknown('nm'), ['化學計量可能變動']),
-  material('pd', 'Pd', 'Pd', 'metal', 'unknown', '鈀接觸金屬，高功函數', materialColors.pd, known(0, 'eV'), unknown('eV'), range('5.1-5.6', 'eV'), unknown(), unknown('cm²/V·s'), unknown('Ω·m'), known(3.89, 'Å'), estimated(30, 'nm'), ['高功函數金屬，常用於 p-type 接觸']),
+  material('pd', 'Pd', 'Pd', 'metal', 'unknown', '鈀接觸金屬，高功函數', materialColors.pd, known(0, 'eV'), unknown('eV'), prototypeSeed(5.3, 'eV'), unknown(), unknown('cm²/V·s'), unknown('Ω·m'), known(3.89, 'Å'), estimated(30, 'nm'), ['高功函數金屬，常用於 p-type 接觸']),
   material('ti', 'Ti', 'Ti', 'metal', 'unknown', '鈦接觸金屬，低功函數', materialColors.ti, known(0, 'eV'), unknown('eV'), range('4.3-4.4', 'eV'), unknown(), unknown('cm²/V·s'), unknown('Ω·m'), known(2.95, 'Å'), estimated(5, 'nm'), ['常用於 n-type 接觸或黏附層']),
   material('in', 'In', 'In', 'metal', 'unknown', '銦接觸金屬，軟金屬', materialColors.in, known(0, 'eV'), unknown('eV'), range('4.1-4.2', 'eV'), unknown(), unknown('cm²/V·s'), unknown('Ω·m'), unknown('Å'), estimated(20, 'nm'), ['軟金屬，可能減少對 Sb₂O₃ 的衝擊']),
   material('hfo2', 'HfO2', 'HfO₂', 'dielectric', 'unknown', '高介電常數材料，閘極介電層', materialColors.hfo2, range('5.5-6.0', 'eV'), unknown('eV'), unknown('eV'), range('20-25'), unknown('cm²/V·s'), unknown('Ω·m'), unknown('Å'), estimated(10, 'nm'), ['高 k 介電層常用材料']),
@@ -40,11 +40,11 @@ export const materials: Material[] = [
 
 export const sbBulkWse2Layers: DeviceLayer[] = [
   layer('sb-bulk-source', 'Sb 塊材 / 底部源極', 'sb-bulk', 'source', 'substrate', { length_um: 10, width_um: 5, thickness_nm: 500000, x_um: 0, y_um: 0, z_nm: 0 }, 'grounded', 'Vs', 0, 1, 'Sb 塊材作為底部平台與源極'),
-  layer('local-sb2o3', '局部 Sb₂O₃', 'sb2o3', 'oxide', 'buffer', { length_um: 3, width_um: 2.5, thickness_nm: 10, x_um: -2, y_um: 0, z_nm: 500000 }, 'none', undefined, null, 0.75, '局部氧化層'),
-  layer('wse2-channel', 'WSe₂ 通道', 'wse2', 'semiconductor', 'channel', { length_um: 5, width_um: 2, thickness_nm: 1, x_um: 0, y_um: 0, z_nm: 500010 }, 'none', undefined, null, 0.9, 'WSe₂ 作為二維半導體通道'),
-  layer('pd-drain', 'Pd 汲極接觸', 'pd', 'drain', 'drain', { length_um: 1.2, width_um: 2, thickness_nm: 30, x_um: -1.8, y_um: 0, z_nm: 500011 }, 'biased', 'Vd', 1, 1, 'Pd 作為汲極接觸金屬'),
-  layer('top-sb2o3', '上方 Sb₂O₃ 介電層', 'sb2o3', 'dielectric', 'gate_dielectric', { length_um: 6, width_um: 2.5, thickness_nm: 20, x_um: 0, y_um: 0, z_nm: 500041 }, 'none', undefined, null, 0.65, '上方閘極介電層'),
-  layer('top-gate', '上閘極', 'pd', 'gate', 'gate', { length_um: 3, width_um: 2, thickness_nm: 30, x_um: 0.5, y_um: 0, z_nm: 500061 }, 'biased', 'Vg', 0, 1, '上閘極金屬'),
+  layer('local-sb2o3', '局部 Sb₂O₃', 'sb2o3', 'oxide', 'buffer', { length_um: 3, width_um: 2.5, thickness_nm: 10, x_um: -2, y_um: 0, z_nm: 10 }, 'none', undefined, null, 0.75, '局部氧化層'),
+  layer('wse2-channel', 'WSe₂ 通道', 'wse2', 'semiconductor', 'channel', { length_um: 5, width_um: 2, thickness_nm: 1, x_um: 0, y_um: 0, z_nm: 20 }, 'none', undefined, null, 0.9, 'WSe₂ 作為二維半導體通道'),
+  layer('pd-drain', 'Pd 汲極接觸', 'pd', 'drain', 'drain', { length_um: 1.2, width_um: 2, thickness_nm: 30, x_um: -1.8, y_um: 0, z_nm: 30 }, 'biased', 'Vd', 1, 1, 'Pd 作為汲極接觸金屬'),
+  layer('top-sb2o3', '上方 Sb₂O₃ 介電層', 'sb2o3', 'dielectric', 'gate_dielectric', { length_um: 6, width_um: 2.5, thickness_nm: 20, x_um: 0, y_um: 0, z_nm: 40 }, 'none', undefined, null, 0.65, '上方閘極介電層'),
+  layer('top-gate', '上閘極', 'pd', 'gate', 'gate', { length_um: 3, width_um: 2, thickness_nm: 30, x_um: 0.5, y_um: 0, z_nm: 50 }, 'biased', 'Vg', 0, 1, '上閘極金屬'),
 ]
 
 export const initialDeviceStructure: DeviceStructure = {
@@ -82,6 +82,7 @@ export const defaultProcessSteps: ProcessStep[] = [
 ]
 
 export const seedProject: SemivizProject = {
+  schemaVersion: 'semiviz-project-v2',
   activeDeviceId: initialDeviceStructure.id,
   devices: [initialDeviceStructure],
   materials,
@@ -193,6 +194,10 @@ function known(value: number | string, unit?: string, note?: string): MaterialPa
 
 function estimated(value: number | string, unit?: string, note?: string): MaterialParameter {
   return baseParameter(value, unit, 'estimated', note)
+}
+
+function prototypeSeed(value: number, unit?: string): MaterialParameter {
+  return estimated(value, unit, 'Prototype seed value; replace with reviewed literature before quantitative use.')
 }
 
 function range(value: string, unit?: string, note?: string): MaterialParameter {

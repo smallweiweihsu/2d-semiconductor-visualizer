@@ -18,7 +18,13 @@ describe('Device Builder viewport geometry', () => {
   })
 
   it('WSe2 z_nm = 500010 shows absolute z warning', () => {
-    const layer = seedProject.devices[0].layers.find((entry) => entry.id === 'wse2-channel')!
+    const layer = {
+      ...seedProject.devices[0].layers.find((entry) => entry.id === 'wse2-channel')!,
+      geometry: {
+        ...seedProject.devices[0].layers.find((entry) => entry.id === 'wse2-channel')!.geometry,
+        z_nm: 500010,
+      },
+    }
 
     expect(getGeometryWarning(layer)).toBe('z_nm seems absolute; consider using relative stack order instead.')
   })

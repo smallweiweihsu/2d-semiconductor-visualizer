@@ -8,10 +8,11 @@ import {
   type ReactNode,
 } from 'react'
 import { seedProject } from '../data/seedProject'
-import { normalizeImportedProject, normalizeStoredProject } from './projectValidation'
+import { currentStorageKey, readProjectFromStorage, resetProjectStorage } from './projectMigration'
+import { normalizeImportedProject } from './projectValidation'
 import type { DeviceStructure, LiteratureSource, Material, SemivizProject } from '../types/semiviz'
 
-const storageKey = 'semiviz-project-v1'
+const storageKey = currentStorageKey
 
 interface ProjectStoreValue {
   project: SemivizProject
@@ -23,6 +24,7 @@ interface ProjectStoreValue {
   updateReference: (referenceId: string, updater: (reference: LiteratureSource) => LiteratureSource) => void
   setActiveDeviceId: (deviceId: string) => void
   replaceProject: (project: unknown) => { ok: boolean; error?: string }
+  resetProject: () => void
   exportProject: () => void
 }
 
@@ -135,6 +137,10 @@ export function ProjectStoreProvider({ children }: { children: ReactNode }) {
     return { ok: result.ok, error: result.error }
   }, [])
 
+  const resetProject = useCallback(() => {
+    setProject(resetProjectStorage(window.localStorage))
+  }, [])
+
   const exportProject = useCallback(() => {
     const blob = new Blob([JSON.stringify(project, null, 2)], {
       type: 'application/json',
@@ -160,9 +166,10 @@ export function ProjectStoreProvider({ children }: { children: ReactNode }) {
       updateReference,
       setActiveDeviceId,
       replaceProject,
+      resetProject,
       exportProject,
     }),
-    [activeDevice, addDevice, addReference, exportProject, project, replaceProject, setActiveDeviceId, updateActiveDevice, updateMaterial, updateReference],
+    [activeDevice, addDevice, addReference, exportProject, project, replaceProject, resetProject, setActiveDeviceId, updateActiveDevice, updateMaterial, updateReference],
   )
 
   return (
@@ -188,15 +195,5 @@ export function useProjectStore() {
 }
 
 function readStoredProject() {
-  const raw = window.localStorage.getItem(storageKey)
-
-  if (!raw) {
-    return seedProject
-  }
-
-  try {
-    return normalizeStoredProject(JSON.parse(raw))
-  } catch {
-    return seedProject
-  }
+  return readProjectFromStorage(window.localStorage)
 }

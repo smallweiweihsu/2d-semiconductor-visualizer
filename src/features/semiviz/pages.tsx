@@ -204,6 +204,7 @@ export function DeviceBuilderPage() {
   const { project, activeDevice, setActiveDeviceId, updateActiveDevice } = useProjectStore()
   const [selectedId, setSelectedId] = useState(activeDevice.layers[2]?.id ?? activeDevice.layers[0]?.id ?? '')
   const [viewMode, setViewMode] = useState('3D')
+  const [normalizeMessage, setNormalizeMessage] = useState('')
   const selected = activeDevice.layers.find((layer) => layer.id === selectedId) ?? activeDevice.layers[2] ?? activeDevice.layers[0]
   const material = selected ? findMaterial(project.materials, selected.materialId) : undefined
 
@@ -281,8 +282,15 @@ export function DeviceBuilderPage() {
               layer={selected}
               materials={project.materials}
               geometryWarning={getGeometryWarning(selected)}
-              onNormalizeZ={() => updateActiveDevice((device) => normalizeDeviceZPositions(device))}
-              onChange={(patch) => updateActiveDevice((device) => updateLayer(device, selected.id, patch))}
+              normalizeMessage={normalizeMessage}
+              onNormalizeZ={() => {
+                updateActiveDevice((device) => normalizeDeviceZPositions(device))
+                setNormalizeMessage('z positions normalized and saved.')
+              }}
+              onChange={(patch) => {
+                setNormalizeMessage('')
+                updateActiveDevice((device) => updateLayer(device, selected.id, patch))
+              }}
             />
             <SimulationConfigEditor
               device={activeDevice}
@@ -407,6 +415,12 @@ export function IVSimulatorPage() {
             <Meta label="Role detection" value={`channel ${extracted.detection.channel} · dielectric ${extracted.detection.gateDielectric}`} />
             <Meta label="Carrier type" value={extracted.carrierType} />
             <div className={`status-pill status-${simulation.status}`}>{simulationStatusLabels[simulation.status]}</div>
+            {simulation.status === 'fallback_preview' ? (
+              <div className="simulation-status-note warning">Using fallback values because project parameters are missing. Go to Materials to review parameters or reset local project.</div>
+            ) : null}
+            {simulation.status === 'ready_with_estimates' ? (
+              <div className="simulation-status-note estimate">Simulation uses estimated seed parameters. Replace with reviewed literature before quantitative use.</div>
+            ) : null}
           </div>
         </Card>
         <Card title="Extracted parameters">

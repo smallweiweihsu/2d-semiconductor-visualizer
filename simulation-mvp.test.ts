@@ -16,10 +16,11 @@ describe('Simulation MVP device extraction', () => {
     expect(extracted.channelLayer?.role).toBe('semiconductor')
     expect(extracted.length_um).toBe(5)
     expect(extracted.width_um).toBe(2)
-    expect(extracted.mobility_cm2Vs).toBeUndefined()
-    expect(extracted.bandGap_eV).toBeUndefined()
-    expect(extracted.electronAffinity_eV).toBeUndefined()
-    expect(extracted.contactWorkFunction_eV).toBeUndefined()
+    expect(extracted.mobility_cm2Vs).toBe(80)
+    expect(extracted.mobilityMeta?.confidence).toBe('estimated')
+    expect(extracted.bandGap_eV).toBe(1.4)
+    expect(extracted.electronAffinity_eV).toBe(3.9)
+    expect(extracted.contactWorkFunction_eV).toBeCloseTo(4.95)
   })
 
   it('calculateCox converts nm to m', () => {

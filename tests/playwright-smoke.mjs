@@ -8,6 +8,8 @@ const port = 5174
 const baseUrl = `http://127.0.0.1:${port}`
 const previewPort = 4174
 const previewUrl = `http://127.0.0.1:${previewPort}`
+const storageKey = 'semiviz-project-v2'
+const legacyStorageKey = 'semiviz-project-v1'
 const routes = [
   ['Dashboard', '/'],
   ['Device Builder', '/device-builder'],
@@ -49,6 +51,23 @@ try {
   await assertCanScroll(page, 'research-notes can scroll')
 
   await page.goto(`${baseUrl}/device-builder`, { waitUntil: 'networkidle' })
+  await page.evaluate(({ legacyStorageKey, storageKey }) => {
+    const project = JSON.parse(window.localStorage.getItem(storageKey))
+    delete project.schemaVersion
+    const channel = project.devices[0].layers.find((layer) => layer.id === 'wse2-channel')
+    channel.geometry.z_nm = 500010
+    const wse2 = project.materials.find((material) => material.id === 'wse2')
+    wse2.mobility_cm2Vs = {
+      ...wse2.mobility_cm2Vs,
+      value: '1-250',
+      valueType: 'range',
+      range: { min: 1, max: 250 },
+      selectedValue: null,
+    }
+    window.localStorage.removeItem(storageKey)
+    window.localStorage.setItem(legacyStorageKey, JSON.stringify(project))
+  }, { legacyStorageKey, storageKey })
+  await page.reload({ waitUntil: 'networkidle' })
   await page.getByRole('button', { name: 'EXPLODED' }).click()
   await expectVisible(page.locator('.view-tabs button.active', { hasText: 'EXPLODED' }), 'device-builder can switch view mode')
   const viewportContainsStack = await page.evaluate(() => {
@@ -61,17 +80,43 @@ try {
     throw new Error('device-builder stack viewport overflows stage')
   }
   await page.getByRole('button', { name: 'WSe₂ 通道 semiconductor · 1 nm channel' }).click()
+  const migratedZValue = await page.getByLabel('relative z offset (nm)').inputValue()
+  if (migratedZValue === '500010') {
+    throw new Error('legacy absolute z value was not migrated to relative z')
+  }
+  await page.getByLabel('relative z offset (nm)').fill('500010')
   await expectVisible(page.getByText('z_nm seems absolute; consider using relative stack order instead.'), 'large absolute z warning appears')
   await page.getByRole('button', { name: 'Normalize z positions' }).click()
+  await expectVisible(page.getByText('z positions normalized and saved.'), 'z normalization status appears')
   await page.waitForFunction(() => {
-    const raw = window.localStorage.getItem('semiviz-project-v1')
+    const raw = window.localStorage.getItem('semiviz-project-v2')
     return raw?.includes('"z_nm":20') && raw?.includes('"z_nm":50')
   })
   await page.reload({ waitUntil: 'networkidle' })
-  const zStillReasonable = await page.evaluate(() => window.localStorage.getItem('semiviz-project-v1')?.includes('"z_nm":20'))
+  const zStillReasonable = await page.evaluate(() => window.localStorage.getItem('semiviz-project-v2')?.includes('"z_nm":20'))
   if (!zStillReasonable) {
     throw new Error('normalized z positions did not persist after refresh')
   }
+  await page.goto(`${baseUrl}/iv-simulator`, { waitUntil: 'networkidle' })
+  await expectVisible(page.getByText('ready with estimates'), 'migrated project uses seed estimates without fallback')
+  const migratedIsFallback = await page.locator('.status-fallback_preview').count()
+  if (migratedIsFallback) {
+    throw new Error('migrated project entered fallback_preview without enabling fallback')
+  }
+  await expectVisible(page.getByText('Simulation uses estimated seed parameters. Replace with reviewed literature before quantitative use.'), 'estimated seed warning appears')
+  page.once('dialog', (dialog) => dialog.accept())
+  await page.getByRole('button', { name: 'Reset local project' }).click()
+  await expectVisible(page.getByText('已重設 local project'), 'reset project status appears')
+  const resetState = await page.evaluate(({ legacyStorageKey, storageKey }) => ({
+    hasLegacy: Boolean(window.localStorage.getItem(legacyStorageKey)),
+    current: window.localStorage.getItem(storageKey),
+  }), { legacyStorageKey, storageKey })
+  if (resetState.hasLegacy || !resetState.current?.includes('semiviz-project-v2')) {
+    throw new Error('Reset local project did not clear legacy keys and write v2 seed')
+  }
+  await page.reload({ waitUntil: 'networkidle' })
+  await expectVisible(page.getByText('ready with estimates'), 'reset project persists after refresh')
+  await page.goto(`${baseUrl}/device-builder`, { waitUntil: 'networkidle' })
 
   await page.getByRole('button', { name: '新增 layer' }).click()
   await page.getByLabel('layer name').fill('Smoke Gate Oxide')
@@ -79,7 +124,7 @@ try {
   await page.getByLabel('thickness_nm').fill('18')
   await page.getByLabel('electricalRole').selectOption('gate_dielectric')
   await page.getByLabel('Gate dielectric').selectOption({ label: 'Smoke Gate Oxide' })
-  await page.waitForFunction(() => window.localStorage.getItem('semiviz-project-v1')?.includes('Smoke Gate Oxide'))
+  await page.waitForFunction(() => window.localStorage.getItem('semiviz-project-v2')?.includes('Smoke Gate Oxide'))
   await page.reload({ waitUntil: 'networkidle' })
   await expectVisible(page.locator('.pane-list').getByText('Smoke Gate Oxide'), 'edited layer persists after refresh')
   await page.goto(`${baseUrl}/iv-simulator`, { waitUntil: 'networkidle' })
@@ -90,14 +135,14 @@ try {
   await page.getByLabel('Title').fill('Smoke Mobility Source')
   await page.getByLabel('Authors').fill('Manual QA')
   await page.getByLabel('DOI').fill('manual-smoke-doi')
-  await page.waitForFunction(() => window.localStorage.getItem('semiviz-project-v1')?.includes('Smoke Mobility Source'))
+  await page.waitForFunction(() => window.localStorage.getItem('semiviz-project-v2')?.includes('Smoke Mobility Source'))
 
   await page.goto(`${baseUrl}/materials`, { waitUntil: 'networkidle' })
   await page.getByRole('button', { name: 'WSe₂二維過渡金屬硫族化物，常用於場效電晶體' }).click()
   await page.getByLabel('mobility_cm2Vs confidence').selectOption('estimated')
   await page.getByRole('spinbutton', { name: 'Value', exact: true }).fill('88')
   await page.getByLabel('mobility_cm2Vs source reference').selectOption({ label: 'Smoke Mobility Source' })
-  await page.waitForFunction(() => window.localStorage.getItem('semiviz-project-v1')?.includes('manual-smoke-doi'))
+  await page.waitForFunction(() => window.localStorage.getItem('semiviz-project-v2')?.includes('manual-smoke-doi'))
   await page.reload({ waitUntil: 'networkidle' })
   await expectVisible(page.locator('.linked-source-list', { hasText: 'Smoke Mobility Source · manual-smoke-doi' }), 'material mobility source persists after refresh')
 
@@ -108,7 +153,7 @@ try {
   await page.goto(`${baseUrl}/materials`, { waitUntil: 'networkidle' })
   await page.getByRole('button', { name: 'WSe₂二維過渡金屬硫族化物，常用於場效電晶體' }).click()
   await page.getByLabel('mobility_cm2Vs confidence').selectOption('unknown')
-  await page.waitForFunction(() => window.localStorage.getItem('semiviz-project-v1')?.includes('"confidence":"unknown"'))
+  await page.waitForFunction(() => window.localStorage.getItem('semiviz-project-v2')?.includes('"confidence":"unknown"'))
   await page.goto(`${baseUrl}/iv-simulator`, { waitUntil: 'networkidle' })
   await expectVisible(page.locator('.disabled-chart').first(), 'unknown mobility disables chart')
   await page.getByText('Use fallback values for prototype preview', { exact: true }).click()
@@ -132,7 +177,7 @@ try {
   const tempDir = await mkdtemp(path.join(tmpdir(), 'semiviz-smoke-'))
 
   await page.goto(baseUrl, { waitUntil: 'networkidle' })
-  const beforeInvalidImport = await page.evaluate(() => window.localStorage.getItem('semiviz-project-v1'))
+  const beforeInvalidImport = await page.evaluate(() => window.localStorage.getItem('semiviz-project-v2'))
   const invalidImportPath = path.join(tempDir, 'invalid-project.json')
   await writeFile(invalidImportPath, '{ invalid json')
   const invalidChooserPromise = page.waitForEvent('filechooser')
@@ -140,7 +185,7 @@ try {
   const invalidChooser = await invalidChooserPromise
   await invalidChooser.setFiles(invalidImportPath)
   await expectVisible(page.getByText(/匯入失敗/), 'invalid JSON import reports failure')
-  const afterInvalidImport = await page.evaluate(() => window.localStorage.getItem('semiviz-project-v1'))
+  const afterInvalidImport = await page.evaluate(() => window.localStorage.getItem('semiviz-project-v2'))
   if (beforeInvalidImport !== afterInvalidImport) {
     throw new Error('invalid JSON import overwrote localStorage')
   }
@@ -170,7 +215,7 @@ try {
   const fileChooser = await fileChooserPromise
   await fileChooser.setFiles(importPath)
   await page.waitForTimeout(1000)
-  const importedInStorage = await page.evaluate(() => window.localStorage.getItem('semiviz-project-v1')?.includes('Imported JSON Device'))
+  const importedInStorage = await page.evaluate(() => window.localStorage.getItem('semiviz-project-v2')?.includes('Imported JSON Device'))
   if (!importedInStorage) {
     throw new Error('import JSON did not update localStorage')
   }
@@ -192,7 +237,8 @@ try {
   }
   await expectVisible(previewPage.getByRole('heading', { name: '研究假說' }), 'preview /research-notes refresh renders')
   await previewPage.evaluate(() => {
-    window.localStorage.setItem('semiviz-project-v1', JSON.stringify({
+    window.localStorage.setItem('semiviz-project-v2', JSON.stringify({
+      schemaVersion: 'semiviz-project-v2',
       activeDeviceId: 'deployment-device',
       devices: [{
         id: 'deployment-device',
@@ -207,7 +253,7 @@ try {
     }))
   })
   await previewPage.reload({ waitUntil: 'networkidle' })
-  const previewStoragePersists = await previewPage.evaluate(() => window.localStorage.getItem('semiviz-project-v1')?.includes('Deployment Persistence Device'))
+  const previewStoragePersists = await previewPage.evaluate(() => window.localStorage.getItem('semiviz-project-v2')?.includes('Deployment Persistence Device'))
   if (!previewStoragePersists) {
     throw new Error('preview localStorage project did not persist after refresh')
   }

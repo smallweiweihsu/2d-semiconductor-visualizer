@@ -57,6 +57,7 @@ export function normalizeImportedProject(input: unknown): ProjectImportResult {
   return {
     ok: true,
     project: {
+      schemaVersion: 'semiviz-project-v2',
       activeDeviceId,
       devices,
       materials,

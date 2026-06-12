@@ -5,12 +5,14 @@ export function LayerPropertyEditor({
   layer,
   materials,
   geometryWarning,
+  normalizeMessage,
   onNormalizeZ,
   onChange,
 }: {
   layer: DeviceLayer
   materials: Material[]
   geometryWarning?: string
+  normalizeMessage?: string
   onNormalizeZ: () => void
   onChange: (patch: Partial<Omit<DeviceLayer, 'geometry'>> & { geometry?: Partial<DeviceLayer['geometry']> }) => void
 }) {
@@ -47,7 +49,8 @@ export function LayerPropertyEditor({
         <NumberField label="relative z offset (nm)" value={layer.geometry.z_nm ?? 0} onChange={(value) => onChange({ geometry: { z_nm: value } })} />
       </div>
       {geometryWarning ? <div className="geometry-warning">{geometryWarning}</div> : null}
-      <button className="manus-button ghost" type="button" onClick={onNormalizeZ}>Normalize z positions</button>
+      {normalizeMessage ? <div className="geometry-success" role="status">{normalizeMessage}</div> : null}
+      <button className={geometryWarning ? 'manus-button primary normalize-z-button' : 'manus-button ghost normalize-z-button'} type="button" onClick={onNormalizeZ}>Normalize z positions</button>
       <label>
         voltageMode
         <select value={layer.voltageMode} onChange={(event) => onChange({ voltageMode: event.target.value as DeviceLayer['voltageMode'] })}>
