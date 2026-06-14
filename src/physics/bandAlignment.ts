@@ -133,3 +133,26 @@ export function estimateSchottkyBarrier({
     warnings_zh,
   }
 }
+
+/**
+ * Cowley–Sze 介面態斜率參數 S：
+ *   S = 1 / (1 + q² · δ · D_it / (ε0 · ε_i))
+ * D_it 單位 cm⁻²·eV⁻¹，δ 為界面層厚度 (nm)，ε_i 為界面層相對介電常數。
+ * S → 1 為理想 Schottky–Mott；S → 0 為完全 pinning（Bardeen 極限）。
+ * 參考：A. M. Cowley & S. M. Sze, J. Appl. Phys. 36, 3212 (1965),
+ *   DOI: 10.1063/1.1702952；R. T. Tung, Appl. Phys. Rev. 1, 011304 (2014),
+ *   DOI: 10.1063/1.4858400。
+ */
+export function pinningFactorFromDit(
+  dit_cm2eV: number,
+  delta_nm = 0.5,
+  epsilonInterface = 3,
+): number {
+  if (!Number.isFinite(dit_cm2eV) || dit_cm2eV < 0) return 1
+  const q = 1.602176634e-19
+  const eps0 = 8.8541878128e-12
+  const delta_m = delta_nm * 1e-9
+  const dit_m2J = dit_cm2eV * 1e4 / q // cm⁻²eV⁻¹ → m⁻²J⁻¹
+  const denom = 1 + (q * q * delta_m * dit_m2J) / (eps0 * epsilonInterface)
+  return 1 / denom
+}

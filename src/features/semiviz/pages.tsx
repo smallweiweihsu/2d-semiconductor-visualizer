@@ -46,6 +46,7 @@ import { LayerPropertyEditor } from './LayerPropertyEditor'
 import { LayerStackPanel } from './LayerStackPanel'
 import { findMaterial } from './materialUtils'
 import { CollapsibleSection } from '../../components/common/CollapsibleSection'
+import { estimateSchottkyBarrier, pinningFactorFromDit } from '../../physics/bandAlignment'
 import { SimulationConfigEditor } from './SimulationConfigEditor'
 import {
   getGeometryWarning,
@@ -865,11 +866,30 @@ export function BandDiagramPage() {
   const [mode, setMode] = useState<'after' | 'before'>('after')
   const metal = findMaterial(project.materials, metalId)
   const semiconductor = findMaterial(project.materials, semiconductorId)
+  const [flpOn, setFlpOn] = useState(false)
+  const [migsOn, setMigsOn] = useState(false)
+  const [ditExp, setDitExp] = useState(13)
+  const dit = Math.pow(10, ditExp)
+  const pinningOn = flpOn || migsOn
   const metalPhi = resolveParameterNumber(metal.workFunction_eV)
   const affinity = resolveParameterNumber(semiconductor.electronAffinity_eV)
   const bandGap = resolveParameterNumber(semiconductor.bandGap_eV)
-  const nBarrier = metalPhi !== undefined && affinity !== undefined ? Math.max(0, metalPhi - affinity) : undefined
-  const pBarrier = bandGap !== undefined && nBarrier !== undefined ? Math.max(0, bandGap - nBarrier) : undefined
+  // 電荷中性能階 CNL（真空下深度, eV）— 估計值，需文獻校準（candidate）
+  // 參考：J. Tersoff, PRL 52, 465 (1984)；R. T. Tung, Appl. Phys. Rev. 1, 011304 (2014)
+  const cnlMap: Record<string, number> = { wse2: 4.55, mos2: 4.45 }
+  const sFactor = pinningOn ? pinningFactorFromDit(dit) : 1
+  const cnlTarget = affinity !== undefined && bandGap !== undefined
+    ? (migsOn ? (cnlMap[semiconductorId] ?? affinity + bandGap / 2) : affinity + bandGap / 2)
+    : undefined
+  const barrierEstimate = estimateSchottkyBarrier({
+    metalWorkFunction_eV: metalPhi ?? null,
+    electronAffinity_eV: affinity ?? null,
+    bandGap_eV: bandGap ?? null,
+    pinningFactor: pinningOn ? sFactor : null,
+    chargeNeutralityLevel_eV: pinningOn ? (cnlTarget ?? null) : null,
+  })
+  const nBarrier = barrierEstimate.electronBarrier_eV ?? undefined
+  const pBarrier = barrierEstimate.holeBarrier_eV ?? undefined
 
   return (
     <WorkspacePage title="Band Diagram" icon={<BarChart3 size={18} />}>
@@ -911,11 +931,21 @@ export function BandDiagramPage() {
                 <button className={mode === 'before' ? 'active' : ''} type="button" onClick={() => setMode('before')}>Before Contact (Flat Band)</button>
               </div>
             </section>
+            <section>
+              <h3>介面物理（真實情況）</h3>
+              <label className="band-check"><input type="checkbox" checked={flpOn} onChange={(e) => setFlpOn(e.target.checked)} /> Fermi-level pinning</label>
+              <label className="band-check"><input type="checkbox" checked={migsOn} onChange={(e) => setMigsOn(e.target.checked)} /> MIGS（以電中性能階 CNL）</label>
+              <label className="band-slider">
+                <span>介面態密度 Dit</span>
+                <input type="range" min={11} max={14} step={0.1} value={ditExp} disabled={!pinningOn} onChange={(e) => setDitExp(Number(e.target.value))} />
+                <small>{dit.toExponential(1)} cm⁻²eV⁻¹{pinningOn ? `（S=${sFactor.toFixed(2)}）` : '（未啟用）'}</small>
+              </label>
+            </section>
           </ManusSidePanel>
         )}
         center={(
           <ManusChartCard title={`Energy Band Diagram: ${metal.displayName} / ${semiconductor.displayName}`} badge={<ManusStatusBadge tone="primary">{mode === 'after' ? 'after contact' : 'before contact'}</ManusStatusBadge>}>
-            <BandDiagramPreview mode={mode} />
+            <BandDiagramPreview mode={mode} metalPhi={metalPhi} chi={affinity} eg={bandGap} phiBn={nBarrier} metalLabel={metal.displayName} semiLabel={semiconductor.displayName} />
           </ManusChartCard>
         )}
         right={(
@@ -935,9 +965,18 @@ export function BandDiagramPage() {
                 <BandRow label="Electron Affinity" value={`${formatBandValue(affinity)} eV`} />
                 <BandRow label="Band Gap" value={`${formatBandValue(bandGap)} eV`} />
               </section>
+              {pinningOn ? (
+                <section className="band-group">
+                  <h3>介面模型</h3>
+                  <BandRow label="Pinning factor S" value={sFactor.toFixed(2)} />
+                  <BandRow label="模型" value={migsOn ? 'MIGS / CNL' : 'Cowley–Sze'} />
+                </section>
+              ) : null}
               <ManusCallout tone="warning">
                 <strong>注意</strong>
-                <p>此為簡化能帶圖，未考慮 Fermi-level pinning、MIGS 效應與介面態密度。</p>
+                <p>{pinningOn
+                  ? 'pinning factor S 由 Cowley–Sze 公式 S=1/(1+q²δDit/ε₀εᵢ) 估算；CNL／Dit 為半經驗值，需該材料系統實測校準，不可跨材料直接沿用。'
+                  : '目前為理想 Schottky–Mott（未套用 pinning）。實測二維接觸常因介面態使功函數無法決定真實障礙；可勾選上方 FLP／MIGS／Dit 加入修正。'}</p>
               </ManusCallout>
             </div>
           </ManusAnalysisPanel>
