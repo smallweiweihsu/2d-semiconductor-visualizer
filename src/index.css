@@ -3053,3 +3053,37 @@ button.manus-list-row {
   font-size: 12px;
   color: var(--muted, #8a94a6);
 }
+
+/* Band Diagram: Manus-style grouped param cards + tighter selectors */
+.band-group {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+}
+.band-group h3 {
+  margin: 0 0 6px;
+  font-size: 13px;
+}
+.band-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 6px 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+.band-row:first-of-type {
+  border-top: none;
+}
+.band-row span {
+  color: var(--muted);
+  font-size: 12px;
+}
+.band-row strong {
+  font-family: "JetBrains Mono", monospace;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.band-diagram-workspace .manus-list-row {
+  margin-bottom: 4px;
+}

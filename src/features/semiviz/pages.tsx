@@ -852,6 +852,10 @@ export function IVSimulatorPage() {
   )
 }
 
+function BandRow({ label, value, color }: { label: string; value: string; color?: string }) {
+  return <div className="band-row"><span>{label}</span><strong style={color ? { color } : undefined}>{value}</strong></div>
+}
+
 export function BandDiagramPage() {
   const { project } = useProjectStore()
   const metals = ['pd', 'ti', 'in'].map((id) => findMaterial(project.materials, id))
@@ -917,19 +921,19 @@ export function BandDiagramPage() {
         right={(
           <ManusAnalysisPanel title="能帶參數">
             <div className="band-analysis-cards" data-testid="band-energy-panel">
-              <section>
+              <section className="band-group">
                 <h3>Schottky Barrier</h3>
-                <Meta label="φ_Bn (n-type)" value={`${formatBandValue(nBarrier)} eV`} />
-                <Meta label="φ_Bp (p-type)" value={`${formatBandValue(pBarrier)} eV`} />
+                <BandRow label="φ_Bn (n-type)" value={`${formatBandValue(nBarrier)} eV`} color="#22d3ee" />
+                <BandRow label="φ_Bp (p-type)" value={`${formatBandValue(pBarrier)} eV`} color="#a78bfa" />
               </section>
-              <section>
+              <section className="band-group">
                 <h3>Metal: {metal.displayName}</h3>
-                <Meta label="Work Function" value={`${formatBandValue(metalPhi)} eV`} />
+                <BandRow label="Work Function" value={`${formatBandValue(metalPhi)} eV`} />
               </section>
-              <section>
+              <section className="band-group">
                 <h3>Semiconductor: {semiconductor.displayName}</h3>
-                <Meta label="Electron Affinity" value={`${formatBandValue(affinity)} eV`} />
-                <Meta label="Band Gap" value={`${formatBandValue(bandGap)} eV`} />
+                <BandRow label="Electron Affinity" value={`${formatBandValue(affinity)} eV`} />
+                <BandRow label="Band Gap" value={`${formatBandValue(bandGap)} eV`} />
               </section>
               <ManusCallout tone="warning">
                 <strong>注意</strong>
