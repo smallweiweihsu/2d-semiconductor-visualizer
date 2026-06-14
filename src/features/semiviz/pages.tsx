@@ -859,8 +859,8 @@ function BandRow({ label, value, color }: { label: string; value: string; color?
 
 export function BandDiagramPage() {
   const { project } = useProjectStore()
-  const metals = ['pd', 'ti', 'in'].map((id) => findMaterial(project.materials, id))
-  const semiconductors = ['wse2', 'mos2'].map((id) => findMaterial(project.materials, id))
+  const metals = ['pd', 'ti', 'in', 'pt', 'au', 'sb-bulk'].map((id) => findMaterial(project.materials, id))
+  const semiconductors = ['wse2', 'mos2', 'inse'].map((id) => findMaterial(project.materials, id))
   const [metalId, setMetalId] = useState('pd')
   const [semiconductorId, setSemiconductorId] = useState('wse2')
   const [mode, setMode] = useState<'after' | 'before'>('after')
@@ -945,7 +945,7 @@ export function BandDiagramPage() {
         )}
         center={(
           <ManusChartCard title={`Energy Band Diagram: ${metal.displayName} / ${semiconductor.displayName}`} badge={<ManusStatusBadge tone="primary">{mode === 'after' ? 'after contact' : 'before contact'}</ManusStatusBadge>}>
-            <BandDiagramPreview mode={mode} metalPhi={metalPhi} chi={affinity} eg={bandGap} phiBn={nBarrier} metalLabel={metal.displayName} semiLabel={semiconductor.displayName} />
+            <div className="band-anim-wrap" key={`${metalId}-${semiconductorId}-${mode}-${pinningOn}`}><BandDiagramPreview mode={mode} metalPhi={metalPhi} chi={affinity} eg={bandGap} phiBn={nBarrier} metalLabel={metal.displayName} semiLabel={semiconductor.displayName} /></div>
           </ManusChartCard>
         )}
         right={(

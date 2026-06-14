@@ -36,6 +36,9 @@ export const materials: Material[] = [
   material('ti', 'Ti', 'Ti', 'metal', 'unknown', '鈦接觸金屬，低功函數', materialColors.ti, known(0, 'eV'), unknown('eV'), range('4.3-4.4', 'eV'), unknown(), unknown('cm²/V·s'), unknown('Ω·m'), known(2.95, 'Å'), estimated(5, 'nm'), ['常用於 n-type 接觸或黏附層']),
   material('in', 'In', 'In', 'metal', 'unknown', '銦接觸金屬，軟金屬', materialColors.in, known(0, 'eV'), unknown('eV'), range('4.1-4.2', 'eV'), unknown(), unknown('cm²/V·s'), unknown('Ω·m'), unknown('Å'), estimated(20, 'nm'), ['軟金屬，可能減少對 Sb₂O₃ 的衝擊']),
   material('hfo2', 'HfO2', 'HfO₂', 'dielectric', 'unknown', '高介電常數材料，閘極介電層', materialColors.hfo2, range('5.5-6.0', 'eV'), unknown('eV'), unknown('eV'), range('20-25'), unknown('cm²/V·s'), unknown('Ω·m'), unknown('Å'), estimated(10, 'nm'), ['高 k 介電層常用材料']),
+  material('pt', 'Pt', 'Pt', 'metal', 'unknown', '鉑接觸金屬，高功函數', '#e5e7eb', known(0, 'eV'), unknown('eV'), prototypeSeed(5.65, 'eV'), unknown(), unknown('cm²/V·s'), unknown('Ω·m'), known(3.92, 'Å'), estimated(20, 'nm'), ['高功函數金屬，p-type 接觸候選（Michaelson 1977）']),
+  material('au', 'Au', 'Au', 'metal', 'unknown', '金接觸金屬', '#fcd34d', known(0, 'eV'), unknown('eV'), prototypeSeed(5.1, 'eV'), unknown(), unknown('cm²/V·s'), unknown('Ω·m'), known(4.08, 'Å'), estimated(30, 'nm'), ['常用接觸金屬（功函數約 5.1 eV, Michaelson 1977）']),
+  material('inse', 'InSe', 'InSe', 'two_d_semiconductor', 'n', '二維 III–VI 半導體，能隙隨層數變化', '#34d399', range('1.2-2.0', 'eV'), prototypeSeed(4.6, 'eV'), unknown('eV'), unknown(), range('10-1000', 'cm²/V·s'), unknown('Ω·m'), estimated(4.0, 'Å'), estimated(0.8, 'nm'), ['層數強烈影響能隙與電子親和力（需文獻校準）']),
 ]
 
 export const sbBulkWse2Layers: DeviceLayer[] = [
