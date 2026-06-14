@@ -363,6 +363,130 @@ export function DeviceBuilderPage() {
   )
 }
 
+function processCategory(type: ProcessType): string {
+  switch (type) {
+    case 'exfoliation':
+    case 'dry_transfer':
+      return 'transfer'
+    case 'metal_deposition':
+    case 'thermal_evaporation':
+    case 'ebeam_evaporation':
+    case 'dielectric_deposition':
+      return 'deposition'
+    case 'rie':
+      return 'etch'
+    case 'oxidation':
+      return 'oxidation'
+    case 'annealing':
+    case 'metal_diffusion':
+      return 'thermal'
+    case 'lithography':
+      return 'litho'
+    case 'liftoff':
+      return 'liftoff'
+    default:
+      return 'measure'
+  }
+}
+
+function ProcessStageVisual({ step }: { step: { type: ProcessType; order: number } }) {
+  const category = processCategory(step.type)
+  const layers = Math.min(Math.max(step.order, 1), 5)
+  const layerColors = ['#22d3ee', '#a78bfa', '#38bdf8', '#f0abfc', '#34d399']
+  const emitter: ReactNode = (() => {
+    switch (category) {
+      case 'deposition':
+        return (
+          <g>
+            <rect x={186} y={28} width={28} height={14} rx={3} fill="#1f2937" stroke="#334155" />
+            {[0, 1, 2, 3].map((i) => (
+              <circle key={i} className="stage-particle" style={{ animationDelay: `${i * 0.4}s` }} cx={200 + (i - 1.5) * 10} cy={60} r={3} fill="#22d3ee" />
+            ))}
+          </g>
+        )
+      case 'etch':
+        return (
+          <g className="stage-pulse">
+            {[0, 1, 2].map((i) => (
+              <g key={i} stroke="#f472b6" strokeWidth={2}>
+                <line x1={170 + i * 30} y1={50} x2={170 + i * 30} y2={120} />
+                <path d={`M${165 + i * 30} 112 L${170 + i * 30} 122 L${175 + i * 30} 112`} fill="#f472b6" />
+              </g>
+            ))}
+          </g>
+        )
+      case 'oxidation':
+        return (
+          <g>
+            <ellipse cx={200} cy={196} rx={120} ry={16} fill="#fb923c" opacity={0.18} className="stage-pulse" />
+            {[0, 1, 2, 3, 4].map((i) => (
+              <circle key={i} className="stage-particle" style={{ animationDelay: `${i * 0.3}s` }} cx={150 + i * 25} cy={70} r={3} fill="#fb923c" />
+            ))}
+          </g>
+        )
+      case 'transfer':
+        return (
+          <g>
+            <polygon points="150,90 250,78 256,96 156,108" fill="#a78bfa" opacity={0.85} />
+            <path d="M200 112 L200 150" stroke="#a78bfa" strokeWidth={2} />
+            <path d="M194 142 L200 154 L206 142" fill="#a78bfa" />
+          </g>
+        )
+      case 'thermal':
+        return (
+          <g className="stage-pulse" stroke="#fb923c" strokeWidth={2} fill="none">
+            <path d="M160 120 q10 -16 20 0 q10 16 20 0" />
+            <path d="M210 120 q10 -16 20 0 q10 16 20 0" />
+          </g>
+        )
+      case 'litho':
+        return (
+          <g>
+            <polygon points="160,40 240,40 280,150 120,150" fill="#22d3ee" opacity={0.12} className="stage-pulse" />
+            <rect x={150} y={150} width={100} height={10} fill="#334155" />
+            <rect x={150} y={150} width={20} height={10} fill="#0a0f17" />
+            <rect x={230} y={150} width={20} height={10} fill="#0a0f17" />
+          </g>
+        )
+      case 'liftoff':
+        return (
+          <g>
+            <polygon points="120,180 210,150 216,166 126,196" fill="#a78bfa" opacity={0.7} />
+            <path d="M210 150 L226 130" stroke="#a78bfa" strokeWidth={2} />
+            <path d="M222 142 L228 128 L214 132" fill="#a78bfa" />
+          </g>
+        )
+      default:
+        return (
+          <g>
+            <line className="stage-pulse" x1={200} y1={40} x2={200} y2={150} stroke="#22d3ee" strokeWidth={2} />
+            <path d="M120 250 q30 -40 50 0 t50 -10 t50 12" fill="none" stroke="#22d3ee" strokeWidth={2} opacity={0.8} />
+          </g>
+        )
+    }
+  })()
+
+  return (
+    <svg viewBox="0 0 400 300" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="製程階段示意">
+      <rect x={70} y={210} width={260} height={44} rx={6} fill="#202938" stroke="#334155" />
+      <text x={200} y={278} textAnchor="middle" fill="#5b6677" fontSize={11}>substrate</text>
+      {Array.from({ length: layers }).map((_, i) => (
+        <rect
+          key={i}
+          x={84}
+          y={206 - (i + 1) * 13}
+          width={232}
+          height={11}
+          rx={2}
+          fill={layerColors[i % layerColors.length]}
+          opacity={0.55}
+        />
+      ))}
+      {emitter}
+    </svg>
+  )
+}
+
 export function ProcessFlowPage() {
   const { project } = useProjectStore()
   const [selectedOrder, setSelectedOrder] = useState(8)
@@ -371,7 +495,7 @@ export function ProcessFlowPage() {
 
   return (
     <WorkspacePage title="製程流程" icon={<GitBranch size={18} />}>
-      <div className="flow-grid process-workspace">
+      <div className="process-grid process-workspace">
         <Card title="製程步驟" className="process-timeline">
           {flow.steps.map((step) => (
             <ManusListRow
@@ -381,35 +505,43 @@ export function ProcessFlowPage() {
               title={`${step.order}. ${processLabels[step.type]}`}
               subtitle={step.notes}
               meta={[step.tool, step.temperature, step.time].filter(Boolean).join(' · ')}
-              badge={step.risk ? <ManusStatusBadge tone="warning">risk</ManusStatusBadge> : null}
+              badge={step.risk ? <ManusStatusBadge tone="warning">風險</ManusStatusBadge> : null}
               onClick={() => setSelectedOrder(step.order)}
             />
           ))}
         </Card>
-        <Card title={flow.name} className="process-detail">
-          <div className="timeline-row">
-            {flow.steps.map((step) => (
-              <button className={step.order === selected.order ? 'active' : ''} key={step.id} onClick={() => setSelectedOrder(step.order)}>{step.order}</button>
-            ))}
+        <section className="manus-card process-stage">
+          <div className="manus-card-body">
+            <div className="stage-canvas">
+              <ProcessStageVisual step={selected} />
+            </div>
+            <p className="stage-caption">製程動畫預覽 — 選取步驟以查看對應的結構變化</p>
+            <div className="stage-steps">
+              {flow.steps.map((step) => (
+                <button className={step.order === selected.order ? 'active' : ''} key={step.id} onClick={() => setSelectedOrder(step.order)}>{step.order}</button>
+              ))}
+            </div>
           </div>
+        </section>
+        <Card title="步驟參數" className="process-detail">
           <ManusDetailHeader
             title={processLabels[selected.type]}
             subtitle={selected.notes}
-            badge={<ManusStatusBadge tone={selected.risk ? 'warning' : 'primary'}>{selected.risk ? 'review risk' : 'planned'}</ManusStatusBadge>}
+            badge={<ManusStatusBadge tone={selected.risk ? 'warning' : 'primary'}>{selected.risk ? '檢查風險' : '已規劃'}</ManusStatusBadge>}
           />
           <ManusMetadataGrid items={[
-            { label: 'tool', value: selected.tool ?? 'not specified' },
-            { label: 'time', value: selected.time ?? 'not specified' },
-            { label: 'temperature', value: selected.temperature ?? 'room temp' },
-            { label: 'material', value: selected.materialId ?? 'process dependent' },
+            { label: '機台', value: selected.tool ?? 'not specified' },
+            { label: '時間', value: selected.time ?? 'not specified' },
+            { label: '溫度', value: selected.temperature ?? 'room temp' },
+            { label: '材料', value: selected.materialId ?? 'process dependent' },
           ]} />
           <ManusCallout tone="primary">
-            <strong>Expected result</strong>
+            <strong>預期結果</strong>
             <p>{selected.expectedResult ?? selected.notes ?? flow.description}</p>
           </ManusCallout>
           {selected.risk ? (
             <ManusCallout tone="warning">
-              <strong>Risk</strong>
+              <strong>風險</strong>
               <p>{selected.risk}</p>
             </ManusCallout>
           ) : null}
@@ -418,6 +550,7 @@ export function ProcessFlowPage() {
     </WorkspacePage>
   )
 }
+
 
 export function IVSimulatorPage() {
   const { project, activeDevice } = useProjectStore()

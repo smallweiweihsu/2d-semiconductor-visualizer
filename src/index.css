@@ -2873,3 +2873,93 @@ button.manus-list-row {
     width: 100%;
   }
 }
+
+/* === Process Flow: Manus-style 3-column with center stage visual === */
+.workspace-heading:has(+ .process-workspace) {
+  display: none;
+}
+.process-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.85fr) minmax(0, 1.25fr) minmax(280px, 1fr);
+  gap: 16px;
+}
+@media (max-width: 1100px) {
+  .process-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.process-stage .manus-card-body {
+  display: flex;
+  flex-direction: column;
+}
+.stage-canvas {
+  position: relative;
+  border-radius: 14px;
+  overflow: hidden;
+  aspect-ratio: 4 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background:
+    radial-gradient(circle at 50% 28%, rgba(34, 211, 238, 0.12), rgba(10, 14, 22, 0) 60%),
+    linear-gradient(180deg, #0a0f17, #0d1320);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.stage-canvas svg {
+  width: 100%;
+  height: 100%;
+}
+.stage-caption {
+  text-align: center;
+  color: var(--muted, #8a94a6);
+  font-size: 13px;
+  margin: 12px 0 10px;
+}
+.stage-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+}
+.stage-steps button {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+  color: #9aa4b2;
+  font-size: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.stage-steps button:hover {
+  border-color: rgba(34, 211, 238, 0.5);
+  color: #cdd6e2;
+}
+.stage-steps button.active {
+  background: var(--primary, #22d3ee);
+  color: #04222b;
+  border-color: transparent;
+  font-weight: 600;
+}
+@keyframes stageFall {
+  0% { transform: translateY(-28px); opacity: 0; }
+  45% { opacity: 1; }
+  100% { transform: translateY(46px); opacity: 0; }
+}
+.stage-particle {
+  animation: stageFall 2.2s linear infinite;
+}
+@keyframes stagePulse {
+  0%, 100% { opacity: 0.35; }
+  50% { opacity: 1; }
+}
+.stage-pulse {
+  animation: stagePulse 2s ease-in-out infinite;
+}
+
+/* Hide redundant page titles to match Manus (Manus shows no big page heading) */
+.workspace-heading:has(+ .materials-workspace),
+.workspace-heading:has(+ .measurements-workspace) {
+  display: none;
+}
