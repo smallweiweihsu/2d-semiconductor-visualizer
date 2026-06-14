@@ -1065,7 +1065,7 @@ export function ReferencesPage() {
                 title={reference.title}
                 subtitle={`${reference.authors} (${reference.year})`}
                 meta={<>Score: {reference.reliabilityScore}/10</>}
-                badge={<ManusStatusBadge tone={reference.status === 'accepted' ? 'success' : 'primary'}>{reference.status}</ManusStatusBadge>}
+                badge={<ManusStatusBadge tone={reference.status === 'accepted' ? 'success' : 'primary'}>{literatureStatusLabel(reference.status)}</ManusStatusBadge>}
                 onClick={() => setSelectedId(reference.id)}
               />
             ))}
@@ -1076,7 +1076,7 @@ export function ReferencesPage() {
             <ManusDetailHeader
               title={selected.title}
               subtitle={`${selected.authors} · ${selected.year}${selected.journal ? ` · ${selected.journal}` : ''}`}
-              badge={<ManusStatusBadge tone={selected.status === 'accepted' ? 'success' : 'primary'}>{selected.status}</ManusStatusBadge>}
+              badge={<ManusStatusBadge tone={selected.status === 'accepted' ? 'success' : 'primary'}>{literatureStatusLabel(selected.status)}</ManusStatusBadge>}
               icon={<BookOpen size={22} />}
             />
             <ManusMetadataGrid items={[
@@ -1300,9 +1300,9 @@ export function ComparisonLabPage() {
             </table>
           </div>
           <div className="confidence-legend">
-            <span><i className="known" />Known</span>
-            <span><i className="estimated" />Estimated</span>
-            <span><i className="unknown" />Unknown</span>
+            <span><i className="known" />已知</span>
+            <span><i className="estimated" />估計</span>
+            <span><i className="unknown" />未知</span>
           </div>
         </Card>
       </div>
@@ -1573,8 +1573,26 @@ function formatMaterialParameter(parameter: MaterialParameter) {
   return value === undefined || value === null ? 'missing' : `${formatParameterValue(value)} ${parameter.unit ?? ''}`.trim()
 }
 
+const materialCategoryZh: Record<MaterialCategory, string> = {
+  metal: '金屬',
+  two_d_semiconductor: '二維半導體',
+  dielectric: '介電層',
+  oxide: '氧化物',
+  bulk_conductor: '塊材導體',
+  substrate: '基板',
+  custom: '自訂',
+}
 function materialCategoryLabel(category: MaterialCategory) {
-  return category.replaceAll('_', ' ')
+  return materialCategoryZh[category] ?? category.replaceAll('_', ' ')
+}
+const literatureStatusZh: Record<string, string> = {
+  candidate: '候選',
+  reviewed: '已審閱',
+  accepted: '已採用',
+  rejected: '已拒絕',
+}
+function literatureStatusLabel(status: string) {
+  return literatureStatusZh[status] ?? status
 }
 
 function formatMaybe(value?: number) {
@@ -1760,7 +1778,9 @@ function ReferenceEditor({
 }
 
 function ConfidenceBadge({ confidence, conflict = false }: { confidence: ParameterConfidence | 'fallback'; conflict?: boolean }) {
-  return <span className={`confidence-badge confidence-${conflict ? 'conflict' : confidence}`}>{conflict ? 'conflict' : confidence}</span>
+  const key = conflict ? 'conflict' : confidence
+  const labels: Record<string, string> = { known: '已知', estimated: '估計', unknown: '未知', fallback: '預設', conflict: '衝突' }
+  return <span className={`confidence-badge confidence-${key}`}><i className="confidence-dot" />{labels[key] ?? key}</span>
 }
 
 function formatNumber(value: number) {
