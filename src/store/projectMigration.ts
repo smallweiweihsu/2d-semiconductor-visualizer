@@ -11,6 +11,13 @@ export const projectStorageKeys = [currentStorageKey, ...legacyStorageKeys]
 
 type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 
+export function ensureSeedMaterials(project: SemivizProject): SemivizProject {
+  const have = new Set(project.materials.map((m) => m.id))
+  const missing = seedProject.materials.filter((m) => !have.has(m.id))
+  if (!missing.length) return project
+  return { ...project, materials: [...project.materials, ...missing] }
+}
+
 export function readProjectFromStorage(storage: StorageLike): SemivizProject {
   const currentRaw = storage.getItem(currentStorageKey)
 
@@ -19,8 +26,8 @@ export function readProjectFromStorage(storage: StorageLike): SemivizProject {
       const parsed = JSON.parse(currentRaw)
       const normalized = normalizeStoredProject(parsed)
       return normalized.schemaVersion === currentProjectSchemaVersion
-        ? normalized
-        : migrateProjectToCurrent(parsed)
+        ? ensureSeedMaterials(normalized)
+        : ensureSeedMaterials(migrateProjectToCurrent(parsed))
     } catch {
       return resetProjectStorage(storage)
     }
@@ -31,7 +38,7 @@ export function readProjectFromStorage(storage: StorageLike): SemivizProject {
     if (!raw) continue
 
     try {
-      const migrated = migrateProjectToCurrent(JSON.parse(raw))
+      const migrated = ensureSeedMaterials(migrateProjectToCurrent(JSON.parse(raw)))
       storage.setItem(currentStorageKey, JSON.stringify(migrated))
       return migrated
     } catch {
