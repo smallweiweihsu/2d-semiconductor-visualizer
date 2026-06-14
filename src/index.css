@@ -2136,7 +2136,7 @@ button.manus-list-row {
 
 .band-diagram-workspace {
   grid-template-columns: var(--manus-band-left-width) minmax(0, 1fr) var(--manus-band-right-width);
-  min-height: 980px;
+  min-height: 0;
 }
 
 .band-diagram-workspace .manus-chart-card {
@@ -2182,10 +2182,13 @@ button.manus-list-row {
   min-height: 0;
 }
 
+.band-diagram-preview {
+  width: 100%;
+}
 .band-diagram-preview svg {
   width: 100%;
-  max-width: 574px;
-  height: clamp(500px, calc(100vh - 170px), 802px);
+  max-width: 100%;
+  height: auto;
   min-height: 0;
   overflow: visible;
 }
@@ -2224,9 +2227,9 @@ button.manus-list-row {
 }
 
 .band-tick-label {
-  fill: oklch(0.58 0.04 250);
+  fill: oklch(0.62 0.04 250);
   font-family: var(--manus-body-font);
-  font-size: 10px;
+  font-size: 13px;
   line-height: 1;
 }
 
@@ -3121,14 +3124,16 @@ button.manus-list-row {
 }
 .band-region-label {
   fill: var(--muted, #8a94a6);
-  font-size: 12px;
+  font-size: 15px;
+  font-weight: 600;
 }
 .band-interface-line {
   stroke: rgba(255, 255, 255, 0.18);
   stroke-dasharray: 3 4;
 }
 .band-curve-tag {
-  font-size: 11px;
+  font-size: 14px;
+  font-weight: 600;
   font-family: "JetBrains Mono", monospace;
 }
 .band-curve-tag.ec { fill: #22d3ee; }
@@ -3268,4 +3273,53 @@ button.manus-list-row {
 .layer-row-tools button:disabled {
   opacity: 0.3;
   cursor: default;
+}
+
+/* Band Diagram: single-line selector rows + 2D-material band-gap shading */
+.bd-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--foreground);
+  cursor: pointer;
+  text-align: left;
+  margin-bottom: 3px;
+  font-size: 13px;
+}
+.bd-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+.bd-row.active {
+  background: var(--manus-selected-bg);
+  border-color: var(--manus-selected-border);
+}
+.bd-row .bd-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 999px;
+  flex-shrink: 0;
+}
+.bd-row .bd-name {
+  font-weight: 600;
+}
+.bd-row .bd-meta {
+  margin-left: auto;
+  color: var(--muted, #8a94a6);
+  font-family: "JetBrains Mono", monospace;
+  font-size: 12px;
+  white-space: nowrap;
+}
+.band-gap-fill {
+  fill: rgba(167, 139, 250, 0.10);
+  stroke: none;
+}
+.band-gap-label {
+  fill: var(--muted, #8a94a6);
+  font-size: 13px;
+  font-family: "JetBrains Mono", monospace;
 }

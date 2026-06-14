@@ -895,28 +895,21 @@ export function BandDiagramPage() {
             <section>
               <h3>接觸金屬</h3>
               {metals.map((entry) => (
-                <ManusListRow
-                  active={entry.id === metalId}
-                  color={entry.color}
-                  key={entry.id}
-                  title={entry.displayName}
-                  meta={`φ=${formatParameterValue(resolveParameterNumber(entry.workFunction_eV) ?? 'unknown')} eV`}
-                  onClick={() => setMetalId(entry.id)}
-                />
+                <button key={entry.id} type="button" className={entry.id === metalId ? 'bd-row active' : 'bd-row'} onClick={() => setMetalId(entry.id)}>
+                  <span className="bd-dot" style={{ backgroundColor: entry.color }} />
+                  <span className="bd-name">{entry.displayName}</span>
+                  <span className="bd-meta">φ={formatParameterValue(resolveParameterNumber(entry.workFunction_eV) ?? 'unknown')} eV</span>
+                </button>
               ))}
             </section>
             <section>
               <h3>半導體</h3>
               {semiconductors.map((entry) => (
-                <ManusListRow
-                  active={entry.id === semiconductorId}
-                  color={entry.color}
-                  key={entry.id}
-                  title={entry.displayName}
-                  subtitle={`χ=${formatParameterValue(resolveParameterNumber(entry.electronAffinity_eV) ?? 'unknown')} eV`}
-                  meta={`Eg=${formatParameterValue(resolveParameterNumber(entry.bandGap_eV) ?? 'unknown')} eV`}
-                  onClick={() => setSemiconductorId(entry.id)}
-                />
+                <button key={entry.id} type="button" className={entry.id === semiconductorId ? 'bd-row active' : 'bd-row'} onClick={() => setSemiconductorId(entry.id)}>
+                  <span className="bd-dot" style={{ backgroundColor: entry.color }} />
+                  <span className="bd-name">{entry.displayName}</span>
+                  <span className="bd-meta">χ={formatParameterValue(resolveParameterNumber(entry.electronAffinity_eV) ?? 'unknown')} · Eg={formatParameterValue(resolveParameterNumber(entry.bandGap_eV) ?? 'unknown')} eV</span>
+                </button>
               ))}
             </section>
             <section>
