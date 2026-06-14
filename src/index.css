@@ -2963,3 +2963,67 @@ button.manus-list-row {
 .workspace-heading:has(+ .measurements-workspace) {
   display: none;
 }
+
+/* === Device Builder: Manus-style read-only Properties summary === */
+.layer-param-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin: 12px 0;
+}
+.layer-param-card {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+.layer-param-card .lp-label {
+  font-size: 11px;
+  color: var(--muted, #8a94a6);
+}
+.layer-param-card .lp-value {
+  font-size: 15px;
+  font-variant-numeric: tabular-nums;
+}
+.layer-param-card .lp-conf {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  color: var(--muted, #8a94a6);
+}
+.layer-param-card .lp-conf i {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  display: inline-block;
+}
+.layer-geo {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin: 10px 0;
+}
+.layer-geo > div {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.layer-geo span {
+  font-size: 11px;
+  color: var(--muted, #8a94a6);
+}
+.layer-geo strong {
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.layer-notes {
+  margin: 6px 0 0;
+  padding-left: 18px;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--muted, #9aa4b2);
+}

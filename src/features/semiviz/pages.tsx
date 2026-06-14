@@ -45,6 +45,7 @@ import {
 import { LayerPropertyEditor } from './LayerPropertyEditor'
 import { LayerStackPanel } from './LayerStackPanel'
 import { findMaterial } from './materialUtils'
+import { CollapsibleSection } from '../../components/common/CollapsibleSection'
 import { SimulationConfigEditor } from './SimulationConfigEditor'
 import {
   getGeometryWarning,
@@ -247,6 +248,31 @@ export function DashboardPage() {
   )
 }
 
+function confidenceColor(c: string): string {
+  if (c === 'known') return '#34d399'
+  if (c === 'estimated') return '#fbbf24'
+  return '#6b7280'
+}
+function confidenceZh(c: string): string {
+  if (c === 'known') return '已知'
+  if (c === 'estimated') return '估計'
+  return '未知'
+}
+function layerParamCards(material: Material): { label: string; value: string; confidence: string }[] {
+  const fmt = (param: MaterialParameter) => {
+    const n = resolveParameterNumber(param)
+    if (n === undefined) return '未知'
+    return `${formatParameterValue(n)}${param.unit ? ' ' + param.unit : ''}`
+  }
+  return [
+    { label: 'Band Gap', value: fmt(material.bandGap_eV), confidence: material.bandGap_eV.confidence },
+    { label: 'Work Function', value: fmt(material.workFunction_eV), confidence: material.workFunction_eV.confidence },
+    { label: 'Electron Affinity', value: fmt(material.electronAffinity_eV), confidence: material.electronAffinity_eV.confidence },
+    { label: 'Dielectric Const.', value: fmt(material.dielectricConstant), confidence: material.dielectricConstant.confidence },
+    { label: 'Mobility', value: fmt(material.mobility_cm2Vs), confidence: material.mobility_cm2Vs.confidence },
+  ]
+}
+
 export function DeviceBuilderPage() {
   const { project, activeDevice, setActiveDeviceId, updateActiveDevice } = useProjectStore()
   const [selectedId, setSelectedId] = useState(activeDevice.layers[2]?.id ?? activeDevice.layers[0]?.id ?? '')
@@ -338,24 +364,46 @@ export function DeviceBuilderPage() {
               <span style={{ backgroundColor: material.color }} />
               <div><h2>{selected.name}</h2><p>{material.displayName} · {selected.role}</p></div>
             </div>
-            <LayerPropertyEditor
-              layer={selected}
-              materials={project.materials}
-              geometryWarning={getGeometryWarning(selected)}
-              normalizeMessage={normalizeMessage}
-              onNormalizeZ={() => {
-                updateActiveDevice((device) => normalizeDeviceZPositions(device))
-                setNormalizeMessage('z positions normalized and saved.')
-              }}
-              onChange={(patch) => {
-                setNormalizeMessage('')
-                updateActiveDevice((device) => updateLayer(device, selected.id, patch))
-              }}
-            />
-            <SimulationConfigEditor
-              device={activeDevice}
-              onChange={(config) => updateActiveDevice((device) => updateSimulationConfig(device, config))}
-            />
+            <div className="layer-param-grid">
+              {layerParamCards(material).map((card) => (
+                <div className="layer-param-card" key={card.label}>
+                  <span className="lp-label">{card.label}</span>
+                  <strong className="lp-value">{card.value}</strong>
+                  <span className="lp-conf"><i style={{ backgroundColor: confidenceColor(card.confidence) }} />{confidenceZh(card.confidence)}</span>
+                </div>
+              ))}
+            </div>
+            <div className="layer-geo">
+              <div><span>厚度</span><strong>{selected.geometry.thickness_nm} nm</strong></div>
+              <div><span>長度</span><strong>{selected.geometry.length_um} µm</strong></div>
+              <div><span>寬度</span><strong>{selected.geometry.width_um} µm</strong></div>
+            </div>
+            {material.notes && material.notes.length ? (
+              <ManusCallout tone="neutral">
+                <strong>注意事項</strong>
+                <ul className="layer-notes">{material.notes.map((note: string) => <li key={note}>{note}</li>)}</ul>
+              </ManusCallout>
+            ) : null}
+            <CollapsibleSection title="編輯 layer 參數">
+              <LayerPropertyEditor
+                layer={selected}
+                materials={project.materials}
+                geometryWarning={getGeometryWarning(selected)}
+                normalizeMessage={normalizeMessage}
+                onNormalizeZ={() => {
+                  updateActiveDevice((device) => normalizeDeviceZPositions(device))
+                  setNormalizeMessage('z positions normalized and saved.')
+                }}
+                onChange={(patch) => {
+                  setNormalizeMessage('')
+                  updateActiveDevice((device) => updateLayer(device, selected.id, patch))
+                }}
+              />
+              <SimulationConfigEditor
+                device={activeDevice}
+                onChange={(config) => updateActiveDevice((device) => updateSimulationConfig(device, config))}
+              />
+            </CollapsibleSection>
           </>
         ) : <EmptyState text="選取 active device 後，這裡會顯示 layer 參數。" />}
       </Card>
