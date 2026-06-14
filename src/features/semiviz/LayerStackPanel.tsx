@@ -1,4 +1,4 @@
-import { ArrowDown, ArrowUp, Copy, Plus, Trash2 } from 'lucide-react'
+import { ArrowDown, ArrowUp, Copy, Trash2 } from 'lucide-react'
 import { findMaterial } from './materialUtils'
 import { sortLayersForList } from '../../visualization/viewportGeometry'
 import type { DeviceLayer, DeviceStructure, Material } from '../../types/semiviz'
@@ -25,13 +25,6 @@ export function LayerStackPanel({
   const displayLayers = sortLayersForList(device.layers)
   return (
     <>
-      <div className="builder-toolbar">
-        <button className="manus-button primary" type="button" onClick={onAdd}>
-          <Plus size={15} />
-          新增 layer
-        </button>
-      </div>
-      <p className="stack-order-hint">Layer list is displayed top-to-bottom.</p>
       {displayLayers.length ? displayLayers.map((layer, index) => (
         <LayerRow
           layer={layer}
@@ -77,15 +70,15 @@ function LayerRow({
   onMove: (layerId: string, direction: 'up' | 'down') => void
 }) {
   const material = findMaterial(materials, layer.materialId)
+  const voltage = layer.voltageLabel && layer.voltageValue_V != null ? ` · ${layer.voltageLabel}=${layer.voltageValue_V}V` : ''
 
   return (
     <div className={selected ? 'layer-editor-row active' : 'layer-editor-row'}>
       <button className="layer-row-main" type="button" onClick={() => onSelect(layer.id)}>
-        <span style={{ backgroundColor: material.color }} />
-        <div>
+        <span className="layer-dot" style={{ backgroundColor: material.color }} />
+        <div className="layer-row-text">
           <strong>{layer.name}</strong>
-          <small>{layer.role} · {layer.geometry.thickness_nm} nm</small>
-          <em>{layer.electricalRole}</em>
+          <small>{layer.role} · {layer.geometry.thickness_nm} nm{voltage}</small>
         </div>
       </button>
       <div className="layer-row-tools">

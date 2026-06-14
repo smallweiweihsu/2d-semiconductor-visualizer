@@ -3158,3 +3158,114 @@ button.manus-list-row {
   from { stroke-dashoffset: 2000; }
   to { stroke-dashoffset: 0; }
 }
+
+/* Device Builder: Manus-style compact layer stack */
+.layer-stack-head {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.device-mini-select {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--foreground);
+  padding: 6px 8px;
+  font-size: 13px;
+}
+.icon-add {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--foreground);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+.icon-add:hover {
+  border-color: var(--primary, #22d3ee);
+  color: var(--primary, #22d3ee);
+}
+.layer-editor-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  margin-bottom: 2px;
+}
+.layer-editor-row.active {
+  background: var(--manus-selected-bg);
+  border-color: var(--manus-selected-border);
+}
+.layer-editor-row:hover {
+  background: rgba(255, 255, 255, 0.03);
+}
+.layer-row-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  border: none;
+  color: var(--foreground);
+  cursor: pointer;
+  text-align: left;
+  padding: 0;
+  min-width: 0;
+}
+.layer-row-main .layer-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+.layer-row-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.layer-row-text strong {
+  font-size: 13px;
+}
+.layer-row-text small {
+  font-size: 11px;
+  color: var(--muted);
+  font-family: "JetBrains Mono", monospace;
+}
+.layer-row-tools {
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.layer-editor-row:hover .layer-row-tools,
+.layer-editor-row.active .layer-row-tools {
+  opacity: 1;
+}
+.layer-row-tools button {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.layer-row-tools button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--foreground);
+}
+.layer-row-tools button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}

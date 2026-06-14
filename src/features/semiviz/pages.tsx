@@ -306,18 +306,13 @@ export function DeviceBuilderPage() {
   return (
     <div className="manus-page three-pane-page">
       <Card className="pane-list" title="Layer Stack">
-        <label className="device-select-field">
-          Active device
-          <select value={activeDevice.id} onChange={(event) => setActiveDeviceId(event.target.value)}>
+        <div className="layer-stack-head">
+          <select className="device-mini-select" value={activeDevice.id} onChange={(event) => setActiveDeviceId(event.target.value)}>
             {project.devices.map((deviceOption) => (
               <option value={deviceOption.id} key={deviceOption.id}>{deviceOption.name}</option>
             ))}
           </select>
-        </label>
-        <div className="template-panel">
-          <small>Sb/WSe₂ TG</small>
-          <strong>{activeDevice.name}</strong>
-          <span>{activeDevice.layers.length ? 'Sb / WSe₂ / top gate / Sb₂O₃' : '尚無 layer，請匯入或新增 layer。'}</span>
+          <button className="icon-add" type="button" aria-label="新增 layer" onClick={handleAddLayer}><Plus size={16} /></button>
         </div>
         <LayerStackPanel
           device={activeDevice}
