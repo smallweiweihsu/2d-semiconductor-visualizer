@@ -89,6 +89,7 @@ import type {
   LiteratureStatus,
   Material,
   MaterialCategory,
+  MeasurementType,
   MaterialParameter,
   ParameterCandidate,
   ParameterConfidence,
@@ -1113,6 +1114,46 @@ export function ReferencesPage() {
   )
 }
 
+function MeasurementVisual({ type }: { type: MeasurementType }) {
+  const accent = '#22d3ee'
+  let body: ReactNode
+  if (type === 'raman' || type === 'pl' || type === 'xps') {
+    const peaks = type === 'xps' ? [120, 210, 300] : [110, 180, 250, 320]
+    body = (
+      <g>
+        <path d="M40 210 L360 210" stroke="#334155" strokeWidth={1} />
+        <path
+          d={`M40 205 ${peaks.map((x) => `L${x - 18} 200 L${x} ${type === 'pl' ? 70 : 120} L${x + 18} 200`).join(' ')} L360 205`}
+          fill="none"
+          stroke={accent}
+          strokeWidth={2}
+        />
+        {peaks.map((x) => <circle key={x} className="stage-pulse" cx={x} cy={type === 'pl' ? 70 : 120} r={3} fill={accent} />)}
+      </g>
+    )
+  } else if (type === 'afm') {
+    body = (
+      <g>
+        {Array.from({ length: 6 }).map((_, r) =>
+          Array.from({ length: 10 }).map((__, c) => (
+            <rect key={`${r}-${c}`} x={50 + c * 30} y={60 + r * 24} width={28} height={22} rx={3}
+              fill={accent} opacity={0.12 + ((r * 3 + c) % 7) * 0.1} />
+          )),
+        )}
+      </g>
+    )
+  } else {
+    body = (
+      <path d="M40 180 q40 -90 80 -40 t80 -20 t80 -40 t80 10" fill="none" stroke={accent} strokeWidth={2} className="stage-pulse" />
+    )
+  }
+  return (
+    <svg viewBox="0 0 400 240" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="量測示意圖">
+      {body}
+    </svg>
+  )
+}
+
 export function MeasurementsPage() {
   const { project, activeDevice, addMeasurement } = useProjectStore()
   const inputRef = useRef<HTMLInputElement>(null)
@@ -1179,8 +1220,8 @@ export function MeasurementsPage() {
             {selected ? (
               <>
                 <ManusDetailHeader
-                  title={`${selected.sampleName} — ${selected.type.toUpperCase()}`}
-                  subtitle={selected.deviceName}
+                  title={`${selected.deviceName} — ${selected.type.toUpperCase()}`}
+                  subtitle={selected.sampleName}
                   badge={<ManusStatusBadge tone={selected.electrical ? 'primary' : 'neutral'}>{selected.electrical?.measurementKind ?? selected.type}</ManusStatusBadge>}
                   icon={<FlaskConical size={22} />}
                 />
@@ -1202,7 +1243,7 @@ export function MeasurementsPage() {
                       unit="uA"
                       lines={[{ key: 'id', color: 'oklch(0.78 0.15 195)' }]}
                     />
-                  ) : <div className="measurement-visual-placeholder">量測數據視覺化區域 — 可匯入 CSV/Excel 資料</div>}
+                  ) : <div className="measurement-visual"><MeasurementVisual type={selected.type} /><span>量測數據視覺化區域 — 可匯入 CSV/Excel 資料</span></div>}
                 </ManusPreviewCard>
                 <div className="metrics-grid">
                   <Meta label="points" value={`${metrics.pointCount}`} />
