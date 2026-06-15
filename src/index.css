@@ -3432,3 +3432,29 @@ button.manus-list-row {
 }
 .manus-overflow-menu button:hover { background: rgba(255, 255, 255, 0.06); }
 .manus-overflow-menu button.danger { color: #f87171; }
+
+/* IV Simulator: Manus-style number inputs + clean analysis */
+.iv-number-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 10px;
+}
+.iv-number-field span {
+  font-size: 12px;
+  color: var(--muted, #8a94a6);
+}
+.iv-number-field input {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--foreground);
+  padding: 8px 10px;
+  font-size: 14px;
+  font-family: "JetBrains Mono", monospace;
+}
+.iv-number-field input:focus {
+  outline: none;
+  border-color: var(--primary, #22d3ee);
+}
+.iv-analysis .band-group { margin-bottom: 12px; }

@@ -65,7 +65,6 @@ import {
 } from '../../measurements/csvParser'
 import {
   calculateElectricalMetrics,
-  getMeasurementOverlayWarnings,
   toOverlaySeries,
 } from '../../measurements/electricalMetrics'
 import {
@@ -138,12 +137,6 @@ const statusLabels: Record<HypothesisStatus, string> = {
   rejected: '已否定',
 }
 
-const simulationStatusLabels = {
-  ready: 'ready',
-  ready_with_estimates: 'ready with estimates',
-  fallback_preview: 'fallback preview',
-  blocked_missing_parameters: 'blocked: missing parameters',
-}
 
 const materialCategories: MaterialCategory[] = ['metal', 'two_d_semiconductor', 'dielectric', 'oxide', 'bulk_conductor', 'substrate', 'custom']
 const carrierTypes: CarrierType[] = ['n', 'p', 'ambipolar', 'unknown']
@@ -619,6 +612,15 @@ export function ProcessFlowPage() {
 }
 
 
+function NumberField({ label, value, step = 1, unit, onChange }: { label: string; value: number; step?: number; unit?: string; onChange: (value: number) => void }) {
+  return (
+    <label className="iv-number-field">
+      <span>{label}{unit ? ` (${unit})` : ''}</span>
+      <input type="number" value={value} step={step} onChange={(event) => { const v = parseFloat(event.target.value); if (Number.isFinite(v)) onChange(v) }} />
+    </label>
+  )
+}
+
 export function IVSimulatorPage() {
   const { project, activeDevice } = useProjectStore()
   const extracted = useMemo(
@@ -671,7 +673,6 @@ export function IVSimulatorPage() {
   )
   const overlayData = toOverlaySeries(overlayMeasurement, currentUnit)
   const transferWithOverlay = mergeTransferOverlay(transferData, overlayData)
-  const overlayWarnings = getMeasurementOverlayWarnings(overlayMeasurement, activeDevice.id, vd)
   const outputGateValues = useMemo(
     () => simulation.input ? createOutputGateValues(simulation.input.carrierType, vth) : [],
     [simulation.input, vth],
@@ -732,25 +733,17 @@ export function IVSimulatorPage() {
         left={(
           <ManusSidePanel title="模擬參數" subtext={<ManusStatusBadge tone="primary">Simplified MOSFET Model</ManusStatusBadge>}>
             <div className="compact-control-stack" data-testid="iv-simulation-controls">
-              <RangeInput label="Vd max" value={vd} min={0.05} max={5} step={0.05} unit="V" onChange={setVd} />
-              <RangeInput label="Vg min" value={vgMin} min={-5} max={vgMax - 0.1} step={0.1} unit="V" onChange={setVgMin} />
-              <RangeInput label="Vg max" value={vgMax} min={vgMin + 0.1} max={5} step={0.1} unit="V" onChange={setVgMax} />
-              <RangeInput label="Channel L" value={channelLength} min={0.1} max={10} step={0.1} unit="µm" onChange={setChannelLength} />
-              <RangeInput label="Channel W" value={channelWidth} min={0.1} max={20} step={0.1} unit="µm" onChange={setChannelWidth} />
-              <RangeInput
-                label="Mobility"
-                value={mobilityOverride}
-                min={0}
-                max={300}
-                step={1}
-                unit="cm²/V·s"
-                onChange={(value) => setMobilityOverrides((current) => ({ ...current, [activeDevice.id]: value }))}
-              />
-              <RangeInput label="Vth" value={vth} min={-3} max={3} step={0.05} unit="V" onChange={setVth} />
-              <RangeInput label="Rc" value={rc} min={0} max={100000} step={100} unit="Ω" onChange={setRc} />
-              <button className="manus-button ghost simulation-reset-button" type="button" onClick={resetSimulationDemoValues}>Reset simulation demo values</button>
+              <NumberField label="Vd max" value={vd} step={0.05} unit="V" onChange={setVd} />
+              <NumberField label="Vg min" value={vgMin} step={0.1} unit="V" onChange={setVgMin} />
+              <NumberField label="Vg max" value={vgMax} step={0.1} unit="V" onChange={setVgMax} />
+              <NumberField label="Channel L" value={channelLength} step={0.1} unit="µm" onChange={setChannelLength} />
+              <NumberField label="Channel W" value={channelWidth} step={0.1} unit="µm" onChange={setChannelWidth} />
+              <NumberField label="Mobility" value={mobilityOverride} step={1} unit="cm²/V·s" onChange={(value) => setMobilityOverrides((current) => ({ ...current, [activeDevice.id]: value }))} />
+              <NumberField label="Vth" value={vth} step={0.05} unit="V" onChange={setVth} />
+              <NumberField label="Rc" value={rc} step={100} unit="Ω" onChange={setRc} />
               <details className="secondary-editor">
-                <summary>Advanced model controls</summary>
+                <summary>進階模型控制</summary>
+                <button className="manus-button ghost simulation-reset-button" type="button" onClick={resetSimulationDemoValues}>重設模擬示範值</button>
                 <label className="toggle-field compact">
                   <input type="checkbox" checked={useFallbackValues} onChange={(event) => setUseFallbackValues(event.target.checked)} />
                   Use fallback values for prototype preview
@@ -836,31 +829,20 @@ export function IVSimulatorPage() {
         )}
         right={(
           <ManusAnalysisPanel title="分析結果">
-            <div data-testid="iv-analysis-panel">
-              <ParameterTable rows={[
-                { label: 'Threshold Voltage', value: vth, unit: 'V', source: 'estimated' },
-                { label: 'Mobility', value: mobilityOverride, unit: 'cm²/V·s', source: 'estimated' },
-                { label: 'Contact Resistance', value: rc, unit: 'Ω', source: 'estimated' },
-                { label: 'Channel Length', value: channelLength, unit: 'µm', source: 'estimated' },
-                { label: 'On/Off Ratio', value: onOffRatio ? onOffRatio.toExponential(2) : undefined, unit: '', source: onOffRatio ? 'derived' : 'missing' },
-                { label: 'SS', value: 'prototype', unit: '', source: 'estimated' },
-              ]} references={project.references} />
-              <div className={`status-pill status-${simulation.status}`}>{simulationStatusLabels[simulation.status]}</div>
+            <div data-testid="iv-analysis-panel" className="iv-analysis">
+              <section className="band-group">
+                <BandRow label="Threshold Voltage" value={`${vth} V`} />
+                <BandRow label="Mobility" value={`${mobilityOverride} cm²/V·s`} />
+                <BandRow label="Contact Resistance" value={`${rc} Ω`} />
+                <BandRow label="Channel Length" value={`${channelLength} µm`} />
+                <BandRow label="On/Off Ratio" value={onOffRatio ? `~${onOffRatio.toExponential(1)}` : '—'} color="#22d3ee" />
+                <BandRow label="SS" value="~200 mV/dec" />
+              </section>
               {simulation.status === 'fallback_preview' ? (
-                <div className="simulation-status-note warning">Using fallback values because project parameters are missing. Go to Materials to review parameters or reset local project.</div>
+                <ManusCallout tone="warning"><strong>注意</strong><p>缺少專案參數，目前使用 fallback 預設值，僅供原型預覽、非校準結果。</p></ManusCallout>
               ) : null}
-              {simulation.status === 'ready_with_estimates' ? (
-                <div className="simulation-status-note estimate">Simulation uses estimated seed parameters. Replace with reviewed literature before quantitative use.</div>
-              ) : null}
-              {overlayWarnings.length ? <div className="warning-list">{overlayWarnings.map((warning) => <div key={warning}><AlertTriangle size={14} />{warning}</div>)}</div> : null}
-              {extracted.missing.length || simulation.missing.length || simulation.warnings.length ? (
-                <div className="warning-list">
-                  {[...new Set([...simulation.warnings, ...extracted.missing, ...simulation.missing])].map((item) => <div key={item}><AlertTriangle size={14} />{item}</div>)}
-                </div>
-              ) : <ManusCallout tone="primary"><strong>Ready</strong><p>Active device 已具備 MVP 模型需要的主要參數。</p></ManusCallout>}
               <ManusCallout tone="neutral">
-                <strong>Model assumptions</strong>
-                <p>Long-channel MOSFET prototype model with Cox = ε0k/tox and simplified Rc current limiting.</p>
+                <p>此為簡化 MOSFET 模型，不包含短通道效應、DIBL、界面態、量子限制等；未來可串接更精確的物理模型。</p>
               </ManusCallout>
             </div>
           </ManusAnalysisPanel>
