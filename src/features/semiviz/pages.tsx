@@ -1226,11 +1226,12 @@ function groupMeasurements(items: MeasurementData[]): Array<[string, Array<[stri
 }
 
 export function MeasurementsPage() {
-  const { project, activeDevice, addMeasurement, updateMeasurement } = useProjectStore()
+  const { project, activeDevice, addMeasurement, updateMeasurement, deleteMeasurement } = useProjectStore()
   const inputRef = useRef<HTMLInputElement>(null)
   const [importStatus, setImportStatus] = useState('')
   const [compareIds, setCompareIds] = useState<string[]>([])
   const [importDeviceId, setImportDeviceId] = useState(activeDevice.id)
+  const [curveIdx, setCurveIdx] = useState(0)
   const folderInputRef = useRef<HTMLInputElement>(null)
   const [selectedMeasurementId, setSelectedMeasurementId] = useState(project.measurements.find((measurement) => measurement.electrical)?.id ?? project.measurements[0]?.id ?? '')
   const selected = project.measurements.find((measurement) => measurement.id === selectedMeasurementId) ?? project.measurements.find((measurement) => measurement.electrical) ?? project.measurements[0]
@@ -1325,6 +1326,9 @@ export function MeasurementsPage() {
                   badge={<ManusStatusBadge tone={selected.electrical ? 'primary' : 'neutral'}>{selected.electrical?.measurementKind ?? selected.type}</ManusStatusBadge>}
                   icon={<FlaskConical size={22} />}
                 />
+                <div className="meas-toolbar">
+                  <button className="manus-button ghost danger" type="button" onClick={() => { if (window.confirm(`確定刪除「${selected.sampleName}」？`)) { deleteMeasurement(selected.id); setSelectedMeasurementId('') } }}>刪除此資料</button>
+                </div>
                 <div className="meas-edit-row">
                   <label>日期<input type="date" value={selected.date} onChange={(event) => updateMeasurement(selected.id, (m) => ({ ...m, date: event.target.value }))} /></label>
                   <label>類型<select value={selected.electrical?.measurementKind ?? 'unknown'} onChange={(event) => updateMeasurement(selected.id, (m) => m.electrical ? ({ ...m, electrical: { ...m.electrical, measurementKind: event.target.value as 'id_vg' | 'id_vd' | 'unknown' } }) : m)} disabled={!selected.electrical}>
@@ -1344,9 +1348,24 @@ export function MeasurementsPage() {
                 </section>
                 <ManusPreviewCard>
                   {selected.electrical ? (() => {
-                    const isOutput = selected.electrical.measurementKind === 'id_vd'
+                    const e = selected.electrical
+                    const isOutput = e.measurementKind === 'id_vd'
+                    if (isOutput && e.curves && e.curves.length > 1) {
+                      const idx = Math.min(curveIdx, e.curves.length - 1)
+                      const cur = e.curves[idx]
+                      return (
+                        <>
+                          <label className="curve-select">選擇 Vg 曲線
+                            <select value={idx} onChange={(ev) => setCurveIdx(Number(ev.target.value))}>
+                              {e.curves.map((c, i) => <option value={i} key={i}>{c.label}</option>)}
+                            </select>
+                          </label>
+                          <LogChart series={[{ label: cur.label, color: '#22d3ee', points: cur.points.map((pt) => ({ x: pt.x, y: pt.id })) }]} xLabel="Vd (V)" yLabel="|Id| (A)" />
+                        </>
+                      )
+                    }
                     const xk = isOutput ? 'Vd' : 'Vg'
-                    const pick = (key: 'Id' | 'Ig') => selected.electrical!.points
+                    const pick = (key: 'Id' | 'Ig') => e.points
                       .filter((point) => (isOutput ? point.Vd !== undefined : point.Vg !== undefined) && point[key] !== undefined)
                       .map((point) => ({ x: (isOutput ? point.Vd : point.Vg) as number, y: point[key] as number }))
                     const idPts = pick('Id')

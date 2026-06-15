@@ -24,6 +24,7 @@ interface ProjectStoreValue {
   updateReference: (referenceId: string, updater: (reference: LiteratureSource) => LiteratureSource) => void
   addMeasurement: (measurement: MeasurementData) => void
   updateMeasurement: (measurementId: string, updater: (measurement: MeasurementData) => MeasurementData) => void
+  deleteMeasurement: (measurementId: string) => void
   setActiveDeviceId: (deviceId: string) => void
   replaceProject: (project: unknown) => { ok: boolean; error?: string }
   resetProject: () => void
@@ -143,6 +144,13 @@ export function ProjectStoreProvider({ children }: { children: ReactNode }) {
     }))
   }, [])
 
+  const deleteMeasurement = useCallback((measurementId: string) => {
+    setProject((current) => ({
+      ...current,
+      measurements: current.measurements.filter((m) => m.id !== measurementId),
+    }))
+  }, [])
+
   const replaceProject = useCallback((nextProject: unknown) => {
     const result = normalizeImportedProject(nextProject)
 
@@ -182,12 +190,13 @@ export function ProjectStoreProvider({ children }: { children: ReactNode }) {
       updateReference,
       addMeasurement,
       updateMeasurement,
+      deleteMeasurement,
       setActiveDeviceId,
       replaceProject,
       resetProject,
       exportProject,
     }),
-    [activeDevice, addDevice, addReference, addMeasurement, updateMeasurement, exportProject, project, replaceProject, resetProject, setActiveDeviceId, updateActiveDevice, updateMaterial, updateReference],
+    [activeDevice, addDevice, addReference, addMeasurement, updateMeasurement, deleteMeasurement, exportProject, project, replaceProject, resetProject, setActiveDeviceId, updateActiveDevice, updateMaterial, updateReference],
   )
 
   return (

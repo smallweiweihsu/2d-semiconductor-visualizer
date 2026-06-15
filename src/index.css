@@ -3526,3 +3526,9 @@ button.manus-list-row {
 
 .import-device-field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted, #8a94a6); margin-bottom: 8px; }
 .import-device-field select { background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 7px; color: var(--foreground); padding: 6px 8px; font-size: 13px; }
+
+/* Measurements: toolbar + curve selector */
+.meas-toolbar { display: flex; gap: 8px; margin: 8px 0; }
+.manus-button.ghost.danger { color: #f87171; border-color: rgba(248,113,113,0.4); }
+.curve-select { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted, #8a94a6); margin-bottom: 8px; }
+.curve-select select { background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 7px; color: var(--foreground); padding: 5px 8px; font-size: 13px; }

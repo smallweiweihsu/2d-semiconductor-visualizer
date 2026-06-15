@@ -227,6 +227,7 @@ export interface ElectricalMeasurementDataset {
     voltage: 'V'
     current: 'A'
   }
+  curves?: Array<{ label: string; points: Array<{ x: number; id: number }> }>
 }
 
 export interface ElectricalMeasurementColumn {

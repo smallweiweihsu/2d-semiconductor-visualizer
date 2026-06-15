@@ -107,6 +107,22 @@ export function createElectricalMeasurement({
   }).filter((point) => point.Id !== undefined && (point.Vg !== undefined || point.Vd !== undefined))
   const measurementKind = kindOverride ?? inferMeasurementKind(points)
 
+  // 輸出檔常含多條 Vg 的 (Vd, Id) 欄位對；擷取為可選曲線。
+  let curves: Array<{ label: string; points: Array<{ x: number; id: number }> }> | undefined
+  if (measurementKind === 'id_vd') {
+    const built: Array<{ label: string; points: Array<{ x: number; id: number }> }> = []
+    for (let i = 0; i + 1 < table.headers.length; i++) {
+      const hv = table.headers[i].toLowerCase()
+      const hc = table.headers[i + 1].toLowerCase()
+      if (hv.includes('voltage') && hc.includes('current')) {
+        const m = table.headers[i + 1].match(/\|i?ds?\|/i) ? '主曲線' : (table.headers[i + 1].match(/plot\s*(\d+)/i)?.[0] ?? `曲線 ${built.length + 1}`)
+        const pts = table.rows.map((row) => ({ x: Number(row[i]), id: Number(row[i + 1]) })).filter((pt) => Number.isFinite(pt.x) && Number.isFinite(pt.id))
+        if (pts.length) built.push({ label: m, points: pts })
+      }
+    }
+    if (built.length > 1) curves = built
+  }
+
   return {
     id: `meas-${Date.now()}`,
     sampleName: sourceName.replace(/\.(csv|txt)$/i, '') || 'Imported measurement',
@@ -122,6 +138,7 @@ export function createElectricalMeasurement({
       columns,
       points,
       units: { voltage: 'V', current: 'A' },
+      curves,
     },
   }
 }
