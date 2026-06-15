@@ -3534,3 +3534,15 @@ button.manus-list-row {
 .curve-select select { background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 7px; color: var(--foreground); padding: 5px 8px; font-size: 13px; }
 
 .extract-note { font-size: 11px; color: var(--muted, #8a94a6); margin: 6px 0 0; line-height: 1.5; }
+
+/* Simple/Advanced mode toggle */
+.mode-toggle {
+  border: 1px solid var(--border);
+  background: rgba(255,255,255,0.04);
+  color: var(--foreground);
+  border-radius: 8px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+.mode-toggle:hover { border-color: var(--primary, #22d3ee); color: var(--primary, #22d3ee); }

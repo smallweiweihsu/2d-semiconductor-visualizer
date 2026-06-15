@@ -13,6 +13,7 @@ import {
   Search,
 } from 'lucide-react'
 import { Link, Route, Switch, useLocation } from 'wouter'
+import { useUiMode } from '../../store/uiMode'
 import { ProjectActions } from './ProjectActions'
 import {
   BandDiagramPage,
@@ -39,6 +40,15 @@ const navItems = [
   { label: 'Comparison Lab', icon: GitCompare, path: '/comparison-lab' },
   { label: 'Research Notes', icon: Lightbulb, path: '/research-notes' },
 ]
+
+function ModeToggle() {
+  const { simple, toggle } = useUiMode()
+  return (
+    <button className="mode-toggle" type="button" onClick={toggle} title="切換簡易／進階顯示">
+      {simple ? '簡易' : '進階'}
+    </button>
+  )
+}
 
 export function ManusShell() {
   const [location] = useLocation()
@@ -71,6 +81,7 @@ export function ManusShell() {
             <Search size={16} />
             <input placeholder="搜尋材料、元件、文獻..." />
           </label>
+          <ModeToggle />
           <ProjectActions />
         </header>
         <main className="manus-main" data-testid="route-scroll-container">

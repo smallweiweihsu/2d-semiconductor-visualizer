@@ -51,6 +51,7 @@ import { StackBandDiagram } from '../../components/semiviz/StackBandDiagram'
 import { LogChart, type LogSeries } from '../../components/semiviz/LogChart'
 import { simulateProcessFlow } from '../../physics/processStructure'
 import { downloadChartSvg, downloadChartPng } from '../../utils/exportChart'
+import { useUiMode } from '../../store/uiMode'
 import { SimulationConfigEditor } from './SimulationConfigEditor'
 import {
   getGeometryWarning,
@@ -1227,6 +1228,7 @@ function groupMeasurements(items: MeasurementData[]): Array<[string, Array<[stri
 
 export function MeasurementsPage() {
   const { project, activeDevice, addMeasurement, updateMeasurement, deleteMeasurement } = useProjectStore()
+  const { simple } = useUiMode()
   const inputRef = useRef<HTMLInputElement>(null)
   const [importStatus, setImportStatus] = useState('')
   const [compareIds, setCompareIds] = useState<string[]>([])
@@ -1386,10 +1388,10 @@ export function MeasurementsPage() {
                   <Meta label="gm_max" value={metrics.gmMax_S !== undefined ? formatScientific(metrics.gmMax_S, 'S') : 'n/a'} />
                 </div>
                 <p className="extract-note">參數為自動萃取（Vth 定電流法 Id=1nA、SS 取次臨界最小值、gm 取最大微分），半定量、需依量測條件解讀。</p>
-                {selected.electrical ? <RawMeasurementTable rows={selected.electrical.points.slice(0, 12)} /> : null}
+                {selected.electrical ? <details className="secondary-editor" open={!simple}><summary>原始數據（前 12 筆）</summary><RawMeasurementTable rows={selected.electrical.points.slice(0, 12)} /></details> : null}
               </>
             ) : <EmptyState text="尚未建立 measurement dataset。" />}
-            <details className="secondary-editor compare-overlay" open>
+            <details className="secondary-editor compare-overlay" open={!simple}>
               <summary>情境比較（多溫度／多條件疊圖）</summary>
               {(() => {
                 const elec = project.measurements.filter((m) => m.electrical)
@@ -1429,7 +1431,7 @@ export function MeasurementsPage() {
                 )
               })()}
             </details>
-            <details className="secondary-editor" open>
+            <details className="secondary-editor" open={!simple}>
               <summary>批量匯入 CSV / TXT</summary>
               <label className="import-device-field">匯入到元件
                 <select value={importDeviceId} onChange={(event) => setImportDeviceId(event.target.value)}>
