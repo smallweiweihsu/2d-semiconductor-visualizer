@@ -49,6 +49,7 @@ import { CollapsibleSection } from '../../components/common/CollapsibleSection'
 import { estimateSchottkyBarrier, pinningFactorFromDit } from '../../physics/bandAlignment'
 import { StackBandDiagram } from '../../components/semiviz/StackBandDiagram'
 import { simulateProcessFlow } from '../../physics/processStructure'
+import { downloadChartSvg, downloadChartPng } from '../../utils/exportChart'
 import { SimulationConfigEditor } from './SimulationConfigEditor'
 import {
   getGeometryWarning,
@@ -880,6 +881,8 @@ export function BandDiagramPage() {
   const [metalId, setMetalId] = useState('pd')
   const [semiconductorId, setSemiconductorId] = useState('wse2')
   const [mode, setMode] = useState<'after' | 'before' | 'stack'>('after')
+  const chartRef = useRef<HTMLDivElement>(null)
+  const exportName = mode === 'stack' ? 'band-stack' : `band-${metalId}-${semiconductorId}-${mode}`
   const metal = findMaterial(project.materials, metalId)
   const semiconductor = findMaterial(project.materials, semiconductorId)
   const [flpOn, setFlpOn] = useState(false)
@@ -955,11 +958,17 @@ export function BandDiagramPage() {
         )}
         center={(
           <ManusChartCard title={mode === 'stack' ? `多層能帶排列：${activeDevice.name}` : `Energy Band Diagram: ${metal.displayName} / ${semiconductor.displayName}`} badge={<ManusStatusBadge tone="primary">{mode === 'after' ? 'after contact' : mode === 'before' ? 'before contact' : 'stack'}</ManusStatusBadge>}>
-            {mode === 'stack' ? (
-              <div className="band-anim-wrap" key={`stack-${activeDevice.id}-${activeDevice.layers.length}`}><StackBandDiagram layers={activeDevice.layers} materials={project.materials} /></div>
-            ) : (
-              <div className="band-anim-wrap" key={`${metalId}-${semiconductorId}-${mode}-${pinningOn}`}><BandDiagramPreview mode={mode} metalPhi={metalPhi} chi={affinity} eg={bandGap} phiBn={nBarrier} metalLabel={metal.displayName} semiLabel={semiconductor.displayName} /></div>
-            )}
+            <div className="chart-export-bar">
+              <button className="manus-button" type="button" onClick={() => downloadChartSvg(chartRef.current?.querySelector('svg') ?? null, exportName)}>匯出 SVG</button>
+              <button className="manus-button" type="button" onClick={() => downloadChartPng(chartRef.current?.querySelector('svg') ?? null, exportName)}>匯出 PNG</button>
+            </div>
+            <div ref={chartRef}>
+              {mode === 'stack' ? (
+                <div className="band-anim-wrap" key={`stack-${activeDevice.id}-${activeDevice.layers.length}`}><StackBandDiagram layers={activeDevice.layers} materials={project.materials} /></div>
+              ) : (
+                <div className="band-anim-wrap" key={`${metalId}-${semiconductorId}-${mode}-${pinningOn}`}><BandDiagramPreview mode={mode} metalPhi={metalPhi} chi={affinity} eg={bandGap} phiBn={nBarrier} metalLabel={metal.displayName} semiLabel={semiconductor.displayName} /></div>
+              )}
+            </div>
           </ManusChartCard>
         )}
         right={(

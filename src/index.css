@@ -3384,3 +3384,15 @@ button.manus-list-row {
   color: var(--muted, #8a94a6);
   line-height: 1.5;
 }
+
+/* Chart export toolbar */
+.chart-export-bar {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+.chart-export-bar .manus-button {
+  font-size: 12px;
+  padding: 5px 10px;
+}
