@@ -48,6 +48,7 @@ import { findMaterial } from './materialUtils'
 import { CollapsibleSection } from '../../components/common/CollapsibleSection'
 import { estimateSchottkyBarrier, pinningFactorFromDit } from '../../physics/bandAlignment'
 import { StackBandDiagram } from '../../components/semiviz/StackBandDiagram'
+import { simulateProcessFlow } from '../../physics/processStructure'
 import { SimulationConfigEditor } from './SimulationConfigEditor'
 import {
   getGeometryWarning,
@@ -534,10 +535,17 @@ function ProcessStageVisual({ step }: { step: { type: ProcessType; order: number
 }
 
 export function ProcessFlowPage() {
-  const { project } = useProjectStore()
+  const { project, activeDevice, updateActiveDevice } = useProjectStore()
   const [selectedOrder, setSelectedOrder] = useState(8)
   const flow = project.processes[0]
   const selected = flow.steps.find((step) => step.order === selectedOrder) ?? flow.steps[0]
+  const stageResults = simulateProcessFlow(activeDevice, flow.steps)
+  const stage = stageResults.find((r) => r.step.order === selected.order) ?? stageResults[stageResults.length - 1]
+  const stageLayers = stage?.layers ?? []
+  const finalLayers = stageResults.length ? stageResults[stageResults.length - 1].layers : []
+  function applyStructure() {
+    updateActiveDevice((device) => ({ ...device, layers: finalLayers }))
+  }
 
   return (
     <WorkspacePage title="製程流程" icon={<GitBranch size={18} />}>
@@ -591,6 +599,18 @@ export function ProcessFlowPage() {
               <p>{selected.risk}</p>
             </ManusCallout>
           ) : null}
+          <div className="proc-structure">
+            <div className="proc-structure-head">
+              <h4>結構演化（模擬）</h4>
+              <button className="manus-button" type="button" onClick={applyStructure}>套用最終結構到元件</button>
+            </div>
+            <ul className="proc-structure-list">
+              {[...stageLayers].reverse().map((l) => (
+                <li key={l.id}><span>{l.name}</span><small>{l.materialId} · {l.geometry.thickness_nm} nm</small></li>
+              ))}
+            </ul>
+            <p className="proc-structure-note">由基板逐步套用至第 {selected.order} 步的模擬結構（半定性，需實驗校準）。套用後會更新元件，並同步到能帶圖與 I-V。</p>
+          </div>
         </Card>
       </div>
     </WorkspacePage>
