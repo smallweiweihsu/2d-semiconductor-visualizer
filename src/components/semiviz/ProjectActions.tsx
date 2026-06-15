@@ -73,7 +73,7 @@ export function ProjectActions() {
         {importMessage ? <span className="import-status" role="status">{importMessage}</span> : null}
         <button className="manus-button ghost" onClick={() => inputRef.current?.click()}>
           <Upload size={15} />
-          匯入資料
+          匯入專案
         </button>
         <div className="manus-overflow">
           <button className="manus-button ghost icon-only" aria-label="更多動作" aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>
