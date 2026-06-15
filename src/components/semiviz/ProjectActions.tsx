@@ -1,5 +1,5 @@
 import { useRef, useState, type ChangeEvent, type FormEvent } from 'react'
-import { Download, Plus, RotateCcw, Upload, X } from 'lucide-react'
+import { Download, MoreHorizontal, Plus, RotateCcw, Upload, X } from 'lucide-react'
 import { useProjectStore } from '../../store/projectStore'
 import { parseProjectJson } from '../../store/projectValidation'
 
@@ -9,6 +9,7 @@ export function ProjectActions() {
   const [name, setName] = useState('New Device')
   const [description, setDescription] = useState('自訂二維半導體元件結構')
   const [importMessage, setImportMessage] = useState('')
+  const [menuOpen, setMenuOpen] = useState(false)
   const { addDevice, exportProject, replaceProject, resetProject } = useProjectStore()
 
   function handleCreate(event: FormEvent) {
@@ -74,14 +75,24 @@ export function ProjectActions() {
           <Upload size={15} />
           匯入資料
         </button>
-        <button className="manus-button ghost" onClick={exportProject}>
-          <Download size={15} />
-          匯出 JSON
-        </button>
-        <button className="manus-button ghost danger" onClick={handleReset}>
-          <RotateCcw size={15} />
-          Reset local project
-        </button>
+        <div className="manus-overflow">
+          <button className="manus-button ghost icon-only" aria-label="更多動作" aria-expanded={menuOpen} onClick={() => setMenuOpen((open) => !open)}>
+            <MoreHorizontal size={16} />
+          </button>
+          {menuOpen ? (
+            <>
+              <div className="manus-overflow-scrim" role="presentation" onClick={() => setMenuOpen(false)} />
+              <div className="manus-overflow-menu" role="menu">
+                <button type="button" role="menuitem" onClick={() => { exportProject(); setMenuOpen(false) }}>
+                  <Download size={14} /> 匯出 JSON
+                </button>
+                <button type="button" role="menuitem" className="danger" onClick={() => { handleReset(); setMenuOpen(false) }}>
+                  <RotateCcw size={14} /> 重設本機專案
+                </button>
+              </div>
+            </>
+          ) : null}
+        </div>
         <button className="manus-button primary" onClick={() => setIsModalOpen(true)}>
           <Plus size={15} />
           新增元件
