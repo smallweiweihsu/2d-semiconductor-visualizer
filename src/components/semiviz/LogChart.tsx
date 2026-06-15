@@ -66,11 +66,11 @@ export function LogChart({ series, xLabel = 'V (V)', yLabel = '|I| (A)' }: LogCh
       ))}
       <text className="band-axis-label" x={M.left + PW / 2} y={H - 10} textAnchor="middle">{xLabel}</text>
       <text className="band-axis-label" x={16} y={M.top + PH / 2} textAnchor="middle" transform={`rotate(-90 16 ${M.top + PH / 2})`}>{yLabel}</text>
-      {/* legend */}
+      {/* legend: 垂直堆疊，避免重疊 */}
       {series.map((s, i) => (
-        <g key={`lg-${s.label}`} transform={`translate(${M.left + 8 + i * 130}, ${M.top + 6})`}>
-          <line x1={0} x2={16} y1={0} y2={0} stroke={s.color} strokeWidth={2} strokeDasharray={s.dashed ? '5 4' : undefined} />
-          <text className="band-stack-sub" x={20} y={4}>{s.label}</text>
+        <g key={`lg-${s.label}-${i}`} transform={`translate(${M.left + 10}, ${M.top + 14 + i * 16})`}>
+          <line x1={0} x2={16} y1={0} y2={0} stroke={s.color} strokeWidth={2.4} strokeDasharray={s.dashed ? '5 4' : undefined} />
+          <text className="band-stack-sub" x={20} y={4}>{s.label.length > 22 ? `${s.label.slice(0, 21)}…` : s.label}</text>
         </g>
       ))}
     </svg>

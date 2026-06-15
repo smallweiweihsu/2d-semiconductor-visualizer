@@ -1417,7 +1417,7 @@ export function MeasurementsPage() {
                               return event.target.checked ? [...new Set([...base, m.id])] : base.filter((id) => id !== m.id)
                             })}
                           />
-                          {measurementKindLabel(m)} · {m.deviceName} · {m.date}
+                          {m.sampleName}
                         </label>
                       ))}
                     </div>
