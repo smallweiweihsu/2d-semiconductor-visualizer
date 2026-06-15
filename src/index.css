@@ -3523,3 +3523,6 @@ button.manus-list-row {
 .compare-checks { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; max-height: 160px; overflow: auto; }
 .compare-check { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--foreground); }
 .compare-check input { accent-color: var(--primary, #22d3ee); }
+
+.import-device-field { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted, #8a94a6); margin-bottom: 8px; }
+.import-device-field select { background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 7px; color: var(--foreground); padding: 6px 8px; font-size: 13px; }

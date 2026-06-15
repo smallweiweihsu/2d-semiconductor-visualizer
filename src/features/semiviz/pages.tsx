@@ -1230,6 +1230,7 @@ export function MeasurementsPage() {
   const inputRef = useRef<HTMLInputElement>(null)
   const [importStatus, setImportStatus] = useState('')
   const [compareIds, setCompareIds] = useState<string[]>([])
+  const [importDeviceId, setImportDeviceId] = useState(activeDevice.id)
   const folderInputRef = useRef<HTMLInputElement>(null)
   const [selectedMeasurementId, setSelectedMeasurementId] = useState(project.measurements.find((measurement) => measurement.electrical)?.id ?? project.measurements[0]?.id ?? '')
   const selected = project.measurements.find((measurement) => measurement.id === selectedMeasurementId) ?? project.measurements.find((measurement) => measurement.electrical) ?? project.measurements[0]
@@ -1241,22 +1242,32 @@ export function MeasurementsPage() {
     let created = 0
     let skipped = 0
     let firstId = ''
+    const importDevice = project.devices.find((d) => d.id === importDeviceId) ?? activeDevice
     for (const file of files) {
       if (!/\.(csv|txt|dat)$/i.test(file.name)) { skipped += 1; continue }
       const parsed = parseDelimitedText(await file.text())
       if (!parsed.headers.length) { skipped += 1; continue }
       const mapping = inferColumnMappings(parsed.headers)
       const meta = parseMeasurementFilename(file.name)
-      const measurement = createElectricalMeasurement({
+      const ctx = `${file.webkitRelativePath || ''} ${file.name}`.toLowerCase()
+      let kind = meta.kind
+      if (!kind) {
+        if (/output|id-?vd/.test(ctx)) kind = 'id_vd'
+        else if (/transfer|id-?vg/.test(ctx)) kind = 'id_vg'
+      }
+      const base = createElectricalMeasurement({
         table: parsed,
         mappings: mapping,
-        activeDeviceId: activeDevice.id,
-        activeDeviceName: activeDevice.name,
+        activeDeviceId: importDevice.id,
+        activeDeviceName: importDevice.name,
         sourceName: file.name,
-        deviceNameOverride: meta.device,
+        deviceNameOverride: importDevice.name,
         dateOverride: meta.date,
-        kindOverride: meta.kind,
+        kindOverride: kind,
       })
+      const measurement = meta.temperatureK
+        ? { ...base, sampleName: `${base.sampleName} · ${meta.temperatureK}K`, notes: `${base.notes ?? ''} (T=${meta.temperatureK}K)`.trim() }
+        : base
       addMeasurement(measurement)
       if (!firstId) firstId = measurement.id
       created += 1
@@ -1367,7 +1378,7 @@ export function MeasurementsPage() {
                   .map((m, i) => {
                     const isOutput = m.electrical!.measurementKind === 'id_vd'
                     return {
-                      label: `${m.deviceName}/${m.date}`,
+                      label: m.sampleName,
                       color: palette[i % palette.length],
                       points: m.electrical!.points
                         .filter((pt) => (isOutput ? pt.Vd !== undefined : pt.Vg !== undefined) && pt.Id !== undefined)
@@ -1398,12 +1409,17 @@ export function MeasurementsPage() {
             </details>
             <details className="secondary-editor" open>
               <summary>批量匯入 CSV / TXT</summary>
+              <label className="import-device-field">匯入到元件
+                <select value={importDeviceId} onChange={(event) => setImportDeviceId(event.target.value)}>
+                  {project.devices.map((d) => <option value={d.id} key={d.id}>{d.name}</option>)}
+                </select>
+              </label>
               <div className="import-actions">
                 <button className="manus-button primary" type="button" onClick={() => inputRef.current?.click()}>選擇檔案（可多選）</button>
                 <button className="manus-button ghost" type="button" onClick={() => folderInputRef.current?.click()}>匯入整個資料夾</button>
               </div>
               {importStatus ? <p className="import-status-msg">{importStatus}</p> : null}
-              <p className="import-hint">建議檔名：<code>元件_YYYY-MM-DD_transfer.txt</code> 或 <code>元件_YYYY-MM-DD_output.txt</code>。匯入時會自動依檔名歸到對應的元件／日期／類型；沒照格式也會匯入（歸到目前元件、今天日期），之後可在上方直接編輯日期與類型。Vg/Id/Ig 欄位會自動對應。</p>
+              <p className="import-hint">會匯入到上方選的元件。類型（轉移/輸出）優先看資料夾名（output/transfer），其次看資料形狀自動判斷；溫度會從檔名擷取（如 <code>100k</code>、<code>80K</code>）並標在名稱上，方便變溫疊圖。日期/類型之後仍可在上方編輯。</p>
             </details>
           </div>
         )}

@@ -45,7 +45,7 @@ export function inferColumnMappings(headers: string[]): ColumnMappingState {
     const rawUnit = unitMatch?.[1] ?? unitMatch?.[2]
     let role: ElectricalMeasurementColumnRole | 'ignore' = 'ignore'
     let unit: string | undefined
-    if (h.includes('current') || h.includes('|i')) {
+    if (h.includes('current')) {
       const isGate = h.includes('igs') || /\big\b/.test(h) || h.includes('|igs|') || h.includes('- ig')
       if (isGate) {
         if (!igAssigned) { role = 'Ig'; igAssigned = true; unit = rawUnit ?? 'A' }
@@ -175,15 +175,17 @@ function splitLine(line: string, delimiter: ParsedCsvTable['delimiter']) {
 
 
 /** 由檔名推斷 元件 / 日期 / 量測類型。建議命名：DeviceName_YYYY-MM-DD_transfer.txt（或 _output）。 */
-export function parseMeasurementFilename(filename: string): { device?: string; date?: string; kind?: ElectricalMeasurementDataset['measurementKind'] } {
+export function parseMeasurementFilename(filename: string): { date?: string; kind?: ElectricalMeasurementDataset['measurementKind']; temperatureK?: number } {
   const base = filename.replace(/\.(csv|txt|dat)$/i, '')
   const lower = base.toLowerCase()
+  // 類型：transfer 檔通常含 Vg 掃描；output 檔含 Vd 掃描。檔名/資料夾含 output→id_vd、transfer→id_vg。
   let kind: ElectricalMeasurementDataset['measurementKind'] | undefined
-  if (/transfer|id[_-]?vg|\bvg\b/.test(lower)) kind = 'id_vg'
-  else if (/output|id[_-]?vd|\bvd\b/.test(lower)) kind = 'id_vd'
+  if (/\btransfer\b|id[_-]?vg/.test(lower)) kind = 'id_vg'
+  else if (/\boutput\b|id[_-]?vd/.test(lower)) kind = 'id_vd'
   const dateMatch = base.match(/(20\d{2})[-_/.]?(\d{2})[-_/.]?(\d{2})/)
   const date = dateMatch ? `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}` : undefined
-  const tokens = base.split(/[_\s]+/).filter(Boolean)
-  const device = tokens.length ? tokens[0] : undefined
-  return { device, date, kind }
+  // 溫度：例如 100k / 80K / 300 K → 視為 K
+  const tMatch = base.match(/(\d{1,3})\s*[kK]\b/)
+  const temperatureK = tMatch ? Number(tMatch[1]) : undefined
+  return { date, kind, temperatureK }
 }
