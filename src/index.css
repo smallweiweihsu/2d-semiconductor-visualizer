@@ -3323,3 +3323,14 @@ button.manus-list-row {
   font-size: 13px;
   font-family: "JetBrains Mono", monospace;
 }
+
+/* Multi-layer stack band alignment */
+.band-vac-line { stroke: #94a3b8; stroke-width: 1.4; stroke-dasharray: 6 5; }
+.band-col-sep { stroke: rgba(255,255,255,0.07); stroke-width: 1; }
+.band-metal-fill { fill: rgba(203,213,225,0.16); }
+.band-stack-val { font-size: 11px; font-family: "JetBrains Mono", monospace; fill: var(--muted, #8a94a6); }
+.band-stack-val.ec { fill: #22d3ee; }
+.band-stack-val.ev { fill: #a78bfa; }
+.band-stack-label { font-size: 13px; font-weight: 600; fill: var(--foreground); }
+.band-stack-sub { font-size: 11px; fill: var(--muted, #8a94a6); }
+.band-stack-na { font-size: 12px; fill: #64748b; }

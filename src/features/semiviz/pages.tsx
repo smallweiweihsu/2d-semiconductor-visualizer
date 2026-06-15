@@ -47,6 +47,7 @@ import { LayerStackPanel } from './LayerStackPanel'
 import { findMaterial } from './materialUtils'
 import { CollapsibleSection } from '../../components/common/CollapsibleSection'
 import { estimateSchottkyBarrier, pinningFactorFromDit } from '../../physics/bandAlignment'
+import { StackBandDiagram } from '../../components/semiviz/StackBandDiagram'
 import { SimulationConfigEditor } from './SimulationConfigEditor'
 import {
   getGeometryWarning,
@@ -853,12 +854,12 @@ function BandRow({ label, value, color }: { label: string; value: string; color?
 }
 
 export function BandDiagramPage() {
-  const { project } = useProjectStore()
+  const { project, activeDevice } = useProjectStore()
   const metals = ['pd', 'ti', 'in', 'pt', 'au', 'sb-bulk'].map((id) => findMaterial(project.materials, id))
   const semiconductors = ['wse2', 'mos2', 'inse'].map((id) => findMaterial(project.materials, id))
   const [metalId, setMetalId] = useState('pd')
   const [semiconductorId, setSemiconductorId] = useState('wse2')
-  const [mode, setMode] = useState<'after' | 'before'>('after')
+  const [mode, setMode] = useState<'after' | 'before' | 'stack'>('after')
   const metal = findMaterial(project.materials, metalId)
   const semiconductor = findMaterial(project.materials, semiconductorId)
   const [flpOn, setFlpOn] = useState(false)
@@ -917,6 +918,7 @@ export function BandDiagramPage() {
               <div className="segmented-vertical">
                 <button className={mode === 'after' ? 'active' : ''} type="button" onClick={() => setMode('after')}>After Contact (Band Bending)</button>
                 <button className={mode === 'before' ? 'active' : ''} type="button" onClick={() => setMode('before')}>Before Contact (Flat Band)</button>
+                <button className={mode === 'stack' ? 'active' : ''} type="button" onClick={() => setMode('stack')}>多層堆疊（整個元件）</button>
               </div>
             </section>
             <section>
@@ -932,8 +934,12 @@ export function BandDiagramPage() {
           </ManusSidePanel>
         )}
         center={(
-          <ManusChartCard title={`Energy Band Diagram: ${metal.displayName} / ${semiconductor.displayName}`} badge={<ManusStatusBadge tone="primary">{mode === 'after' ? 'after contact' : 'before contact'}</ManusStatusBadge>}>
-            <div className="band-anim-wrap" key={`${metalId}-${semiconductorId}-${mode}-${pinningOn}`}><BandDiagramPreview mode={mode} metalPhi={metalPhi} chi={affinity} eg={bandGap} phiBn={nBarrier} metalLabel={metal.displayName} semiLabel={semiconductor.displayName} /></div>
+          <ManusChartCard title={mode === 'stack' ? `多層能帶排列：${activeDevice.name}` : `Energy Band Diagram: ${metal.displayName} / ${semiconductor.displayName}`} badge={<ManusStatusBadge tone="primary">{mode === 'after' ? 'after contact' : mode === 'before' ? 'before contact' : 'stack'}</ManusStatusBadge>}>
+            {mode === 'stack' ? (
+              <div className="band-anim-wrap" key={`stack-${activeDevice.id}-${activeDevice.layers.length}`}><StackBandDiagram layers={activeDevice.layers} materials={project.materials} /></div>
+            ) : (
+              <div className="band-anim-wrap" key={`${metalId}-${semiconductorId}-${mode}-${pinningOn}`}><BandDiagramPreview mode={mode} metalPhi={metalPhi} chi={affinity} eg={bandGap} phiBn={nBarrier} metalLabel={metal.displayName} semiLabel={semiconductor.displayName} /></div>
+            )}
           </ManusChartCard>
         )}
         right={(
