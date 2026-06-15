@@ -3512,3 +3512,9 @@ button.manus-list-row {
   padding: 6px 8px;
   font-size: 13px;
 }
+
+/* Measurements batch import UI */
+.import-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+.import-status-msg { color: var(--primary, #22d3ee); font-size: 13px; margin: 6px 0; }
+.import-hint { font-size: 11px; color: var(--muted, #8a94a6); line-height: 1.6; margin: 6px 0 0; }
+.import-hint code { background: rgba(255,255,255,0.06); padding: 1px 5px; border-radius: 4px; font-size: 11px; }

@@ -71,12 +71,18 @@ export function createElectricalMeasurement({
   activeDeviceId,
   activeDeviceName,
   sourceName,
+  deviceNameOverride,
+  dateOverride,
+  kindOverride,
 }: {
   table: ParsedCsvTable
   mappings: ColumnMappingState
   activeDeviceId: string
   activeDeviceName: string
   sourceName: string
+  deviceNameOverride?: string
+  dateOverride?: string
+  kindOverride?: ElectricalMeasurementDataset['measurementKind']
 }): MeasurementData {
   const columns: ElectricalMeasurementColumn[] = table.headers.map((header) => ({
     source: header,
@@ -99,14 +105,14 @@ export function createElectricalMeasurement({
     })
     return point
   }).filter((point) => point.Id !== undefined && (point.Vg !== undefined || point.Vd !== undefined))
-  const measurementKind = inferMeasurementKind(points)
+  const measurementKind = kindOverride ?? inferMeasurementKind(points)
 
   return {
     id: `meas-${Date.now()}`,
     sampleName: sourceName.replace(/\.(csv|txt)$/i, '') || 'Imported measurement',
-    deviceName: activeDeviceName,
+    deviceName: deviceNameOverride || activeDeviceName,
     deviceId: activeDeviceId,
-    date: new Date().toISOString().slice(0, 10),
+    date: dateOverride || new Date().toISOString().slice(0, 10),
     type: 'electrical',
     tool: 'CSV import',
     notes: 'Imported local electrical measurement',
@@ -165,4 +171,19 @@ function detectDelimiter(line: string): ParsedCsvTable['delimiter'] {
 function splitLine(line: string, delimiter: ParsedCsvTable['delimiter']) {
   if (delimiter === ' ') return line.split(/\s+/).map((entry) => entry.trim())
   return line.split(delimiter).map((entry) => entry.trim().replace(/^"|"$/g, ''))
+}
+
+
+/** 由檔名推斷 元件 / 日期 / 量測類型。建議命名：DeviceName_YYYY-MM-DD_transfer.txt（或 _output）。 */
+export function parseMeasurementFilename(filename: string): { device?: string; date?: string; kind?: ElectricalMeasurementDataset['measurementKind'] } {
+  const base = filename.replace(/\.(csv|txt|dat)$/i, '')
+  const lower = base.toLowerCase()
+  let kind: ElectricalMeasurementDataset['measurementKind'] | undefined
+  if (/transfer|id[_-]?vg|\bvg\b/.test(lower)) kind = 'id_vg'
+  else if (/output|id[_-]?vd|\bvd\b/.test(lower)) kind = 'id_vd'
+  const dateMatch = base.match(/(20\d{2})[-_/.]?(\d{2})[-_/.]?(\d{2})/)
+  const date = dateMatch ? `${dateMatch[1]}-${dateMatch[2]}-${dateMatch[3]}` : undefined
+  const tokens = base.split(/[_\s]+/).filter(Boolean)
+  const device = tokens.length ? tokens[0] : undefined
+  return { device, date, kind }
 }

@@ -60,8 +60,7 @@ import {
   createElectricalMeasurement,
   inferColumnMappings,
   parseDelimitedText,
-  type ColumnMappingState,
-  type ParsedCsvTable,
+  parseMeasurementFilename,
 } from '../../measurements/csvParser'
 import {
   calculateElectricalMetrics,
@@ -98,7 +97,6 @@ import type {
   ParameterCandidate,
   ParameterConfidence,
   ProcessType,
-  ElectricalMeasurementColumnRole,
   ElectricalMeasurementPoint,
 } from '../../types/semiviz'
 import { getMaterialParameters, getReferenceUsage } from '../../store/materialParameterUtils'
@@ -143,9 +141,6 @@ const materialCategories: MaterialCategory[] = ['metal', 'two_d_semiconductor', 
 const carrierTypes: CarrierType[] = ['n', 'p', 'ambipolar', 'unknown']
 const confidenceOptions: ParameterConfidence[] = ['known', 'estimated', 'unknown']
 const referenceStatusOptions: LiteratureStatus[] = ['candidate', 'reviewed', 'accepted', 'rejected']
-const measurementColumnRoles: ElectricalMeasurementColumnRole[] = ['ignore', 'Vg', 'Vd', 'Id', 'Ig', 'time', 'sweepDirection', 'temperature']
-const voltageUnits = ['V', 'mV']
-const currentUnits = ['A', 'mA', 'uA', 'nA', 'pA']
 const ivDemoDefaults = {
   vd: 2,
   vgMin: -3,
@@ -1232,40 +1227,47 @@ function groupMeasurements(items: MeasurementData[]): Array<[string, Array<[stri
 export function MeasurementsPage() {
   const { project, activeDevice, addMeasurement, updateMeasurement } = useProjectStore()
   const inputRef = useRef<HTMLInputElement>(null)
-  const [table, setTable] = useState<ParsedCsvTable>()
-  const [sourceName, setSourceName] = useState('')
-  const [mappings, setMappings] = useState<ColumnMappingState>({})
+  const [importStatus, setImportStatus] = useState('')
+  const folderInputRef = useRef<HTMLInputElement>(null)
   const [selectedMeasurementId, setSelectedMeasurementId] = useState(project.measurements.find((measurement) => measurement.electrical)?.id ?? project.measurements[0]?.id ?? '')
   const selected = project.measurements.find((measurement) => measurement.id === selectedMeasurementId) ?? project.measurements.find((measurement) => measurement.electrical) ?? project.measurements[0]
   const metrics = calculateElectricalMetrics(selected)
 
-  async function handleFile(event: ChangeEvent<HTMLInputElement>) {
-    const file = event.currentTarget.files?.[0]
-    if (!file) return
-    const parsed = parseDelimitedText(await file.text())
-    setSourceName(file.name)
-    setTable(parsed)
-    setMappings(inferColumnMappings(parsed.headers))
+  async function handleFiles(event: ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(event.currentTarget.files ?? [])
+    if (!files.length) return
+    let created = 0
+    let skipped = 0
+    let firstId = ''
+    for (const file of files) {
+      if (!/\.(csv|txt|dat)$/i.test(file.name)) { skipped += 1; continue }
+      const parsed = parseDelimitedText(await file.text())
+      if (!parsed.headers.length) { skipped += 1; continue }
+      const mapping = inferColumnMappings(parsed.headers)
+      const meta = parseMeasurementFilename(file.name)
+      const measurement = createElectricalMeasurement({
+        table: parsed,
+        mappings: mapping,
+        activeDeviceId: activeDevice.id,
+        activeDeviceName: activeDevice.name,
+        sourceName: file.name,
+        deviceNameOverride: meta.device,
+        dateOverride: meta.date,
+        kindOverride: meta.kind,
+      })
+      addMeasurement(measurement)
+      if (!firstId) firstId = measurement.id
+      created += 1
+    }
+    if (firstId) setSelectedMeasurementId(firstId)
+    setImportStatus(`已匯入 ${created} 個檔案${skipped ? `，略過 ${skipped} 個非資料檔` : ''}`)
     event.currentTarget.value = ''
-  }
-
-  function saveImport() {
-    if (!table) return
-    const measurement = createElectricalMeasurement({
-      table,
-      mappings,
-      activeDeviceId: activeDevice.id,
-      activeDeviceName: activeDevice.name,
-      sourceName,
-    })
-    addMeasurement(measurement)
-    setSelectedMeasurementId(measurement.id)
-    setTable(undefined)
   }
 
   return (
     <WorkspacePage title="Measurements" icon={<FlaskConical size={18} />}>
-      <input ref={inputRef} className="sr-only" type="file" accept=".csv,.txt,text/csv,text/plain" onChange={(event) => { void handleFile(event) }} />
+      <input ref={inputRef} className="sr-only" type="file" multiple accept=".csv,.txt,text/csv,text/plain" onChange={(event) => { void handleFiles(event) }} />
+      <input ref={(el) => { folderInputRef.current = el; if (el) el.setAttribute('webkitdirectory', '') }} className="sr-only" type="file" multiple onChange={(event) => { void handleFiles(event) }} />
       <ManusSplitDetail
         className="measurements-workspace"
         list={(
@@ -1349,28 +1351,13 @@ export function MeasurementsPage() {
               </>
             ) : <EmptyState text="尚未建立 measurement dataset。" />}
             <details className="secondary-editor" open>
-              <summary>CSV / TXT import</summary>
-              <button className="manus-button primary" type="button" onClick={() => inputRef.current?.click()}>Import electrical CSV</button>
-              {table ? (
-                <div className="import-preview">
-                  <strong>{sourceName}</strong>
-                  <div className="mapping-grid">
-                    {table.headers.map((header) => (
-                      <div className="mapping-row" key={header}>
-                        <span>{header}</span>
-                        <select value={mappings[header]?.role ?? 'ignore'} onChange={(event) => setMappings((current) => ({ ...current, [header]: { ...current[header], role: event.target.value as ElectricalMeasurementColumnRole } }))}>
-                          {measurementColumnRoles.map((role) => <option value={role} key={role}>{role}</option>)}
-                        </select>
-                        <select value={mappings[header]?.unit ?? ''} onChange={(event) => setMappings((current) => ({ ...current, [header]: { ...current[header], unit: event.target.value } }))}>
-                          <option value="">unit</option>
-                          {[...voltageUnits, ...currentUnits].map((unit) => <option value={unit} key={unit}>{unit}</option>)}
-                        </select>
-                      </div>
-                    ))}
-                  </div>
-                  <button className="manus-button primary" type="button" onClick={saveImport}>Save measurement</button>
-                </div>
-              ) : <EmptyState text="匯入 Id-Vg / Id-Vd CSV 或 TXT 後可設定欄位對應與單位。" />}
+              <summary>批量匯入 CSV / TXT</summary>
+              <div className="import-actions">
+                <button className="manus-button primary" type="button" onClick={() => inputRef.current?.click()}>選擇檔案（可多選）</button>
+                <button className="manus-button ghost" type="button" onClick={() => folderInputRef.current?.click()}>匯入整個資料夾</button>
+              </div>
+              {importStatus ? <p className="import-status-msg">{importStatus}</p> : null}
+              <p className="import-hint">建議檔名：<code>元件_YYYY-MM-DD_transfer.txt</code> 或 <code>元件_YYYY-MM-DD_output.txt</code>。匯入時會自動依檔名歸到對應的元件／日期／類型；沒照格式也會匯入（歸到目前元件、今天日期），之後可在上方直接編輯日期與類型。Vg/Id/Ig 欄位會自動對應。</p>
             </details>
           </div>
         )}
