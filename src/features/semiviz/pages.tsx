@@ -48,6 +48,7 @@ import { findMaterial } from './materialUtils'
 import { CollapsibleSection } from '../../components/common/CollapsibleSection'
 import { estimateSchottkyBarrier, pinningFactorFromDit } from '../../physics/bandAlignment'
 import { StackBandDiagram } from '../../components/semiviz/StackBandDiagram'
+import { LogChart, type LogSeries } from '../../components/semiviz/LogChart'
 import { simulateProcessFlow } from '../../physics/processStructure'
 import { downloadChartSvg, downloadChartPng } from '../../utils/exportChart'
 import { SimulationConfigEditor } from './SimulationConfigEditor'
@@ -1228,6 +1229,7 @@ export function MeasurementsPage() {
   const { project, activeDevice, addMeasurement, updateMeasurement } = useProjectStore()
   const inputRef = useRef<HTMLInputElement>(null)
   const [importStatus, setImportStatus] = useState('')
+  const [compareIds, setCompareIds] = useState<string[]>([])
   const folderInputRef = useRef<HTMLInputElement>(null)
   const [selectedMeasurementId, setSelectedMeasurementId] = useState(project.measurements.find((measurement) => measurement.electrical)?.id ?? project.measurements[0]?.id ?? '')
   const selected = project.measurements.find((measurement) => measurement.id === selectedMeasurementId) ?? project.measurements.find((measurement) => measurement.electrical) ?? project.measurements[0]
@@ -1332,12 +1334,16 @@ export function MeasurementsPage() {
                 <ManusPreviewCard>
                   {selected.electrical ? (() => {
                     const isOutput = selected.electrical.measurementKind === 'id_vd'
-                    const xk = isOutput ? 'vd' : 'vg'
-                    const pts = selected.electrical.points
-                      .filter((point) => (isOutput ? point.Vd !== undefined : point.Vg !== undefined) && point.Id !== undefined)
-                      .map((point) => ({ [xk]: (isOutput ? point.Vd : point.Vg) as number, id: Math.abs(point.Id ?? 0) * 1e6 }))
-                    return pts.length ? (
-                      <Chart data={pts} xKey={xk} unit="uA" lines={[{ key: 'id', color: 'oklch(0.78 0.15 195)' }]} />
+                    const xk = isOutput ? 'Vd' : 'Vg'
+                    const pick = (key: 'Id' | 'Ig') => selected.electrical!.points
+                      .filter((point) => (isOutput ? point.Vd !== undefined : point.Vg !== undefined) && point[key] !== undefined)
+                      .map((point) => ({ x: (isOutput ? point.Vd : point.Vg) as number, y: point[key] as number }))
+                    const idPts = pick('Id')
+                    const igPts = pick('Ig')
+                    const seriesList: LogSeries[] = [{ label: '|Id|', color: '#22d3ee', points: idPts }]
+                    if (igPts.length) seriesList.push({ label: '|Ig|', color: '#f472b6', points: igPts, dashed: true })
+                    return idPts.length ? (
+                      <LogChart series={seriesList} xLabel={`${xk} (V)`} yLabel="|I| (A)" />
                     ) : <div className="measurement-visual"><MeasurementVisual type={selected.type} /><span>此資料集沒有可繪製的點（請確認欄位對應）</span></div>
                   })() : <div className="measurement-visual"><MeasurementVisual type={selected.type} /><span>量測數據視覺化區域 — 可匯入 CSV/Excel 資料</span></div>}
                 </ManusPreviewCard>
@@ -1350,6 +1356,46 @@ export function MeasurementsPage() {
                 {selected.electrical ? <RawMeasurementTable rows={selected.electrical.points.slice(0, 12)} /> : null}
               </>
             ) : <EmptyState text="尚未建立 measurement dataset。" />}
+            <details className="secondary-editor compare-overlay" open>
+              <summary>情境比較（多溫度／多條件疊圖）</summary>
+              {(() => {
+                const elec = project.measurements.filter((m) => m.electrical)
+                const palette = ['#22d3ee', '#a78bfa', '#34d399', '#fbbf24', '#f472b6', '#60a5fa', '#fb923c']
+                const chosen = compareIds.length ? compareIds : (selected ? [selected.id] : [])
+                const seriesList: LogSeries[] = elec
+                  .filter((m) => chosen.includes(m.id))
+                  .map((m, i) => {
+                    const isOutput = m.electrical!.measurementKind === 'id_vd'
+                    return {
+                      label: `${m.deviceName}/${m.date}`,
+                      color: palette[i % palette.length],
+                      points: m.electrical!.points
+                        .filter((pt) => (isOutput ? pt.Vd !== undefined : pt.Vg !== undefined) && pt.Id !== undefined)
+                        .map((pt) => ({ x: (isOutput ? pt.Vd : pt.Vg) as number, y: pt.Id as number })),
+                    }
+                  })
+                return (
+                  <>
+                    <div className="compare-checks">
+                      {elec.map((m) => (
+                        <label key={m.id} className="compare-check">
+                          <input
+                            type="checkbox"
+                            checked={chosen.includes(m.id)}
+                            onChange={(event) => setCompareIds((current) => {
+                              const base = current.length ? current : (selected ? [selected.id] : [])
+                              return event.target.checked ? [...new Set([...base, m.id])] : base.filter((id) => id !== m.id)
+                            })}
+                          />
+                          {measurementKindLabel(m)} · {m.deviceName} · {m.date}
+                        </label>
+                      ))}
+                    </div>
+                    {seriesList.length ? <LogChart series={seriesList} xLabel="V (V)" yLabel="|Id| (A)" /> : <EmptyState text="勾選兩筆以上電性資料即可疊圖比較（變溫或不同製程）。" />}
+                  </>
+                )
+              })()}
+            </details>
             <details className="secondary-editor" open>
               <summary>批量匯入 CSV / TXT</summary>
               <div className="import-actions">

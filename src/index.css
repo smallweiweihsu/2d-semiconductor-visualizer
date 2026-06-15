@@ -3518,3 +3518,8 @@ button.manus-list-row {
 .import-status-msg { color: var(--primary, #22d3ee); font-size: 13px; margin: 6px 0; }
 .import-hint { font-size: 11px; color: var(--muted, #8a94a6); line-height: 1.6; margin: 6px 0 0; }
 .import-hint code { background: rgba(255,255,255,0.06); padding: 1px 5px; border-radius: 4px; font-size: 11px; }
+
+/* Measurements comparison overlay */
+.compare-checks { display: flex; flex-direction: column; gap: 4px; margin-bottom: 10px; max-height: 160px; overflow: auto; }
+.compare-check { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--foreground); }
+.compare-check input { accent-color: var(--primary, #22d3ee); }
