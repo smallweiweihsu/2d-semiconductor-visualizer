@@ -54,27 +54,24 @@ export function createDeviceMeshLayers({
     return []
   }
 
-  const minY = Math.min(...normalized.map((layer) => layer.visualY))
+  let runY = 0.15
   const meshLayers = normalized.map((layer) => {
     const source = layers.find((entry) => entry.id === layer.id)
     const material = source ? materials.find((entry) => entry.id === source.materialId) : undefined
-    const rolePlacement = getRolePlacement()
-    const y = ((layer.visualY - minY) / 24) + (layer.visualThickness / 38) + rolePlacement.yLift
-    const zOffset = rolePlacement.z
+    const h = clamp(layer.visualThickness / 26, 0.08, 0.55)
+    const y = runY + h / 2
+    runY += h // 無間隙：層與層直接貼合堆疊
     const baseOpacity = source ? clamp(source.opacity, 0.08, 1) : 1
     const appearance = getMaterialAppearance(material, source)
-    const size = getRoleSize(source, layer.visualWidth, layer.visualThickness)
+    const rsize = getRoleSize(source, layer.visualWidth, layer.visualThickness)
+    const size: [number, number, number] = [rsize[0], h, rsize[2]]
 
     return {
       id: layer.id,
       name: layer.name,
       materialName: material?.displayName ?? source?.materialId ?? 'unknown material',
       color: layer.color,
-      position: [
-        rolePlacement.x + layer.visualOffsetX * sceneWidth * rolePlacement.offsetScale,
-        y,
-        zOffset,
-      ] as [number, number, number],
+      position: [0, y, 0] as [number, number, number],
       size,
       opacity: getLayerOpacity(Math.min(baseOpacity, appearance.opacity), layer.isSelected, opacityMode, source?.electricalRole),
       appearance,
@@ -89,68 +86,6 @@ export function createDeviceMeshLayers({
       unlit: false,
     }
   })
-
-  const hasSourcePad = meshLayers.some((mesh) => mesh.electricalRole === 'source')
-  const substrateSource = layers.find((layer) => layer.role === 'source' && layer.electricalRole === 'substrate' && layer.visible)
-  const channel = meshLayers.find((mesh) => mesh.electricalRole === 'channel')
-  const sourceMaterial = substrateSource ? materials.find((material) => material.id === substrateSource.materialId) : undefined
-
-  if (!hasSourcePad && substrateSource && channel) {
-    const appearance = getMaterialAppearance(sourceMaterial, { ...substrateSource, electricalRole: 'source' })
-    meshLayers.push({
-      id: `${substrateSource.id}-visual-source-pad`,
-      name: 'Source contact',
-      materialName: sourceMaterial?.displayName ?? substrateSource.materialId,
-      color: appearance.color,
-      position: [0, channel.position[1] + 0.12, 0],
-      size: [sceneWidth * 0.24, 0.2, sceneDepth * 0.5],
-      opacity: getLayerOpacity(Math.min(substrateSource.opacity, appearance.opacity), selectedId === substrateSource.id, opacityMode, 'source'),
-      appearance,
-      role: 'source',
-      electricalRole: 'source',
-      thickness_nm: substrateSource.geometry.thickness_nm,
-      isSelected: selectedId === substrateSource.id,
-      selectLayerId: substrateSource.id,
-      highlightColor: selectedId === substrateSource.id ? '#67e8f9' : '#0f172a',
-      labelVisible: true,
-      glow: selectedId === substrateSource.id ? 1 : 0,
-      unlit: false,
-    })
-  }
-
-  const channelLayer = layers.find((layer) => layer.electricalRole === 'channel' && layer.visible)
-  const channelMesh = meshLayers.find((mesh) => mesh.electricalRole === 'channel')
-  const channelMaterial = channelLayer ? materials.find((material) => material.id === channelLayer.materialId) : undefined
-
-  if (channelLayer && channelMesh) {
-    const appearance = {
-      ...getMaterialAppearance(channelMaterial, channelLayer),
-      color: '#8b5cf6',
-      emissive: '#c084fc',
-      emissiveIntensity: 1.2,
-      opacity: 1,
-      transparent: false,
-    }
-    meshLayers.push({
-      id: `${channelLayer.id}-visual-front-edge`,
-      name: 'WSe₂ channel edge',
-      materialName: channelMaterial?.displayName ?? channelLayer.materialId,
-      color: appearance.color,
-      position: [channelMesh.position[0], channelMesh.position[1] + 0.18, channelMesh.position[2] - 0.12],
-      size: [channelMesh.size[0] * 0.92, 0.065, 0.12],
-      opacity: 1,
-      appearance,
-      role: channelLayer.role,
-      electricalRole: 'channel',
-      thickness_nm: channelLayer.geometry.thickness_nm,
-      isSelected: selectedId === channelLayer.id,
-      selectLayerId: channelLayer.id,
-      highlightColor: selectedId === channelLayer.id ? '#67e8f9' : '#0f172a',
-      labelVisible: false,
-      glow: 0.85,
-      unlit: true,
-    })
-  }
 
   return meshLayers
 }
@@ -191,11 +126,6 @@ function getLayerOpacity(baseOpacity: number, selected: boolean, opacityMode: Op
   }
   if (opacityMode === 'selected-only') return selected ? 1 : 0.18
   return baseOpacity
-}
-
-function getRolePlacement() {
-  // 置中貼合堆疊：所有層垂直疊在一起（不再依角色左右/前後散開）。
-  return { x: 0, z: 0, yLift: 0, offsetScale: 0 }
 }
 
 function getRoleSize(layer: DeviceLayer | undefined, visualWidth: number, visualThickness: number): [number, number, number] {

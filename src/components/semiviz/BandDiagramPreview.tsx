@@ -87,8 +87,8 @@ export function BandDiagramPreview({
   const depletionW = (xDomain[1] - interfaceX) * 0.4
 
   const semiSamples = 32
-  const ecAfter: Array<[number, number]> = []
-  const evAfter: Array<[number, number]> = []
+  const ecAfter: Array<[number, number]> = [[0, ef], [interfaceX, ef]]
+  const evAfter: Array<[number, number]> = [[0, ef], [interfaceX, ef]]
   for (let i = 0; i <= semiSamples; i++) {
     const x = interfaceX + ((xDomain[1] - interfaceX) * i) / semiSamples
     const ec = ecBulk + (ecInterface - ecBulk) * Math.exp(-(x - interfaceX) / depletionW)
