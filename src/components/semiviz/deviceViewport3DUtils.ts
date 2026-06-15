@@ -195,11 +195,11 @@ function getLayerOpacity(baseOpacity: number, selected: boolean, opacityMode: Op
 
 function getRolePlacement(layer?: DeviceLayer) {
   const role = layer?.electricalRole
-  if (role === 'source') return { x: -2.15, z: 0, yLift: 0.03, offsetScale: 0.18 }
-  if (role === 'drain') return { x: 2.15, z: 0, yLift: 0.03, offsetScale: 0.18 }
-  if (role === 'contact') return { x: layer?.geometry.x_um && layer.geometry.x_um < 0 ? -2.15 : 2.15, z: 0, yLift: 0.03, offsetScale: 0.18 }
-  if (role === 'gate') return { x: 0, z: 0, yLift: 0.08, offsetScale: 0.2 }
-  if (role === 'channel') return { x: 0, z: -0.72, yLift: 0.14, offsetScale: 0.18 }
+  if (role === 'source') return { x: -2.15, z: 0, yLift: 0, offsetScale: 0.18 }
+  if (role === 'drain') return { x: 2.15, z: 0, yLift: 0, offsetScale: 0.18 }
+  if (role === 'contact') return { x: layer?.geometry.x_um && layer.geometry.x_um < 0 ? -2.15 : 2.15, z: 0, yLift: 0, offsetScale: 0.18 }
+  if (role === 'gate') return { x: 0, z: 0, yLift: 0, offsetScale: 0.2 }
+  if (role === 'channel') return { x: 0, z: -0.72, yLift: 0, offsetScale: 0.18 }
   return { x: 0, z: clamp((layer?.geometry.y_um ?? 0) / 7, -0.8, 0.8), yLift: 0, offsetScale: 1 }
 }
 
