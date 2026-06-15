@@ -52,6 +52,7 @@ import { LogChart, type LogSeries } from '../../components/semiviz/LogChart'
 import { simulateProcessFlow } from '../../physics/processStructure'
 import { downloadChartSvg, downloadChartPng } from '../../utils/exportChart'
 import { useUiMode } from '../../store/uiMode'
+import { generateMeasurementReport } from '../../utils/measurementReport'
 import { SimulationConfigEditor } from './SimulationConfigEditor'
 import {
   getGeometryWarning,
@@ -1295,6 +1296,19 @@ export function MeasurementsPage() {
     event.currentTarget.value = ''
   }
 
+  function downloadReport() {
+    const md = generateMeasurementReport(project, activeDevice)
+    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${activeDevice.name}_report.md`
+    document.body.appendChild(a)
+    a.click()
+    a.remove()
+    setTimeout(() => URL.revokeObjectURL(url), 1000)
+  }
+
   return (
     <WorkspacePage title="Measurements" icon={<FlaskConical size={18} />}>
       <input ref={inputRef} className="sr-only" type="file" multiple accept=".csv,.txt,text/csv,text/plain" onChange={(event) => { void handleFiles(event) }} />
@@ -1308,6 +1322,7 @@ export function MeasurementsPage() {
                 <h2>量測資料</h2>
                 <p>{project.measurements.length} datasets · 依元件 / 日期歸檔</p>
               </div>
+              <button className="manus-button ghost" type="button" onClick={downloadReport} title="產生目前元件的量測報告 (Markdown)">產生報告</button>
             </div>
             {groupMeasurements(project.measurements).map(([device, dates]) => (
               <details className="meas-folder" open key={device}>
