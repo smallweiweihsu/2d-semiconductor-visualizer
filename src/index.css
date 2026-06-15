@@ -3435,22 +3435,25 @@ button.manus-list-row {
 
 /* IV Simulator: Manus-style number inputs + clean analysis */
 .iv-number-field {
-  display: flex;
-  flex-direction: column;
-  gap: 5px;
-  margin-bottom: 10px;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 5px;
 }
 .iv-number-field span {
-  font-size: 12px;
+  font-size: 11px;
   color: var(--muted, #8a94a6);
 }
 .iv-number-field input {
+  width: 92px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid var(--border);
-  border-radius: 8px;
+  border-radius: 6px;
   color: var(--foreground);
-  padding: 8px 10px;
-  font-size: 14px;
+  padding: 4px 8px;
+  font-size: 12px;
+  text-align: right;
   font-family: "JetBrains Mono", monospace;
 }
 .iv-number-field input:focus {

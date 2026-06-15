@@ -31,7 +31,38 @@ export function parseDelimitedText(text: string): ParsedCsvTable {
 }
 
 export function inferColumnMappings(headers: string[]): ColumnMappingState {
-  return Object.fromEntries(headers.map((header) => [header, inferColumnMapping(header)]))
+  // 儀器輸出常見格式（tab 分隔）：
+  //   轉移：Voltage (V) - |Ids|, |Current| (A) - |Ids|, Voltage (V) - |Igs|, |Current| (A) - |Igs|
+  //   輸出：Drain Voltage (V) - |Ids|, Drain Current (A) - |Ids|, ... Plot 1..5
+  // 規則：第一個電壓欄→Vg/Vd，其餘電壓欄忽略（同一掃描軸）；第一個 Id 電流→Id、第一個 Ig 電流→Ig，其餘忽略。
+  const state: ColumnMappingState = {}
+  let voltageAssigned = false
+  let idAssigned = false
+  let igAssigned = false
+  for (const header of headers) {
+    const h = header.toLowerCase()
+    const unitMatch = header.match(/\(([^)]+)\)|\[([^\]]+)\]/)
+    const rawUnit = unitMatch?.[1] ?? unitMatch?.[2]
+    let role: ElectricalMeasurementColumnRole | 'ignore' = 'ignore'
+    let unit: string | undefined
+    if (h.includes('current') || h.includes('|i')) {
+      const isGate = h.includes('igs') || /\big\b/.test(h) || h.includes('|igs|') || h.includes('- ig')
+      if (isGate) {
+        if (!igAssigned) { role = 'Ig'; igAssigned = true; unit = rawUnit ?? 'A' }
+      } else {
+        if (!idAssigned) { role = 'Id'; idAssigned = true; unit = rawUnit ?? 'A' }
+      }
+    } else if (h.includes('voltage') || h.includes('vg') || h.includes('vd')) {
+      const isDrain = h.includes('drain') || h.includes('vd')
+      if (!voltageAssigned) { role = isDrain ? 'Vd' : 'Vg'; voltageAssigned = true; unit = rawUnit ?? 'V' }
+    } else {
+      const fallback = inferColumnMapping(header)
+      role = fallback.role
+      unit = fallback.unit
+    }
+    state[header] = { role: role as ElectricalMeasurementColumnRole, unit }
+  }
+  return state
 }
 
 export function createElectricalMeasurement({
