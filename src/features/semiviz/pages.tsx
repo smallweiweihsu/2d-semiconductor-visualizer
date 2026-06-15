@@ -966,7 +966,7 @@ export function BandDiagramPage() {
               {mode === 'stack' ? (
                 <div className="band-anim-wrap" key={`stack-${activeDevice.id}-${activeDevice.layers.length}`}><StackBandDiagram layers={activeDevice.layers} materials={project.materials} /></div>
               ) : (
-                <div className="band-anim-wrap" key={`${metalId}-${semiconductorId}-${mode}-${pinningOn}`}><BandDiagramPreview mode={mode} metalPhi={metalPhi} chi={affinity} eg={bandGap} phiBn={nBarrier} metalLabel={metal.displayName} semiLabel={semiconductor.displayName} /></div>
+                <BandDiagramPreview mode={mode} metalPhi={metalPhi} chi={affinity} eg={bandGap} phiBn={nBarrier} metalLabel={metal.displayName} semiLabel={semiconductor.displayName} />
               )}
             </div>
           </ManusChartCard>

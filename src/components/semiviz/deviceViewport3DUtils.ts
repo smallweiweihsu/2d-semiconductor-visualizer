@@ -58,7 +58,7 @@ export function createDeviceMeshLayers({
   const meshLayers = normalized.map((layer) => {
     const source = layers.find((entry) => entry.id === layer.id)
     const material = source ? materials.find((entry) => entry.id === source.materialId) : undefined
-    const rolePlacement = getRolePlacement(source)
+    const rolePlacement = getRolePlacement()
     const y = ((layer.visualY - minY) / 24) + (layer.visualThickness / 38) + rolePlacement.yLift
     const zOffset = rolePlacement.z
     const baseOpacity = source ? clamp(source.opacity, 0.08, 1) : 1
@@ -102,7 +102,7 @@ export function createDeviceMeshLayers({
       name: 'Source contact',
       materialName: sourceMaterial?.displayName ?? substrateSource.materialId,
       color: appearance.color,
-      position: [-2.15, channel.position[1] + 0.12, 0],
+      position: [0, channel.position[1] + 0.12, 0],
       size: [sceneWidth * 0.24, 0.2, sceneDepth * 0.5],
       opacity: getLayerOpacity(Math.min(substrateSource.opacity, appearance.opacity), selectedId === substrateSource.id, opacityMode, 'source'),
       appearance,
@@ -136,7 +136,7 @@ export function createDeviceMeshLayers({
       name: 'WSe₂ channel edge',
       materialName: channelMaterial?.displayName ?? channelLayer.materialId,
       color: appearance.color,
-      position: [channelMesh.position[0], channelMesh.position[1] + 0.18, channelMesh.position[2] - 0.72],
+      position: [channelMesh.position[0], channelMesh.position[1] + 0.18, channelMesh.position[2] - 0.12],
       size: [channelMesh.size[0] * 0.92, 0.065, 0.12],
       opacity: 1,
       appearance,
@@ -193,14 +193,9 @@ function getLayerOpacity(baseOpacity: number, selected: boolean, opacityMode: Op
   return baseOpacity
 }
 
-function getRolePlacement(layer?: DeviceLayer) {
-  const role = layer?.electricalRole
-  if (role === 'source') return { x: -2.15, z: 0, yLift: 0, offsetScale: 0.18 }
-  if (role === 'drain') return { x: 2.15, z: 0, yLift: 0, offsetScale: 0.18 }
-  if (role === 'contact') return { x: layer?.geometry.x_um && layer.geometry.x_um < 0 ? -2.15 : 2.15, z: 0, yLift: 0, offsetScale: 0.18 }
-  if (role === 'gate') return { x: 0, z: 0, yLift: 0, offsetScale: 0.2 }
-  if (role === 'channel') return { x: 0, z: -0.72, yLift: 0, offsetScale: 0.18 }
-  return { x: 0, z: clamp((layer?.geometry.y_um ?? 0) / 7, -0.8, 0.8), yLift: 0, offsetScale: 1 }
+function getRolePlacement() {
+  // 置中貼合堆疊：所有層垂直疊在一起（不再依角色左右/前後散開）。
+  return { x: 0, z: 0, yLift: 0, offsetScale: 0 }
 }
 
 function getRoleSize(layer: DeviceLayer | undefined, visualWidth: number, visualThickness: number): [number, number, number] {
