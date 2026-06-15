@@ -23,6 +23,7 @@ interface ProjectStoreValue {
   addReference: () => LiteratureSource
   updateReference: (referenceId: string, updater: (reference: LiteratureSource) => LiteratureSource) => void
   addMeasurement: (measurement: MeasurementData) => void
+  updateMeasurement: (measurementId: string, updater: (measurement: MeasurementData) => MeasurementData) => void
   setActiveDeviceId: (deviceId: string) => void
   replaceProject: (project: unknown) => { ok: boolean; error?: string }
   resetProject: () => void
@@ -135,6 +136,13 @@ export function ProjectStoreProvider({ children }: { children: ReactNode }) {
     }))
   }, [])
 
+  const updateMeasurement = useCallback((measurementId: string, updater: (measurement: MeasurementData) => MeasurementData) => {
+    setProject((current) => ({
+      ...current,
+      measurements: current.measurements.map((m) => m.id === measurementId ? updater(m) : m),
+    }))
+  }, [])
+
   const replaceProject = useCallback((nextProject: unknown) => {
     const result = normalizeImportedProject(nextProject)
 
@@ -173,12 +181,13 @@ export function ProjectStoreProvider({ children }: { children: ReactNode }) {
       addReference,
       updateReference,
       addMeasurement,
+      updateMeasurement,
       setActiveDeviceId,
       replaceProject,
       resetProject,
       exportProject,
     }),
-    [activeDevice, addDevice, addReference, addMeasurement, exportProject, project, replaceProject, resetProject, setActiveDeviceId, updateActiveDevice, updateMaterial, updateReference],
+    [activeDevice, addDevice, addReference, addMeasurement, updateMeasurement, exportProject, project, replaceProject, resetProject, setActiveDeviceId, updateActiveDevice, updateMaterial, updateReference],
   )
 
   return (

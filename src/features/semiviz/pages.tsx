@@ -92,6 +92,7 @@ import type {
   LiteratureStatus,
   Material,
   MaterialCategory,
+  MeasurementData,
   MeasurementType,
   MaterialParameter,
   ParameterCandidate,
@@ -1202,8 +1203,34 @@ function MeasurementVisual({ type }: { type: MeasurementType }) {
   )
 }
 
+function measurementKindLabel(m: MeasurementData): string {
+  if (m.electrical?.measurementKind === 'id_vg') return '轉移曲線'
+  if (m.electrical?.measurementKind === 'id_vd') return '輸出曲線'
+  if (m.type === 'raman') return 'Raman'
+  if (m.type === 'pl') return 'PL'
+  if (m.type === 'afm') return 'AFM'
+  if (m.type === 'xps') return 'XPS'
+  return m.type
+}
+
+function groupMeasurements(items: MeasurementData[]): Array<[string, Array<[string, MeasurementData[]]>]> {
+  const byDevice = new Map<string, Map<string, MeasurementData[]>>()
+  for (const m of items) {
+    const dev = m.deviceName || '未指定元件'
+    const date = m.date || '未指定日期'
+    if (!byDevice.has(dev)) byDevice.set(dev, new Map())
+    const dates = byDevice.get(dev)!
+    if (!dates.has(date)) dates.set(date, [])
+    dates.get(date)!.push(m)
+  }
+  return [...byDevice.entries()].map(([dev, dates]) => [
+    dev,
+    [...dates.entries()].sort((a, b) => b[0].localeCompare(a[0])),
+  ])
+}
+
 export function MeasurementsPage() {
-  const { project, activeDevice, addMeasurement } = useProjectStore()
+  const { project, activeDevice, addMeasurement, updateMeasurement } = useProjectStore()
   const inputRef = useRef<HTMLInputElement>(null)
   const [table, setTable] = useState<ParsedCsvTable>()
   const [sourceName, setSourceName] = useState('')
@@ -1246,20 +1273,30 @@ export function MeasurementsPage() {
             <div className="split-panel-heading">
               <div>
                 <h2>量測資料</h2>
-                <p>{project.measurements.length} datasets</p>
+                <p>{project.measurements.length} datasets · 依元件 / 日期歸檔</p>
               </div>
             </div>
-            {project.measurements.map((measurement) => (
-              <ManusListRow
-                active={measurement.id === selected?.id}
-                color={measurement.electrical ? 'oklch(0.78 0.15 195)' : 'oklch(0.72 0.16 290)'}
-                key={measurement.id}
-                title={measurement.sampleName}
-                subtitle={measurement.notes ?? measurement.deviceName}
-                meta={measurement.date}
-                badge={<ManusStatusBadge>{measurement.electrical?.measurementKind ?? measurement.type}</ManusStatusBadge>}
-                onClick={() => setSelectedMeasurementId(measurement.id)}
-              />
+            {groupMeasurements(project.measurements).map(([device, dates]) => (
+              <details className="meas-folder" open key={device}>
+                <summary><span className="meas-folder-icon">📁</span>{device}</summary>
+                {dates.map(([date, items]) => (
+                  <details className="meas-subfolder" open key={date}>
+                    <summary><span className="meas-folder-icon">🗓</span>{date}</summary>
+                    {items.map((measurement) => (
+                      <button
+                        key={measurement.id}
+                        type="button"
+                        className={measurement.id === selected?.id ? 'meas-leaf active' : 'meas-leaf'}
+                        onClick={() => setSelectedMeasurementId(measurement.id)}
+                      >
+                        <span className="meas-leaf-dot" style={{ backgroundColor: measurement.electrical ? '#22d3ee' : '#a78bfa' }} />
+                        <span className="meas-leaf-name">{measurementKindLabel(measurement)}</span>
+                        <span className="meas-leaf-sub">{measurement.sampleName}</span>
+                      </button>
+                    ))}
+                  </details>
+                ))}
+              </details>
             ))}
           </>
         )}
@@ -1273,8 +1310,15 @@ export function MeasurementsPage() {
                   badge={<ManusStatusBadge tone={selected.electrical ? 'primary' : 'neutral'}>{selected.electrical?.measurementKind ?? selected.type}</ManusStatusBadge>}
                   icon={<FlaskConical size={22} />}
                 />
+                <div className="meas-edit-row">
+                  <label>日期<input type="date" value={selected.date} onChange={(event) => updateMeasurement(selected.id, (m) => ({ ...m, date: event.target.value }))} /></label>
+                  <label>類型<select value={selected.electrical?.measurementKind ?? 'unknown'} onChange={(event) => updateMeasurement(selected.id, (m) => m.electrical ? ({ ...m, electrical: { ...m.electrical, measurementKind: event.target.value as 'id_vg' | 'id_vd' | 'unknown' } }) : m)} disabled={!selected.electrical}>
+                    <option value="id_vg">轉移曲線 (Id–Vg)</option>
+                    <option value="id_vd">輸出曲線 (Id–Vd)</option>
+                    <option value="unknown">未指定</option>
+                  </select></label>
+                </div>
                 <ManusMetadataGrid items={[
-                  { label: '日期', value: selected.date },
                   { label: '操作者', value: selected.operator ?? 'not specified' },
                   { label: '儀器', value: selected.tool ?? 'not specified' },
                   { label: 'Device', value: selected.deviceName },
@@ -1284,14 +1328,16 @@ export function MeasurementsPage() {
                   <p>{selected.notes ?? 'No notes yet.'}</p>
                 </section>
                 <ManusPreviewCard>
-                  {selected.electrical ? (
-                    <Chart
-                      data={selected.electrical.points.filter((point) => point.Vg !== undefined && point.Id !== undefined).map((point) => ({ vg: point.Vg!, id: (point.Id ?? 0) * 1e6 }))}
-                      xKey="vg"
-                      unit="uA"
-                      lines={[{ key: 'id', color: 'oklch(0.78 0.15 195)' }]}
-                    />
-                  ) : <div className="measurement-visual"><MeasurementVisual type={selected.type} /><span>量測數據視覺化區域 — 可匯入 CSV/Excel 資料</span></div>}
+                  {selected.electrical ? (() => {
+                    const isOutput = selected.electrical.measurementKind === 'id_vd'
+                    const xk = isOutput ? 'vd' : 'vg'
+                    const pts = selected.electrical.points
+                      .filter((point) => (isOutput ? point.Vd !== undefined : point.Vg !== undefined) && point.Id !== undefined)
+                      .map((point) => ({ [xk]: (isOutput ? point.Vd : point.Vg) as number, id: Math.abs(point.Id ?? 0) * 1e6 }))
+                    return pts.length ? (
+                      <Chart data={pts} xKey={xk} unit="uA" lines={[{ key: 'id', color: 'oklch(0.78 0.15 195)' }]} />
+                    ) : <div className="measurement-visual"><MeasurementVisual type={selected.type} /><span>此資料集沒有可繪製的點（請確認欄位對應）</span></div>
+                  })() : <div className="measurement-visual"><MeasurementVisual type={selected.type} /><span>量測數據視覺化區域 — 可匯入 CSV/Excel 資料</span></div>}
                 </ManusPreviewCard>
                 <div className="metrics-grid">
                   <Meta label="points" value={`${metrics.pointCount}`} />

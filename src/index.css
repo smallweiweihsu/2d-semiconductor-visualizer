@@ -3461,3 +3461,54 @@ button.manus-list-row {
   border-color: var(--primary, #22d3ee);
 }
 .iv-analysis .band-group { margin-bottom: 12px; }
+
+/* Measurements: folder-tree list + editable meta */
+.meas-folder, .meas-subfolder { margin-bottom: 2px; }
+.meas-folder > summary {
+  cursor: pointer;
+  padding: 6px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 7px;
+  list-style: none;
+}
+.meas-subfolder > summary {
+  cursor: pointer;
+  padding: 5px 8px 5px 20px;
+  font-size: 12px;
+  color: var(--muted, #8a94a6);
+  border-radius: 7px;
+  list-style: none;
+}
+.meas-folder > summary:hover, .meas-subfolder > summary:hover { background: rgba(255,255,255,0.04); }
+.meas-folder-icon { margin-right: 6px; }
+.meas-leaf {
+  display: grid;
+  grid-template-columns: 10px auto 1fr;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  text-align: left;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  color: var(--foreground);
+  padding: 6px 8px 6px 34px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.meas-leaf:hover { background: rgba(255,255,255,0.03); }
+.meas-leaf.active { background: var(--manus-selected-bg); border-color: var(--manus-selected-border); }
+.meas-leaf-dot { width: 8px; height: 8px; border-radius: 999px; }
+.meas-leaf-name { font-weight: 600; }
+.meas-leaf-sub { color: var(--muted, #8a94a6); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.meas-edit-row { display: flex; gap: 12px; margin: 10px 0; flex-wrap: wrap; }
+.meas-edit-row label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted, #8a94a6); }
+.meas-edit-row input, .meas-edit-row select {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--foreground);
+  padding: 6px 8px;
+  font-size: 13px;
+}
