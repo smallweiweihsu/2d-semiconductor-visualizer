@@ -53,6 +53,7 @@ import { simulateProcessFlow } from '../../physics/processStructure'
 import { downloadChartSvg, downloadChartPng } from '../../utils/exportChart'
 import { useUiMode } from '../../store/uiMode'
 import { generateMeasurementReport } from '../../utils/measurementReport'
+import { ArrheniusPanel } from '../../components/semiviz/ArrheniusPanel'
 import { SimulationConfigEditor } from './SimulationConfigEditor'
 import {
   getGeometryWarning,
@@ -1460,6 +1461,10 @@ export function MeasurementsPage() {
                   </>
                 )
               })()}
+            </details>
+            <details className="secondary-editor" open={!simple}>
+              <summary>變溫 Arrhenius 分析（活化能 Ea）</summary>
+              <ArrheniusPanel measurements={project.measurements.filter((m) => m.electrical && (selected ? m.deviceName === selected.deviceName : true))} />
             </details>
             <details className="secondary-editor" open={!simple}>
               <summary>批量匯入 CSV / TXT</summary>
