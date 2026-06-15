@@ -66,7 +66,7 @@ import {
 } from '../../measurements/csvParser'
 import {
   calculateElectricalMetrics,
-  toOverlaySeries,
+  extractTransferParameters,
 } from '../../measurements/electricalMetrics'
 import {
   calculateCox,
@@ -669,8 +669,6 @@ export function IVSimulatorPage() {
     })) : [],
     [currentUnit, simulation.input],
   )
-  const overlayData = toOverlaySeries(overlayMeasurement, currentUnit)
-  const transferWithOverlay = mergeTransferOverlay(transferData, overlayData)
   const outputGateValues = useMemo(
     () => simulation.input ? createOutputGateValues(simulation.input.carrierType, vth) : [],
     [simulation.input, vth],
@@ -693,6 +691,22 @@ export function IVSimulatorPage() {
   )
   const cox = simulation.input ? calculateCox(simulation.input.dielectricConstant, simulation.input.tox_nm) : undefined
   const chartDisabled = !simulation.input
+  const simTransferSeries: LogSeries[] = (() => {
+    const out: LogSeries[] = []
+    if (simulation.input) {
+      out.push({ label: '模擬 |Id|', color: '#22d3ee', points: calculateTransferCurve(simulation.input).map((pt) => ({ x: pt.vg, y: pt.id_A })) })
+    }
+    if (overlayMeasurement?.electrical) {
+      const mp = overlayMeasurement.electrical.points.filter((pt) => pt.Vg !== undefined && pt.Id !== undefined).map((pt) => ({ x: pt.Vg as number, y: pt.Id as number }))
+      if (mp.length) out.push({ label: `實測 |Id| (${overlayMeasurement.sampleName})`, color: '#fbbf24', points: mp, dashed: true })
+    }
+    return out
+  })()
+  function fitVthFromMeasurement() {
+    if (!overlayMeasurement?.electrical) return
+    const ext = extractTransferParameters(overlayMeasurement.electrical.points)
+    if (ext.vth_V !== undefined) setVth(Number(ext.vth_V.toFixed(2)))
+  }
   const transferAbsCurrents = transferData.map((point) => Math.abs(point.id)).filter((value) => value > 0)
   const onOffRatio = transferAbsCurrents.length
     ? Math.max(...transferAbsCurrents) / Math.max(Math.min(...transferAbsCurrents), Number.EPSILON)
@@ -739,6 +753,15 @@ export function IVSimulatorPage() {
               <NumberField label="Mobility" value={mobilityOverride} step={1} unit="cm²/V·s" onChange={(value) => setMobilityOverrides((current) => ({ ...current, [activeDevice.id]: value }))} />
               <NumberField label="Vth" value={vth} step={0.05} unit="V" onChange={setVth} />
               <NumberField label="Rc" value={rc} step={100} unit="Ω" onChange={setRc} />
+              <div className="iv-fit-panel">
+                <label className="iv-number-field"><span>疊加實測 (轉移)</span>
+                  <select value={overlayMeasurementId} onChange={(event) => setOverlayMeasurementId(event.target.value)}>
+                    <option value="">無</option>
+                    {electricalMeasurements.filter((m) => m.electrical?.measurementKind === 'id_vg').map((m) => <option value={m.id} key={m.id}>{m.sampleName}</option>)}
+                  </select>
+                </label>
+                {overlayMeasurement ? <button className="manus-button ghost" type="button" onClick={fitVthFromMeasurement}>依實測套用 Vth</button> : null}
+              </div>
               <details className="secondary-editor">
                 <summary>進階模型控制</summary>
                 <button className="manus-button ghost simulation-reset-button" type="button" onClick={resetSimulationDemoValues}>重設模擬示範值</button>
@@ -772,15 +795,7 @@ export function IVSimulatorPage() {
               {chartDisabled ? <DisabledChart missing={simulation.missing} /> : (
                 <>
                   {simulation.status === 'fallback_preview' ? <div className="prototype-warning"><AlertTriangle size={14} />Prototype preview using fallback values, not calibrated.</div> : null}
-                  <Chart
-                    data={transferWithOverlay}
-                    xKey="vg"
-                    unit={currentUnit}
-                    lines={[
-                      { key: 'id', color: 'oklch(0.78 0.15 195)' },
-                      ...(overlayMeasurement ? [{ key: 'measuredId', color: 'oklch(0.74 0.18 55)' }] : []),
-                    ]}
-                  />
+                  <LogChart series={simTransferSeries} xLabel="Vg (V)" yLabel="|Id| (A)" />
                 </>
               )}
             </ManusChartCard>
@@ -1722,16 +1737,6 @@ function formatTickValue(value: number | string) {
     return numeric.toExponential(1)
   }
   return Number(numeric.toFixed(2)).toString()
-}
-
-function mergeTransferOverlay(
-  simulated: Array<{ vg: number; id: number; region: string }>,
-  measured: Array<{ vg: number; measuredId: number }>,
-) {
-  const rows = new Map<number, Record<string, number | string>>()
-  simulated.forEach((point) => rows.set(point.vg, { ...rows.get(point.vg), ...point }))
-  measured.forEach((point) => rows.set(point.vg, { ...rows.get(point.vg), ...point }))
-  return [...rows.values()].sort((a, b) => Number(a.vg) - Number(b.vg))
 }
 
 function RawMeasurementTable({ rows }: { rows: ElectricalMeasurementPoint[] }) {

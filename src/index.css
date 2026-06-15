@@ -3546,3 +3546,7 @@ button.manus-list-row {
   cursor: pointer;
 }
 .mode-toggle:hover { border-color: var(--primary, #22d3ee); color: var(--primary, #22d3ee); }
+
+/* IV measurement fit panel */
+.iv-fit-panel { display: flex; flex-direction: column; gap: 6px; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+.iv-fit-panel select { width: 92px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 6px; color: var(--foreground); padding: 4px 6px; font-size: 12px; }
