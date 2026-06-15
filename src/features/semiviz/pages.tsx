@@ -1381,8 +1381,11 @@ export function MeasurementsPage() {
                   <Meta label="points" value={`${metrics.pointCount}`} />
                   <Meta label="max |Id|" value={formatScientific(metrics.maxAbsId_A, 'A')} />
                   <Meta label="on/off" value={metrics.onOffRatio ? metrics.onOffRatio.toExponential(2) : 'n/a'} />
-                  <Meta label="Vg range" value={metrics.vgRange ? `${metrics.vgRange[0]} to ${metrics.vgRange[1]} V` : 'n/a'} />
+                  <Meta label="Vth (定電流 1nA)" value={metrics.vth_V !== undefined ? `${metrics.vth_V.toFixed(2)} V` : 'n/a'} />
+                  <Meta label="SS_min" value={metrics.ssMin_mVdec !== undefined ? `${metrics.ssMin_mVdec.toFixed(0)} mV/dec` : 'n/a'} />
+                  <Meta label="gm_max" value={metrics.gmMax_S !== undefined ? formatScientific(metrics.gmMax_S, 'S') : 'n/a'} />
                 </div>
+                <p className="extract-note">參數為自動萃取（Vth 定電流法 Id=1nA、SS 取次臨界最小值、gm 取最大微分），半定量、需依量測條件解讀。</p>
                 {selected.electrical ? <RawMeasurementTable rows={selected.electrical.points.slice(0, 12)} /> : null}
               </>
             ) : <EmptyState text="尚未建立 measurement dataset。" />}

@@ -3532,3 +3532,5 @@ button.manus-list-row {
 .manus-button.ghost.danger { color: #f87171; border-color: rgba(248,113,113,0.4); }
 .curve-select { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted, #8a94a6); margin-bottom: 8px; }
 .curve-select select { background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 7px; color: var(--foreground); padding: 5px 8px; font-size: 13px; }
+
+.extract-note { font-size: 11px; color: var(--muted, #8a94a6); margin: 6px 0 0; line-height: 1.5; }
