@@ -1251,10 +1251,16 @@ export function MeasurementsPage() {
   const [compareIds, setCompareIds] = useState<string[]>([])
   const [importDeviceId, setImportDeviceId] = useState(activeDevice.id)
   const [curveIdx, setCurveIdx] = useState(0)
+  const [normW, setNormW] = useState(false)
+  const measChartRef = useRef<HTMLDivElement>(null)
   const folderInputRef = useRef<HTMLInputElement>(null)
   const [selectedMeasurementId, setSelectedMeasurementId] = useState(project.measurements.find((measurement) => measurement.electrical)?.id ?? project.measurements[0]?.id ?? '')
   const selected = project.measurements.find((measurement) => measurement.id === selectedMeasurementId) ?? project.measurements.find((measurement) => measurement.electrical) ?? project.measurements[0]
   const metrics = calculateElectricalMetrics(selected)
+  const measDevice = selected ? project.devices.find((d) => d.id === selected.deviceId || d.name === selected.deviceName) : undefined
+  const channelW = measDevice?.layers.find((l) => l.electricalRole === 'channel')?.geometry.width_um
+  const normFactor = normW && channelW ? 1e6 / channelW : 1
+  const yLabelI = normW && channelW ? '|I|/W (µA/µm)' : '|I| (A)'
 
   async function handleFiles(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.currentTarget.files ?? [])
@@ -1379,6 +1385,14 @@ export function MeasurementsPage() {
                   <h3>備註</h3>
                   <p>{selected.notes ?? 'No notes yet.'}</p>
                 </section>
+                {selected.electrical ? (
+                  <div className="chart-export-bar">
+                    <label className="meas-norm"><input type="checkbox" checked={normW} disabled={!channelW} onChange={(ev) => setNormW(ev.target.checked)} /> µA/µm{channelW ? ` (W=${channelW}µm)` : '（無通道寬）'}</label>
+                    <button className="manus-button" type="button" onClick={() => downloadChartSvg(measChartRef.current?.querySelector('svg') ?? null, selected.sampleName)}>匯出 SVG</button>
+                    <button className="manus-button" type="button" onClick={() => downloadChartPng(measChartRef.current?.querySelector('svg') ?? null, selected.sampleName)}>匯出 PNG</button>
+                  </div>
+                ) : null}
+                <div ref={measChartRef}>
                 <ManusPreviewCard>
                   {selected.electrical ? (() => {
                     const e = selected.electrical
@@ -1393,23 +1407,24 @@ export function MeasurementsPage() {
                               {e.curves.map((c, i) => <option value={i} key={i}>{c.label}</option>)}
                             </select>
                           </label>
-                          <LogChart series={[{ label: cur.label, color: '#22d3ee', points: cur.points.map((pt) => ({ x: pt.x, y: pt.id })) }]} xLabel="Vd (V)" yLabel="|Id| (A)" />
+                          <LogChart series={[{ label: cur.label, color: '#22d3ee', points: cur.points.map((pt) => ({ x: pt.x, y: pt.id * normFactor })) }]} xLabel="Vd (V)" yLabel={yLabelI} />
                         </>
                       )
                     }
                     const xk = isOutput ? 'Vd' : 'Vg'
                     const pick = (key: 'Id' | 'Ig') => e.points
                       .filter((point) => (isOutput ? point.Vd !== undefined : point.Vg !== undefined) && point[key] !== undefined)
-                      .map((point) => ({ x: (isOutput ? point.Vd : point.Vg) as number, y: point[key] as number }))
+                      .map((point) => ({ x: (isOutput ? point.Vd : point.Vg) as number, y: (point[key] as number) * normFactor }))
                     const idPts = pick('Id')
                     const igPts = pick('Ig')
                     const seriesList: LogSeries[] = [{ label: '|Id|', color: '#22d3ee', points: idPts }]
                     if (igPts.length) seriesList.push({ label: '|Ig|', color: '#f472b6', points: igPts, dashed: true })
                     return idPts.length ? (
-                      <LogChart series={seriesList} xLabel={`${xk} (V)`} yLabel="|I| (A)" />
+                      <LogChart series={seriesList} xLabel={`${xk} (V)`} yLabel={yLabelI} />
                     ) : <div className="measurement-visual"><MeasurementVisual type={selected.type} /><span>此資料集沒有可繪製的點（請確認欄位對應）</span></div>
                   })() : <div className="measurement-visual"><MeasurementVisual type={selected.type} /><span>量測數據視覺化區域 — 可匯入 CSV/Excel 資料</span></div>}
                 </ManusPreviewCard>
+                </div>
                 <div className="metrics-grid">
                   <Meta label="points" value={`${metrics.pointCount}`} />
                   <Meta label="max |Id|" value={formatScientific(metrics.maxAbsId_A, 'A')} />

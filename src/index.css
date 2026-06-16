@@ -3558,3 +3558,6 @@ button.manus-list-row {
 .arrhenius-result strong { font-size: 18px; font-family: "JetBrains Mono", monospace; color: #fbbf24; }
 .arrhenius-result small { font-size: 11px; color: var(--muted, #8a94a6); }
 .arrhenius svg { width: 100%; max-width: 100%; height: auto; }
+
+.meas-norm { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted, #8a94a6); margin-right: auto; }
+.meas-norm input { accent-color: var(--primary, #22d3ee); }
