@@ -34,7 +34,7 @@ export default async function handler(req: ProxyReq, res: ProxyRes): Promise<voi
       return
     }
   }
-  let payload: { system?: string; prompt?: string; maxTokens?: number }
+  let payload: { system?: string; prompt?: string; maxTokens?: number; model?: string }
   try {
     payload = (typeof req.body === 'string' ? JSON.parse(req.body) : req.body) as typeof payload
   } catch {
@@ -46,7 +46,8 @@ export default async function handler(req: ProxyReq, res: ProxyRes): Promise<voi
     res.status(400).json({ error: '缺少 prompt' })
     return
   }
-  const model = process.env.AI_MODEL || 'claude-sonnet-4-5'
+  const requested = (payload?.model ?? '').toString()
+  const model = (/^claude-[a-z0-9.-]+$/i.test(requested) ? requested : '') || process.env.AI_MODEL || 'claude-sonnet-4-5'
   const maxTokens = Math.min(Math.max(Number(payload?.maxTokens) || 1200, 64), 4096)
   try {
     const upstream = await fetch('https://api.anthropic.com/v1/messages', {

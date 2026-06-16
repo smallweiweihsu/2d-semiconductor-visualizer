@@ -50,6 +50,7 @@ import type { BackfillSuggestion } from '../../ai/tasks'
 import { useAsync } from '../../ai/useAsync'
 import { promptForAiToken } from '../../ai/client'
 import { extractPdfText } from '../../ai/pdf'
+import { useActiveSelection } from '../../store/activeSelection'
 import { estimateSchottkyBarrier, pinningFactorFromDit } from '../../physics/bandAlignment'
 import { StackBandDiagram } from '../../components/semiviz/StackBandDiagram'
 import { LogChart, type LogSeries } from '../../components/semiviz/LogChart'
@@ -1011,6 +1012,8 @@ export function MaterialsPage() {
   const [selectedId, setSelectedId] = useState(project.materials[0]?.id ?? '')
   const filtered = project.materials.filter((material) => material.displayName.toLowerCase().includes(query.toLowerCase()) || material.name.toLowerCase().includes(query.toLowerCase()))
   const selected = project.materials.find((material) => material.id === selectedId) ?? filtered[0] ?? project.materials[0]
+  const { setActive } = useActiveSelection()
+  useEffect(() => { if (selected) setActive({ type: 'material', id: selected.id, label: selected.displayName }) }, [selected, setActive])
 
   return (
     <WorkspacePage title="Materials" icon={<Database size={18} />}>
@@ -1121,6 +1124,8 @@ export function ReferencesPage() {
     return !q || r.title.toLowerCase().includes(q) || (r.authors ?? '').toLowerCase().includes(q) || String(r.year).includes(q) || (r.material ?? '').toLowerCase().includes(q) || (r.electrode ?? '').toLowerCase().includes(q)
   })
   const selected = project.references.find((reference) => reference.id === selectedId) ?? project.references[0]
+  const { setActive } = useActiveSelection()
+  useEffect(() => { if (selected) setActive({ type: 'reference', id: selected.id, label: selected.title }) }, [selected, setActive])
 
   return (
     <WorkspacePage title="References" icon={<BookOpen size={18} />}>

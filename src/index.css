@@ -3674,3 +3674,13 @@ select option { background-color: #0f1623; color: #e5e7eb; }
 .floating-ai-input { display: flex; gap: 8px; padding: 10px 12px; border-top: 1px solid var(--border); align-items: flex-end; }
 .floating-ai-input textarea { flex: 1 1 auto; background: var(--secondary); border: 1px solid var(--border); border-radius: 8px; color: var(--foreground); padding: 8px 10px; font-size: 13px; resize: none; }
 .floating-ai-input .manus-button { flex: 0 0 auto; padding: 8px 12px; }
+
+/* Floating AI: settings + apply actions */
+.floating-ai-settings { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+.floating-ai-settings label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted); }
+.floating-ai-settings select { background: var(--secondary); border: 1px solid var(--border); border-radius: 6px; color: var(--foreground); padding: 6px 8px; font-size: 13px; }
+.floating-ai-settings .ai-sub { margin: 6px 0 0; }
+.floating-ai-apply { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 4px; }
+.floating-ai-apply button { background: var(--secondary); border: 1px solid var(--border); color: var(--foreground); border-radius: 6px; padding: 4px 8px; font-size: 11px; cursor: pointer; }
+.floating-ai-apply button:hover { border-color: var(--primary); color: var(--primary); }
+.floating-ai-done { color: #34d399; font-size: 12px; margin: 0; }

@@ -23,6 +23,33 @@ export function setAiToken(token: string): void {
   }
 }
 
+export const AI_MODELS: Array<{ id: string; label: string }> = [
+  { id: '', label: '預設（伺服器設定）' },
+  { id: 'claude-opus-4-8', label: 'Claude Opus 4.8（最強，較慢/較貴）' },
+  { id: 'claude-sonnet-4-6', label: 'Claude Sonnet 4.6（均衡）' },
+  { id: 'claude-sonnet-4-5', label: 'Claude Sonnet 4.5（均衡，穩定）' },
+  { id: 'claude-haiku-4-5-20251001', label: 'Claude Haiku 4.5（最快/最便宜）' },
+]
+
+const MODEL_KEY = 'ai_model'
+
+export function getAiModel(): string {
+  try {
+    return localStorage.getItem(MODEL_KEY) ?? ''
+  } catch {
+    return ''
+  }
+}
+
+export function setAiModel(model: string): void {
+  try {
+    if (model) localStorage.setItem(MODEL_KEY, model)
+    else localStorage.removeItem(MODEL_KEY)
+  } catch {
+    /* ignore */
+  }
+}
+
 export function promptForAiToken(): void {
   const current = getAiToken()
   const next = window.prompt('輸入 AI 存取密碼（與 Vercel 的 AI_ACCESS_TOKEN 相同）', current)
@@ -35,7 +62,7 @@ export async function callAI({ prompt, system, maxTokens }: AiCallOptions): Prom
     res = await fetch('/api/ai', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-ai-token': getAiToken() },
-      body: JSON.stringify({ prompt, system, maxTokens }),
+      body: JSON.stringify({ prompt, system, maxTokens, model: getAiModel() || undefined }),
     })
   } catch {
     throw new Error('無法連線 AI 服務（請確認已部署 /api 並設定金鑰）')

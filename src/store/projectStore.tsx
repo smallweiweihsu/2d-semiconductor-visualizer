@@ -22,6 +22,7 @@ interface ProjectStoreValue {
   updateMaterial: (materialId: string, updater: (material: Material) => Material) => void
   addMaterial: (name: string, category: Material['category']) => Material
   deleteReference: (referenceId: string) => void
+  addHypothesis: (title: string, description: string) => void
   addReference: (defaults?: Partial<LiteratureSource>) => LiteratureSource
   updateReference: (referenceId: string, updater: (reference: LiteratureSource) => LiteratureSource) => void
   addMeasurement: (measurement: MeasurementData) => void
@@ -137,6 +138,16 @@ export function ProjectStoreProvider({ children }: { children: ReactNode }) {
     return nextReference
   }, [])
 
+  const addHypothesis = useCallback((title: string, description: string) => {
+    setProject((current) => ({
+      ...current,
+      hypotheses: [
+        { id: `hyp-${Date.now()}`, title: title.slice(0, 80), description, status: 'open' as const, createdAt: new Date().toISOString().slice(0, 10) },
+        ...current.hypotheses,
+      ],
+    }))
+  }, [])
+
   const updateReference = useCallback((referenceId: string, updater: (reference: LiteratureSource) => LiteratureSource) => {
     setProject((current) => ({
       ...current,
@@ -202,6 +213,7 @@ export function ProjectStoreProvider({ children }: { children: ReactNode }) {
       updateMaterial,
       addMaterial,
       deleteReference,
+      addHypothesis,
       addReference,
       updateReference,
       addMeasurement,
@@ -212,7 +224,7 @@ export function ProjectStoreProvider({ children }: { children: ReactNode }) {
       resetProject,
       exportProject,
     }),
-    [activeDevice, addDevice, addReference, addMeasurement, updateMeasurement, deleteMeasurement, exportProject, project, replaceProject, resetProject, setActiveDeviceId, updateActiveDevice, updateMaterial, addMaterial, deleteReference, updateReference],
+    [activeDevice, addDevice, addReference, addMeasurement, updateMeasurement, deleteMeasurement, exportProject, project, replaceProject, resetProject, setActiveDeviceId, updateActiveDevice, updateMaterial, addMaterial, deleteReference, updateReference, addHypothesis],
   )
 
   return (
