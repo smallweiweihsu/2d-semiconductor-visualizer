@@ -36,10 +36,22 @@ export function ensureSeedMaterials(project: SemivizProject): SemivizProject {
   const missingM = seedProject.materials.filter((m) => !haveM.has(m.id))
   const materials = missingM.length ? [...mergedMaterials, ...missingM] : mergedMaterials
   const withMaterials = { ...project, materials }
-  // 3) 補上缺少的種子文獻
-  const haveR = new Set((withMaterials.references ?? []).map((r) => r.id))
+  // 3) 既有種子/library 文獻：補填缺少的 electrode / notes / material（不覆蓋使用者已填值）
+  const seedRefById = new Map(seedProject.references.map((r) => [r.id, r]))
+  const mergedRefs = (withMaterials.references ?? []).map((r) => {
+    const sr = seedRefById.get(r.id)
+    if (!sr) return r
+    const next = { ...r }
+    let ch = false
+    if (next.electrode === undefined && sr.electrode !== undefined) { next.electrode = sr.electrode; ch = true }
+    if ((!next.notes || next.notes === '') && sr.notes) { next.notes = sr.notes; ch = true }
+    if ((!next.material || next.material === '') && sr.material) { next.material = sr.material; ch = true }
+    return ch ? next : r
+  })
+  // 4) 補上缺少的種子文獻
+  const haveR = new Set(mergedRefs.map((r) => r.id))
   const missingR = seedProject.references.filter((r) => !haveR.has(r.id))
-  return missingR.length ? { ...withMaterials, references: [...withMaterials.references, ...missingR] } : withMaterials
+  return { ...withMaterials, references: missingR.length ? [...mergedRefs, ...missingR] : mergedRefs }
 }
 
 export function readProjectFromStorage(storage: StorageLike): SemivizProject {
