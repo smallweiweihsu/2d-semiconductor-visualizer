@@ -3561,3 +3561,8 @@ button.manus-list-row {
 
 .meas-norm { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--muted, #8a94a6); margin-right: auto; }
 .meas-norm input { accent-color: var(--primary, #22d3ee); }
+
+/* Materials category groups */
+.mat-group { margin-bottom: 4px; }
+.mat-group > summary { cursor: pointer; padding: 6px 8px; font-size: 12px; font-weight: 600; color: var(--muted, #8a94a6); border-radius: 7px; list-style: none; }
+.mat-group > summary:hover { background: rgba(255,255,255,0.04); }

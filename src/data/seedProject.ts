@@ -121,7 +121,7 @@ export const seedProject: SemivizProject = {
   ],
 }
 
-function material(
+export function material(
   id: string,
   name: string,
   displayName: string,
@@ -207,7 +207,7 @@ function range(value: string, unit?: string, note?: string): MaterialParameter {
   return estimated(value, unit, note)
 }
 
-function unknown(unit?: string, note = '需要文獻參數'): MaterialParameter {
+export function unknown(unit?: string, note = '需要文獻參數'): MaterialParameter {
   return baseParameter(null, unit, 'unknown', note)
 }
 

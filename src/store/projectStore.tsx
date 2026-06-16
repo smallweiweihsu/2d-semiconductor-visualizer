@@ -7,7 +7,7 @@ import {
   useState,
   type ReactNode,
 } from 'react'
-import { seedProject } from '../data/seedProject'
+import { seedProject, material as makeMaterial, unknown as unknownParam } from '../data/seedProject'
 import { currentStorageKey, readProjectFromStorage, resetProjectStorage } from './projectMigration'
 import { normalizeImportedProject } from './projectValidation'
 import type { DeviceStructure, LiteratureSource, Material, MeasurementData, SemivizProject } from '../types/semiviz'
@@ -20,6 +20,8 @@ interface ProjectStoreValue {
   addDevice: (name: string, description: string) => DeviceStructure
   updateActiveDevice: (updater: (device: DeviceStructure) => DeviceStructure) => void
   updateMaterial: (materialId: string, updater: (material: Material) => Material) => void
+  addMaterial: (name: string, category: Material['category']) => Material
+  deleteReference: (referenceId: string) => void
   addReference: () => LiteratureSource
   updateReference: (referenceId: string, updater: (reference: LiteratureSource) => LiteratureSource) => void
   addMeasurement: (measurement: MeasurementData) => void
@@ -104,6 +106,17 @@ export function ProjectStoreProvider({ children }: { children: ReactNode }) {
     }))
   }, [])
 
+  const addMaterial = useCallback((name: string, category: Material['category']) => {
+    const id = `mat-${Date.now()}`
+    const m = makeMaterial(id, name, name, category, 'unknown', '自訂材料', '#94a3b8', unknownParam('eV'), unknownParam('eV'), unknownParam('eV'), unknownParam(), unknownParam('cm²/V·s'), unknownParam('Ω·m'), unknownParam('Å'), unknownParam('nm'), ['自訂材料，參數待補'])
+    setProject((current) => ({ ...current, materials: [...current.materials, m] }))
+    return m
+  }, [])
+
+  const deleteReference = useCallback((referenceId: string) => {
+    setProject((current) => ({ ...current, references: current.references.filter((r) => r.id !== referenceId) }))
+  }, [])
+
   const addReference = useCallback(() => {
     const nextReference: LiteratureSource = {
       id: `ref-${Date.now()}`,
@@ -186,6 +199,8 @@ export function ProjectStoreProvider({ children }: { children: ReactNode }) {
       addDevice,
       updateActiveDevice,
       updateMaterial,
+      addMaterial,
+      deleteReference,
       addReference,
       updateReference,
       addMeasurement,
@@ -196,7 +211,7 @@ export function ProjectStoreProvider({ children }: { children: ReactNode }) {
       resetProject,
       exportProject,
     }),
-    [activeDevice, addDevice, addReference, addMeasurement, updateMeasurement, deleteMeasurement, exportProject, project, replaceProject, resetProject, setActiveDeviceId, updateActiveDevice, updateMaterial, updateReference],
+    [activeDevice, addDevice, addReference, addMeasurement, updateMeasurement, deleteMeasurement, exportProject, project, replaceProject, resetProject, setActiveDeviceId, updateActiveDevice, updateMaterial, addMaterial, deleteReference, updateReference],
   )
 
   return (

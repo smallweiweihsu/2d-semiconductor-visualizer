@@ -1007,7 +1007,7 @@ export function BandDiagramPage() {
 }
 
 export function MaterialsPage() {
-  const { project, updateMaterial } = useProjectStore()
+  const { project, updateMaterial, addMaterial } = useProjectStore()
   const [query, setQuery] = useState('')
   const [selectedId, setSelectedId] = useState(project.materials[0]?.id ?? '')
   const [selectedParameterKey, setSelectedParameterKey] = useState('mobility_cm2Vs')
@@ -1026,19 +1026,28 @@ export function MaterialsPage() {
           <>
             <div className="split-panel-heading">
               <h2>材料資料庫</h2>
+              <button className="manus-button ghost" type="button" onClick={() => { const name = window.prompt('新材料名稱'); if (name) { const m = addMaterial(name, 'custom'); setSelectedId(m.id) } }}>新增材料</button>
             </div>
           <input className="manus-field" placeholder="搜尋材料" value={query} onChange={(event) => setQuery(event.target.value)} />
-          {filtered.map((material) => (
-              <ManusListRow
-                active={material.id === selected?.id}
-                color={material.color}
-                key={material.id}
-                title={material.displayName}
-                subtitle={material.description}
-                badge={<ManusStatusBadge>{materialCategoryLabel(material.category)}</ManusStatusBadge>}
-                onClick={() => setSelectedId(material.id)}
-              />
-          ))}
+          {(['metal', 'two_d_semiconductor', 'dielectric', 'oxide', 'bulk_conductor', 'substrate', 'custom'] as const).map((cat) => {
+            const group = filtered.filter((m) => m.category === cat)
+            if (!group.length) return null
+            return (
+              <details className="mat-group" open key={cat}>
+                <summary>{materialCategoryLabel(cat)}（{group.length}）</summary>
+                {group.map((material) => (
+                  <ManusListRow
+                    active={material.id === selected?.id}
+                    color={material.color}
+                    key={material.id}
+                    title={material.displayName}
+                    subtitle={material.description}
+                    onClick={() => setSelectedId(material.id)}
+                  />
+                ))}
+              </details>
+            )
+          })}
           </>
         )}
         detail={selected ? (
@@ -1104,7 +1113,7 @@ export function MaterialsPage() {
 }
 
 export function ReferencesPage() {
-  const { project, addReference, updateReference } = useProjectStore()
+  const { project, addReference, updateReference, deleteReference } = useProjectStore()
   const [selectedId, setSelectedId] = useState(project.references[0]?.id ?? '')
   const selected = project.references.find((reference) => reference.id === selectedId) ?? project.references[0]
 
@@ -1143,6 +1152,9 @@ export function ReferencesPage() {
               badge={<ManusStatusBadge tone={selected.status === 'accepted' ? 'success' : 'primary'}>{literatureStatusLabel(selected.status)}</ManusStatusBadge>}
               icon={<BookOpen size={22} />}
             />
+            <div className="meas-toolbar">
+              <button className="manus-button ghost danger" type="button" onClick={() => { if (window.confirm(`刪除文獻「${selected.title}」？`)) { deleteReference(selected.id); setSelectedId('') } }}>刪除此文獻</button>
+            </div>
             <ManusMetadataGrid items={[
               { label: 'DOI', value: selected.doi ? <a href={`https://doi.org/${selected.doi}`} target="_blank" rel="noreferrer">{selected.doi}</a> : 'not provided' },
               { label: 'URL', value: selected.url ? <a href={selected.url} target="_blank" rel="noreferrer">open source</a> : 'not provided' },
@@ -1252,6 +1264,7 @@ export function MeasurementsPage() {
   const [importDeviceId, setImportDeviceId] = useState(activeDevice.id)
   const [curveIdx, setCurveIdx] = useState(0)
   const [normW, setNormW] = useState(false)
+  const [normWidth, setNormWidth] = useState<number | undefined>(undefined)
   const measChartRef = useRef<HTMLDivElement>(null)
   const folderInputRef = useRef<HTMLInputElement>(null)
   const [selectedMeasurementId, setSelectedMeasurementId] = useState(project.measurements.find((measurement) => measurement.electrical)?.id ?? project.measurements[0]?.id ?? '')
@@ -1259,8 +1272,9 @@ export function MeasurementsPage() {
   const metrics = calculateElectricalMetrics(selected)
   const measDevice = selected ? project.devices.find((d) => d.id === selected.deviceId || d.name === selected.deviceName) : undefined
   const channelW = measDevice?.layers.find((l) => l.electricalRole === 'channel')?.geometry.width_um
-  const normFactor = normW && channelW ? 1e6 / channelW : 1
-  const yLabelI = normW && channelW ? '|I|/W (µA/µm)' : '|I| (A)'
+  const effWidth = normWidth ?? channelW
+  const normFactor = normW && effWidth ? 1e6 / effWidth : 1
+  const yLabelI = normW && effWidth ? '|I|/W (µA/µm)' : '|I| (A)'
 
   async function handleFiles(event: ChangeEvent<HTMLInputElement>) {
     const files = Array.from(event.currentTarget.files ?? [])
@@ -1387,7 +1401,8 @@ export function MeasurementsPage() {
                 </section>
                 {selected.electrical ? (
                   <div className="chart-export-bar">
-                    <label className="meas-norm"><input type="checkbox" checked={normW} disabled={!channelW} onChange={(ev) => setNormW(ev.target.checked)} /> µA/µm{channelW ? ` (W=${channelW}µm)` : '（無通道寬）'}</label>
+                    <label className="meas-norm"><input type="checkbox" checked={normW} onChange={(ev) => setNormW(ev.target.checked)} /> µA/µm</label>
+                    {normW ? <label className="meas-norm">通道寬 W(µm)=<input type="number" step={0.1} value={effWidth ?? ''} onChange={(ev) => setNormWidth(Number(ev.target.value))} style={{ width: 64 }} /></label> : null}
                     <button className="manus-button" type="button" onClick={() => downloadChartSvg(measChartRef.current?.querySelector('svg') ?? null, selected.sampleName)}>匯出 SVG</button>
                     <button className="manus-button" type="button" onClick={() => downloadChartPng(measChartRef.current?.querySelector('svg') ?? null, selected.sampleName)}>匯出 PNG</button>
                   </div>
