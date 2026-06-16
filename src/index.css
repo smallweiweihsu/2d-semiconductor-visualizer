@@ -2325,7 +2325,7 @@ button.manus-list-row {
 }
 
 .reference-detail-panel {
-  max-width: 760px;
+  max-width: none;
 }
 
 .reference-detail-panel .linked-source-list,
@@ -3566,3 +3566,16 @@ button.manus-list-row {
 .mat-group { margin-bottom: 4px; }
 .mat-group > summary { cursor: pointer; padding: 6px 8px; font-size: 12px; font-weight: 600; color: var(--muted, #8a94a6); border-radius: 7px; list-style: none; }
 .mat-group > summary:hover { background: rgba(255,255,255,0.04); }
+
+
+/* Density polish: compact materials rows, full-width details, tighter comparison */
+.materials-workspace .manus-list-row {
+  min-height: auto;
+  padding: 6px 10px;
+  margin-bottom: 2px;
+}
+.materials-workspace .manus-list-row .manus-row-copy small { display: none; }
+.comparison-workspace { gap: 14px; }
+.comparison-table table { font-size: 13px; }
+.comparison-table th, .comparison-table td { padding: 7px 10px; }
+.reference-detail-panel .linked-source-list { max-width: none; }
