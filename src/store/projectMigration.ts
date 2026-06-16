@@ -11,10 +11,32 @@ export const projectStorageKeys = [currentStorageKey, ...legacyStorageKeys]
 
 type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 
+const SEED_PARAM_KEYS = ['bandGap_eV', 'electronAffinity_eV', 'workFunction_eV', 'dielectricConstant', 'mobility_cm2Vs', 'resistivity_ohm_m', 'latticeConstant_A', 'defaultThickness_nm'] as const
+
 export function ensureSeedMaterials(project: SemivizProject): SemivizProject {
-  const haveM = new Set(project.materials.map((m) => m.id))
+  const seedById = new Map(seedProject.materials.map((m) => [m.id, m]))
+  // 1) 既有種子材料：把「未知」的參數用最新種子值補上（不覆蓋使用者已設定的值）
+  const mergedMaterials = project.materials.map((mat) => {
+    const seed = seedById.get(mat.id)
+    if (!seed) return mat
+    const next = { ...mat }
+    let changed = false
+    for (const k of SEED_PARAM_KEYS) {
+      const cur = next[k]
+      const sv = seed[k]
+      if (cur && cur.confidence === 'unknown' && sv && sv.confidence !== 'unknown') {
+        next[k] = sv
+        changed = true
+      }
+    }
+    return changed ? next : mat
+  })
+  // 2) 補上缺少的種子材料
+  const haveM = new Set(mergedMaterials.map((m) => m.id))
   const missingM = seedProject.materials.filter((m) => !haveM.has(m.id))
-  const withMaterials = missingM.length ? { ...project, materials: [...project.materials, ...missingM] } : project
+  const materials = missingM.length ? [...mergedMaterials, ...missingM] : mergedMaterials
+  const withMaterials = { ...project, materials }
+  // 3) 補上缺少的種子文獻
   const haveR = new Set((withMaterials.references ?? []).map((r) => r.id))
   const missingR = seedProject.references.filter((r) => !haveR.has(r.id))
   return missingR.length ? { ...withMaterials, references: [...withMaterials.references, ...missingR] } : withMaterials
