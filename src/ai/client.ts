@@ -5,12 +5,36 @@ export interface AiCallOptions {
   maxTokens?: number
 }
 
+const TOKEN_KEY = 'ai_access_token'
+
+export function getAiToken(): string {
+  try {
+    return localStorage.getItem(TOKEN_KEY) ?? ''
+  } catch {
+    return ''
+  }
+}
+
+export function setAiToken(token: string): void {
+  try {
+    localStorage.setItem(TOKEN_KEY, token)
+  } catch {
+    /* ignore */
+  }
+}
+
+export function promptForAiToken(): void {
+  const current = getAiToken()
+  const next = window.prompt('輸入 AI 存取密碼（與 Vercel 的 AI_ACCESS_TOKEN 相同）', current)
+  if (next != null) setAiToken(next.trim())
+}
+
 export async function callAI({ prompt, system, maxTokens }: AiCallOptions): Promise<string> {
   let res: Response
   try {
     res = await fetch('/api/ai', {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: { 'content-type': 'application/json', 'x-ai-token': getAiToken() },
       body: JSON.stringify({ prompt, system, maxTokens }),
     })
   } catch {

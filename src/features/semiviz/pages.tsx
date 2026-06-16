@@ -45,9 +45,11 @@ import { LayerPropertyEditor } from './LayerPropertyEditor'
 import { LayerStackPanel } from './LayerStackPanel'
 import { findMaterial } from './materialUtils'
 import { CollapsibleSection } from '../../components/common/CollapsibleSection'
-import { aiPaperOutline, aiMeasurementAnalysis, aiMaterialBackfill, aiAsk } from '../../ai/tasks'
+import { aiPaperOutline, aiMeasurementAnalysis, aiMaterialBackfill } from '../../ai/tasks'
 import type { BackfillSuggestion } from '../../ai/tasks'
 import { useAsync } from '../../ai/useAsync'
+import { promptForAiToken } from '../../ai/client'
+import { extractPdfText } from '../../ai/pdf'
 import { estimateSchottkyBarrier, pinningFactorFromDit } from '../../physics/bandAlignment'
 import { StackBandDiagram } from '../../components/semiviz/StackBandDiagram'
 import { LogChart, type LogSeries } from '../../components/semiviz/LogChart'
@@ -1635,7 +1637,6 @@ export function ResearchNotesPage() {
             <div className="research-empty-note">
               <p>把材料參數、製程 step、量測 dataset 與文獻來源連結到此假說後，可作為下一步 review queue。</p>
             </div>
-            <ResearchQAPanel />
             <div className="scroll-spacer" aria-hidden="true" />
           </section>
         )}
@@ -2034,15 +2035,23 @@ const PARAM_LABEL_TO_KEY: Record<string, keyof Material> = {
 
 function ReferenceAIPanel({ reference, onApply }: { reference: LiteratureSource; onApply: (patch: Partial<LiteratureSource>) => void }) {
   const [fullText, setFullText] = useState('')
+  const [pdfLoading, setPdfLoading] = useState(false)
+  const [pdfNote, setPdfNote] = useState('')
   const [result, setResult] = useState<{ outline: string; parameters: string; relevance?: string } | null>(null)
   const { loading, error, run } = useAsync<{ outline: string; parameters: string; relevance?: string }>()
   return (
     <details className="secondary-editor ai-panel">
       <summary>✨ AI 助手：產生大綱 / 提取參數</summary>
-      <textarea className="ai-input" rows={3} placeholder="（選填）貼上摘要或全文片段，AI 會據此撰寫；留空則依標題與既有知識。" value={fullText} onChange={(e) => setFullText(e.target.value)} />
+      <textarea className="ai-input" rows={3} placeholder="（選填）貼上摘要或全文片段，或直接上傳 PDF；留空則依標題與既有知識。" value={fullText} onChange={(e) => setFullText(e.target.value)} />
       <div className="ai-actions">
+        <label className="manus-button ghost" style={{ cursor: 'pointer' }}>
+          {pdfLoading ? '讀取 PDF…' : '上傳 PDF'}
+          <input type="file" accept="application/pdf" style={{ display: 'none' }} onChange={async (e) => { const file = e.target.files?.[0]; if (!file) return; setPdfLoading(true); try { const text = await extractPdfText(file); setFullText(text); setPdfNote(`已讀取 PDF：約 ${text.length} 字`) } catch { setPdfNote('PDF 讀取失敗，請改用貼上文字') } finally { setPdfLoading(false) } }} />
+        </label>
         <button className="manus-button primary" type="button" disabled={loading} onClick={async () => { const r = await run(aiPaperOutline(reference, fullText)); if (r) setResult(r) }}>{loading ? '產生中…' : '產生大綱'}</button>
+        <button className="manus-button ghost" type="button" onClick={promptForAiToken} title="設定 AI 密碼">🔑 密碼</button>
       </div>
+      {pdfNote ? <p className="ai-sub" style={{ padding: '0 12px' }}>{pdfNote}</p> : null}
       {error ? <p className="ai-error">{error}</p> : null}
       {result ? (
         <div className="ai-result">
@@ -2064,6 +2073,7 @@ function MeasurementAIPanel({ name, kind, metrics }: { name: string; kind: strin
       <summary>✨ AI 解讀此資料</summary>
       <div className="ai-actions">
         <button className="manus-button primary" type="button" disabled={loading} onClick={async () => { const r = await run(aiMeasurementAnalysis({ name, kind, metrics })); if (r) setResult(r) }}>{loading ? '分析中…' : '產生解讀與建議'}</button>
+        <button className="manus-button ghost" type="button" onClick={promptForAiToken} title="設定 AI 密碼">🔑 密碼</button>
       </div>
       {error ? <p className="ai-error">{error}</p> : null}
       {result ? <div className="ai-result"><p style={{ whiteSpace: 'pre-wrap' }}>{result}</p></div> : null}
@@ -2081,6 +2091,7 @@ function MaterialAIPanel({ material, onApply }: { material: Material; onApply: (
       <p className="ai-sub">{missing.length ? `偵測到缺少：${missing.join('、')}` : '目前所選參數皆已填寫；仍可請 AI 提供文獻常見值參考。'}</p>
       <div className="ai-actions">
         <button className="manus-button primary" type="button" disabled={loading} onClick={async () => { const r = await run(aiMaterialBackfill(material, missing.length ? missing : ['work function', 'band gap', 'mobility'])); if (r) setRows(r) }}>{loading ? '查詢中…' : '查補參數（估計值）'}</button>
+        <button className="manus-button ghost" type="button" onClick={promptForAiToken} title="設定 AI 密碼">🔑 密碼</button>
       </div>
       {error ? <p className="ai-error">{error}</p> : null}
       {rows.length ? (
@@ -2098,24 +2109,5 @@ function MaterialAIPanel({ material, onApply }: { material: Material; onApply: (
         </div>
       ) : null}
     </details>
-  )
-}
-
-export function ResearchQAPanel() {
-  const { project, activeDevice } = useProjectStore()
-  const [q, setQ] = useState('')
-  const [answer, setAnswer] = useState('')
-  const { loading, error, run } = useAsync<string>()
-  const context = `專案脈絡：活躍元件「${activeDevice.name}」，材料 ${project.materials.map((m) => m.displayName).join('、')}；文獻 ${project.references.length} 篇、量測 ${project.measurements.length} 筆。`
-  return (
-    <div className="ai-panel qa-panel">
-      <h3>✨ 研究問答助手</h3>
-      <textarea className="ai-input" rows={3} placeholder="例如：我的 WSe2 p-FET SS 偏高，可能原因與改善方向？" value={q} onChange={(e) => setQ(e.target.value)} />
-      <div className="ai-actions">
-        <button className="manus-button primary" type="button" disabled={loading || !q.trim()} onClick={async () => { const r = await run(aiAsk(q, context)); if (r != null) setAnswer(r) }}>{loading ? '思考中…' : '送出'}</button>
-      </div>
-      {error ? <p className="ai-error">{error}</p> : null}
-      {answer ? <div className="ai-result"><p style={{ whiteSpace: 'pre-wrap' }}>{answer}</p></div> : null}
-    </div>
   )
 }

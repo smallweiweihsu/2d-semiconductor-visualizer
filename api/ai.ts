@@ -6,6 +6,7 @@ import process from 'node:process'
 interface ProxyReq {
   method?: string
   body?: unknown
+  headers?: Record<string, string | string[] | undefined>
 }
 interface ProxyRes {
   status: (code: number) => ProxyRes
@@ -22,6 +23,16 @@ export default async function handler(req: ProxyReq, res: ProxyRes): Promise<voi
   if (!apiKey) {
     res.status(500).json({ error: '伺服器尚未設定 ANTHROPIC_API_KEY（請在 Vercel 環境變數加入）' })
     return
+  }
+  // 選用的存取密碼：若有設定 AI_ACCESS_TOKEN，前端必須在 x-ai-token 標頭帶上相同值
+  const requiredToken = process.env.AI_ACCESS_TOKEN
+  if (requiredToken) {
+    const headerToken = req.headers?.['x-ai-token']
+    const provided = Array.isArray(headerToken) ? headerToken[0] : headerToken
+    if (provided !== requiredToken) {
+      res.status(401).json({ error: '需要 AI 存取密碼（請在 App 點「🔑 密碼」輸入，與 Vercel 的 AI_ACCESS_TOKEN 相同）' })
+      return
+    }
   }
   let payload: { system?: string; prompt?: string; maxTokens?: number }
   try {

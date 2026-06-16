@@ -15,6 +15,7 @@ import {
 import { Link, Route, Switch, useLocation } from 'wouter'
 import { useUiMode } from '../../store/uiMode'
 import { ProjectActions } from './ProjectActions'
+import { FloatingAI } from './FloatingAI'
 import {
   BandDiagramPage,
   ComparisonLabPage,
@@ -99,6 +100,7 @@ export function ManusShell() {
           </Switch>
         </main>
       </div>
+      <FloatingAI />
     </div>
   )
 }
