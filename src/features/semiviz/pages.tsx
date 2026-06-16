@@ -871,7 +871,7 @@ function BandRow({ label, value, color }: { label: string; value: string; color?
 
 export function BandDiagramPage() {
   const { project, activeDevice } = useProjectStore()
-  const metals = ['pd', 'ti', 'in', 'pt', 'au', 'sb-bulk'].map((id) => findMaterial(project.materials, id))
+  const metals = ['pd', 'ti', 'in', 'pt', 'au', 'sb-bulk', 'graphene'].map((id) => findMaterial(project.materials, id))
   const semiconductors = ['wse2', 'mos2', 'inse'].map((id) => findMaterial(project.materials, id))
   const [metalId, setMetalId] = useState('pd')
   const [semiconductorId, setSemiconductorId] = useState('wse2')
