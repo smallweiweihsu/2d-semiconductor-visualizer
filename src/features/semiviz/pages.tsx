@@ -1111,9 +1111,12 @@ export function MaterialsPage() {
 }
 
 function groupReferences(items: LiteratureSource[]): Array<[string, Array<[string, LiteratureSource[]]>]> {
+  const PRIMARY = ['wse2', 'mos2', 'mose2', 'ws2', 'inse', 'graphene', '石墨烯', 'wte2', 'bp']
   const byMat = new Map<string, Map<string, LiteratureSource[]>>()
   for (const r of items) {
-    const mat = (r.material || '其他').split(/[,，]/)[0].trim() || '其他'
+    const tokens = (r.material || '').split(/[,，]/).map((t) => t.trim()).filter(Boolean)
+    const primary = tokens.find((t) => PRIMARY.includes(t.toLowerCase()))
+    const mat = primary || tokens[0] || '其他'
     const el = r.electrode || '未分類'
     if (!byMat.has(mat)) byMat.set(mat, new Map())
     const em = byMat.get(mat)!
@@ -1144,12 +1147,12 @@ export function ReferencesPage() {
                 <h2>文獻來源</h2>
                 <p>{project.references.length} papers</p>
               </div>
-              <button className="panel-icon-button" type="button" onClick={() => setSelectedId(addReference().id)} aria-label="新增 reference"><Plus size={16} /></button>
+              <button className="panel-icon-button" type="button" onClick={() => { const mat = window.prompt('歸到哪個材料分類？(例如 WSe2 / MoS2 / InSe / Graphene)', 'WSe2') ?? ''; setSelectedId(addReference({ material: mat.trim() || undefined }).id) }} aria-label="新增 reference"><Plus size={16} /></button>
             </div>
             <input className="manus-field" placeholder="搜尋標題 / 作者 / 年份" value={refQuery} onChange={(event) => setRefQuery(event.target.value)} />
             {groupReferences(filteredRefs).map(([mat, elecs]) => (
               <details className="meas-folder" open key={mat}>
-                <summary><span className="meas-folder-icon">📁</span>{mat}（{elecs.reduce((n, [, rs]) => n + rs.length, 0)}）</summary>
+                <summary><span className="meas-folder-icon">📁</span>{mat}（{elecs.reduce((n, [, rs]) => n + rs.length, 0)}）<span className="folder-add" role="button" title={`新增 ${mat} 文獻`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedId(addReference({ material: mat }).id) }}><Plus size={13} /></span></summary>
                 {elecs.map(([el, refs]) => (
                   <details className="meas-subfolder" open key={el}>
                     <summary><span className="meas-folder-icon">🔌</span>{el}</summary>
@@ -1418,7 +1421,8 @@ export function MeasurementsPage() {
                     <button className="manus-button" type="button" onClick={() => downloadChartPng(measChartRef.current?.querySelector('svg') ?? null, selected.sampleName)}>匯出 PNG</button>
                   </div>
                 ) : null}
-                <div ref={measChartRef}>
+                <div className="meas-chart-row">
+                <div className="meas-chart-main" ref={measChartRef}>
                 <ManusPreviewCard>
                   {selected.electrical ? (() => {
                     const e = selected.electrical
@@ -1451,15 +1455,19 @@ export function MeasurementsPage() {
                   })() : <div className="measurement-visual"><MeasurementVisual type={selected.type} /><span>量測數據視覺化區域 — 可匯入 CSV/Excel 資料</span></div>}
                 </ManusPreviewCard>
                 </div>
-                <div className="metrics-grid">
-                  <Meta label="points" value={`${metrics.pointCount}`} />
-                  <Meta label="max |Id|" value={formatScientific(metrics.maxAbsId_A, 'A')} />
-                  <Meta label="on/off" value={metrics.onOffRatio ? metrics.onOffRatio.toExponential(2) : 'n/a'} />
-                  <Meta label="Vth (定電流 1nA)" value={metrics.vth_V !== undefined ? `${metrics.vth_V.toFixed(2)} V` : 'n/a'} />
-                  <Meta label="SS_min" value={metrics.ssMin_mVdec !== undefined ? `${metrics.ssMin_mVdec.toFixed(0)} mV/dec` : 'n/a'} />
-                  <Meta label="gm_max" value={metrics.gmMax_S !== undefined ? formatScientific(metrics.gmMax_S, 'S') : 'n/a'} />
+                <aside className="meas-params-col">
+                  <h3 className="meas-params-title">擷取參數</h3>
+                  <div className="metrics-grid">
+                    <Meta label="points" value={`${metrics.pointCount}`} />
+                    <Meta label="max |Id|" value={formatScientific(metrics.maxAbsId_A, 'A')} />
+                    <Meta label="on/off" value={metrics.onOffRatio ? metrics.onOffRatio.toExponential(2) : 'n/a'} />
+                    <Meta label="Vth (定電流 1nA)" value={metrics.vth_V !== undefined ? `${metrics.vth_V.toFixed(2)} V` : 'n/a'} />
+                    <Meta label="SS_min" value={metrics.ssMin_mVdec !== undefined ? `${metrics.ssMin_mVdec.toFixed(0)} mV/dec` : 'n/a'} />
+                    <Meta label="gm_max" value={metrics.gmMax_S !== undefined ? formatScientific(metrics.gmMax_S, 'S') : 'n/a'} />
+                  </div>
+                  <p className="extract-note">參數為自動萃取（Vth 定電流法 Id=1nA、SS 取次臨界最小值、gm 取最大微分），半定量、需依量測條件解讀。</p>
+                </aside>
                 </div>
-                <p className="extract-note">參數為自動萃取（Vth 定電流法 Id=1nA、SS 取次臨界最小值、gm 取最大微分），半定量、需依量測條件解讀。</p>
                 {selected.electrical ? <details className="secondary-editor" open={!simple}><summary>原始數據（前 12 筆）</summary><RawMeasurementTable rows={selected.electrical.points.slice(0, 12)} /></details> : null}
               </>
             ) : <EmptyState text="尚未建立 measurement dataset。" />}

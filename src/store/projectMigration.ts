@@ -46,9 +46,17 @@ export function ensureSeedMaterials(project: SemivizProject): SemivizProject {
     const isLib = r.id.startsWith('lit-lib-')
     // 系統文獻庫（lit-lib-*）：electrode/notes 以最新種子為準（重新分類）；其餘只補空值
     if (isLib) {
+      // 系統文獻庫以種子為準同步：分類、大綱、DOI、年份、作者、期刊、提取參數、URL
       if (sr.electrode !== undefined && next.electrode !== sr.electrode) { next.electrode = sr.electrode; ch = true }
       if (sr.notes && next.notes !== sr.notes) { next.notes = sr.notes; ch = true }
       if (sr.material && next.material !== sr.material) { next.material = sr.material; ch = true }
+      if (sr.year !== undefined && next.year !== sr.year) { next.year = sr.year; ch = true }
+      // metadata：只在空值時補（讓使用者之後的編輯能保留）
+      if ((next.doi === undefined || next.doi === '') && sr.doi) { next.doi = sr.doi; ch = true }
+      if ((next.url === undefined || next.url === '') && sr.url) { next.url = sr.url; ch = true }
+      if ((next.authors === undefined || next.authors === '') && sr.authors) { next.authors = sr.authors; ch = true }
+      if ((next.journal === undefined || next.journal === '') && sr.journal) { next.journal = sr.journal; ch = true }
+      if ((next.parameterExtracted === undefined || next.parameterExtracted === '') && sr.parameterExtracted) { next.parameterExtracted = sr.parameterExtracted; ch = true }
     } else {
       if (next.electrode === undefined && sr.electrode !== undefined) { next.electrode = sr.electrode; ch = true }
       if ((!next.notes || next.notes === '') && sr.notes) { next.notes = sr.notes; ch = true }

@@ -22,7 +22,7 @@ interface ProjectStoreValue {
   updateMaterial: (materialId: string, updater: (material: Material) => Material) => void
   addMaterial: (name: string, category: Material['category']) => Material
   deleteReference: (referenceId: string) => void
-  addReference: () => LiteratureSource
+  addReference: (defaults?: Partial<LiteratureSource>) => LiteratureSource
   updateReference: (referenceId: string, updater: (reference: LiteratureSource) => LiteratureSource) => void
   addMeasurement: (measurement: MeasurementData) => void
   updateMeasurement: (measurementId: string, updater: (measurement: MeasurementData) => MeasurementData) => void
@@ -117,7 +117,7 @@ export function ProjectStoreProvider({ children }: { children: ReactNode }) {
     setProject((current) => ({ ...current, references: current.references.filter((r) => r.id !== referenceId) }))
   }, [])
 
-  const addReference = useCallback(() => {
+  const addReference = useCallback((defaults?: Partial<LiteratureSource>) => {
     const nextReference: LiteratureSource = {
       id: `ref-${Date.now()}`,
       title: 'New reference',
@@ -126,6 +126,7 @@ export function ProjectStoreProvider({ children }: { children: ReactNode }) {
       status: 'candidate',
       reliabilityScore: 5,
       notes: '',
+      ...defaults,
     }
 
     setProject((current) => ({
