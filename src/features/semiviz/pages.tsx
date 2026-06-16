@@ -4,13 +4,11 @@ import {
   AlertTriangle,
   BarChart3,
   BookOpen,
-  Check,
   Clock,
   Database,
   FlaskConical,
   GitBranch,
   GitCompare,
-  Star,
   Layers,
   Lightbulb,
   Plus,
@@ -38,7 +36,6 @@ import {
   ManusListRow,
   ManusMetadataGrid,
   ManusPreviewCard,
-  ManusScoreDots,
   ManusSplitDetail,
   ManusStatusBadge,
   ManusSidePanel,
@@ -146,7 +143,6 @@ const statusLabels: Record<HypothesisStatus, string> = {
 const materialCategories: MaterialCategory[] = ['metal', 'two_d_semiconductor', 'dielectric', 'oxide', 'bulk_conductor', 'substrate', 'custom']
 const carrierTypes: CarrierType[] = ['n', 'p', 'ambipolar', 'unknown']
 const confidenceOptions: ParameterConfidence[] = ['known', 'estimated', 'unknown']
-const referenceStatusOptions: LiteratureStatus[] = ['candidate', 'reviewed', 'accepted', 'rejected']
 const ivDemoDefaults = {
   vd: 2,
   vgMin: -3,
@@ -1114,17 +1110,26 @@ export function MaterialsPage() {
   )
 }
 
+function groupReferences(items: LiteratureSource[]): Array<[string, Array<[string, LiteratureSource[]]>]> {
+  const byMat = new Map<string, Map<string, LiteratureSource[]>>()
+  for (const r of items) {
+    const mat = (r.material || '其他').split(/[,，]/)[0].trim() || '其他'
+    const el = r.electrode || '未分類'
+    if (!byMat.has(mat)) byMat.set(mat, new Map())
+    const em = byMat.get(mat)!
+    if (!em.has(el)) em.set(el, [])
+    em.get(el)!.push(r)
+  }
+  return [...byMat.entries()].map(([m, em]) => [m, [...em.entries()]])
+}
+
 export function ReferencesPage() {
   const { project, addReference, updateReference, deleteReference } = useProjectStore()
   const [selectedId, setSelectedId] = useState(project.references[0]?.id ?? '')
   const [refQuery, setRefQuery] = useState('')
-  const [refMat, setRefMat] = useState('all')
-  const refMaterials = [...new Set(project.references.flatMap((r) => (r.material ?? '').split(/[,，]/).map((x) => x.trim()).filter(Boolean)))].sort()
   const filteredRefs = project.references.filter((r) => {
     const q = refQuery.toLowerCase()
-    const okQ = !q || r.title.toLowerCase().includes(q) || (r.authors ?? '').toLowerCase().includes(q) || String(r.year).includes(q)
-    const okM = refMat === 'all' || (r.material ?? '').toLowerCase().includes(refMat.toLowerCase())
-    return okQ && okM
+    return !q || r.title.toLowerCase().includes(q) || (r.authors ?? '').toLowerCase().includes(q) || String(r.year).includes(q) || (r.material ?? '').toLowerCase().includes(q) || (r.electrode ?? '').toLowerCase().includes(q)
   })
   const selected = project.references.find((reference) => reference.id === selectedId) ?? project.references[0]
 
@@ -1142,21 +1147,22 @@ export function ReferencesPage() {
               <button className="panel-icon-button" type="button" onClick={() => setSelectedId(addReference().id)} aria-label="新增 reference"><Plus size={16} /></button>
             </div>
             <input className="manus-field" placeholder="搜尋標題 / 作者 / 年份" value={refQuery} onChange={(event) => setRefQuery(event.target.value)} />
-            <select className="ref-filter" value={refMat} onChange={(event) => setRefMat(event.target.value)}>
-              <option value="all">所有材料</option>
-              {refMaterials.map((m) => <option value={m} key={m}>{m}</option>)}
-            </select>
-            {filteredRefs.map((reference) => (
-              <ManusListRow
-                active={reference.id === selected?.id}
-                icon={reference.status === 'accepted' ? <Check size={16} color="#34d399" /> : reference.status === 'reviewed' ? <Clock size={16} color="#22d3ee" /> : <Star size={16} color="#fbbf24" />}
-                key={reference.id}
-                title={reference.title}
-                subtitle={`${reference.authors} (${reference.year})`}
-                meta={<>Score: {reference.reliabilityScore}/10</>}
-                badge={<ManusStatusBadge tone={reference.status === 'accepted' ? 'success' : 'primary'}>{literatureStatusLabel(reference.status)}</ManusStatusBadge>}
-                onClick={() => setSelectedId(reference.id)}
-              />
+            {groupReferences(filteredRefs).map(([mat, elecs]) => (
+              <details className="meas-folder" open key={mat}>
+                <summary><span className="meas-folder-icon">📁</span>{mat}（{elecs.reduce((n, [, rs]) => n + rs.length, 0)}）</summary>
+                {elecs.map(([el, refs]) => (
+                  <details className="meas-subfolder" open key={el}>
+                    <summary><span className="meas-folder-icon">🔌</span>{el}</summary>
+                    {refs.map((reference) => (
+                      <button key={reference.id} type="button" className={reference.id === selected?.id ? 'meas-leaf active' : 'meas-leaf'} onClick={() => setSelectedId(reference.id)}>
+                        <span className="meas-leaf-dot" style={{ backgroundColor: reference.status === 'accepted' ? '#34d399' : reference.status === 'reviewed' ? '#22d3ee' : '#fbbf24' }} />
+                        <span className="meas-leaf-name">{reference.title}</span>
+                        <span className="meas-leaf-sub">{reference.year} · {reference.reliabilityScore}/10</span>
+                      </button>
+                    ))}
+                  </details>
+                ))}
+              </details>
             ))}
           </>
         )}
@@ -1171,33 +1177,22 @@ export function ReferencesPage() {
             <div className="meas-toolbar">
               <button className="manus-button ghost danger" type="button" onClick={() => { if (window.confirm(`刪除文獻「${selected.title}」？`)) { deleteReference(selected.id); setSelectedId('') } }}>刪除此文獻</button>
             </div>
-            <ManusMetadataGrid items={[
-              { label: 'DOI', value: selected.doi ? <a href={`https://doi.org/${selected.doi}`} target="_blank" rel="noreferrer">{selected.doi}</a> : 'not provided' },
-              { label: 'URL', value: selected.url ? <a href={selected.url} target="_blank" rel="noreferrer">open source</a> : 'not provided' },
-              { label: '相關材料', value: selected.material ?? 'multiple / TBD' },
-              { label: '提取參數', value: selected.parameterExtracted ?? 'review required' },
-            ]} />
-            <section className="reference-score-panel">
-              <span>Reliability score</span>
-              <ManusScoreDots score={selected.reliabilityScore} />
-              <strong>{selected.reliabilityScore}/10</strong>
-            </section>
-            <ManusCallout tone="neutral">
-              <strong>Review notes</strong>
-              <p>{selected.notes ?? 'No review notes yet.'}</p>
-            </ManusCallout>
+            <div className="ref-inline-edit">
+              <label>狀態<select value={selected.status} onChange={(e) => updateReference(selected.id, (r) => ({ ...r, status: e.target.value as LiteratureStatus }))}>
+                <option value="candidate">候選</option><option value="reviewed">已審閱</option><option value="accepted">已採用</option><option value="rejected">已拒絕</option>
+              </select></label>
+              <label>可靠性 (0–10)<input type="number" min={0} max={10} value={selected.reliabilityScore} onChange={(e) => updateReference(selected.id, (r) => ({ ...r, reliabilityScore: Number(e.target.value) }))} /></label>
+              <label>相關材料<input value={selected.material ?? ''} onChange={(e) => updateReference(selected.id, (r) => ({ ...r, material: e.target.value }))} /></label>
+              <label>上電極<input value={selected.electrode ?? ''} onChange={(e) => updateReference(selected.id, (r) => ({ ...r, electrode: e.target.value }))} /></label>
+              <label>DOI<input value={selected.doi ?? ''} onChange={(e) => updateReference(selected.id, (r) => ({ ...r, doi: e.target.value }))} /></label>
+              <label>URL<input value={selected.url ?? ''} onChange={(e) => updateReference(selected.id, (r) => ({ ...r, url: e.target.value }))} /></label>
+              <label className="full">提取參數<input value={selected.parameterExtracted ?? ''} onChange={(e) => updateReference(selected.id, (r) => ({ ...r, parameterExtracted: e.target.value }))} /></label>
+              <label className="full">大綱 / Review notes<textarea rows={5} value={selected.notes ?? ''} onChange={(e) => updateReference(selected.id, (r) => ({ ...r, notes: e.target.value }))} /></label>
+            </div>
             <div className="linked-source-list">
               <strong>Used by</strong>
-              {getReferenceUsage(project, selected.id).length ? getReferenceUsage(project, selected.id).map((usage) => <span key={`${usage.materialId}-${usage.parameterKey}`}>{usage.materialName} · {usage.parameterLabel}</span>) : <span>No material parameters linked yet</span>}
+              {getReferenceUsage(project, selected.id).length ? getReferenceUsage(project, selected.id).map((usage) => <span key={`${usage.materialId}-${usage.parameterKey}`}>{usage.materialName} · {usage.parameterLabel}</span>) : <span>尚未連結材料參數</span>}
             </div>
-            <details className="secondary-editor">
-              <summary>Edit reference</summary>
-              <ReferenceEditor
-                reference={selected}
-                usages={getReferenceUsage(project, selected.id)}
-                onChange={(reference) => updateReference(selected.id, () => reference)}
-              />
-            </details>
           </div>
         ) : <EmptyState text="新增或選擇 reference。" />}
       />
@@ -2026,35 +2021,6 @@ function CandidateEditor({ parameter, onChange }: { parameter: MaterialParameter
   )
 }
 
-function ReferenceEditor({
-  reference,
-  usages,
-  onChange,
-}: {
-  reference: LiteratureSource
-  usages: ReturnType<typeof getReferenceUsage>
-  onChange: (reference: LiteratureSource) => void
-}) {
-  return (
-    <div className="reference-editor">
-      <label>Title<input value={reference.title} onChange={(event) => onChange({ ...reference, title: event.target.value })} /></label>
-      <div className="form-grid-2">
-        <label>Authors<input value={reference.authors} onChange={(event) => onChange({ ...reference, authors: event.target.value })} /></label>
-        <label>Year<input type="number" value={reference.year} onChange={(event) => onChange({ ...reference, year: Number(event.target.value) })} /></label>
-        <label>Journal<input value={reference.journal ?? ''} onChange={(event) => onChange({ ...reference, journal: event.target.value })} /></label>
-        <label>DOI<input value={reference.doi ?? ''} onChange={(event) => onChange({ ...reference, doi: event.target.value })} /></label>
-        <label>URL<input value={reference.url ?? ''} onChange={(event) => onChange({ ...reference, url: event.target.value })} /></label>
-        <label>Status<select value={reference.status} onChange={(event) => onChange({ ...reference, status: event.target.value as LiteratureStatus })}>{referenceStatusOptions.map((status) => <option value={status} key={status}>{status}</option>)}</select></label>
-        <label>Reliability score<input type="number" min={0} max={10} value={reference.reliabilityScore} onChange={(event) => onChange({ ...reference, reliabilityScore: Number(event.target.value) })} /></label>
-      </div>
-      <label>Notes<textarea value={reference.notes ?? ''} onChange={(event) => onChange({ ...reference, notes: event.target.value })} /></label>
-      <div className="linked-source-list">
-        <strong>Used by</strong>
-        {usages.length ? usages.map((usage) => <span key={`${usage.materialId}-${usage.parameterKey}`}>{usage.materialName} · {usage.parameterLabel}</span>) : <span>No material parameters linked yet</span>}
-      </div>
-    </div>
-  )
-}
 
 function ConfidenceBadge({ confidence, conflict = false }: { confidence: ParameterConfidence | 'fallback'; conflict?: boolean }) {
   const key = conflict ? 'conflict' : confidence

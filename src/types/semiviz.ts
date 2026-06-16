@@ -265,6 +265,7 @@ export interface LiteratureSource {
   doi?: string
   url?: string
   material?: string
+  electrode?: string
   parameterExtracted?: string
   reliabilityScore: number
   status: LiteratureStatus

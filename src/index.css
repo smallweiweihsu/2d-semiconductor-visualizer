@@ -3589,3 +3589,13 @@ select option { background-color: #0f1623; color: #e5e7eb; }
 .manus-metadata-grid { grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)) !important; }
 .material-detail-panel, .reference-detail-panel, .measurement-detail-panel, .research-detail-panel { max-width: none; width: 100%; }
 .material-detail-panel section, .reference-detail-panel section, .measurement-detail-panel section { max-width: none; }
+
+/* References inline editing grid */
+.ref-inline-edit { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin: 14px 0; }
+.ref-inline-edit label { display: flex; flex-direction: column; gap: 4px; font-size: 12px; color: var(--muted, #8a94a6); }
+.ref-inline-edit label.full { grid-column: 1 / -1; }
+.ref-inline-edit input, .ref-inline-edit select, .ref-inline-edit textarea {
+  background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 8px;
+  color: var(--foreground); padding: 7px 9px; font-size: 13px; font-family: inherit;
+}
+.ref-inline-edit textarea { resize: vertical; line-height: 1.6; }
