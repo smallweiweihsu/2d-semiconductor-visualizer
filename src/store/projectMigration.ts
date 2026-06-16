@@ -38,8 +38,17 @@ export function ensureSeedMaterials(project: SemivizProject): SemivizProject {
   const withMaterials = { ...project, materials }
   // 3) 既有種子/library 文獻：補填缺少的 electrode / notes / material（不覆蓋使用者已填值）
   const seedRefById = new Map(seedProject.references.map((r) => [r.id, r]))
+  // 早期示範文獻（假佔位）標題：若使用者尚未修改，整筆換成真實論文
+  const LEGACY_FAKE_TITLES = new Set([
+    'High-performance WSe₂ FET with Sb₂O₃ gate dielectric',
+    'Metal contact engineering for 2D semiconductors',
+    'Oxidation behavior of WSe₂ under O₂ plasma',
+    'In as a low-damage contact for 2D materials',
+    'Sb₂O₃ as native oxide dielectric',
+  ])
   const mergedRefs = (withMaterials.references ?? []).map((r) => {
     const sr = seedRefById.get(r.id)
+    if (sr && LEGACY_FAKE_TITLES.has(r.title)) return { ...sr }
     if (!sr) return r
     const next = { ...r }
     let ch = false
