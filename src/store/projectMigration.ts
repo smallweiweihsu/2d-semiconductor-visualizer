@@ -43,9 +43,17 @@ export function ensureSeedMaterials(project: SemivizProject): SemivizProject {
     if (!sr) return r
     const next = { ...r }
     let ch = false
-    if (next.electrode === undefined && sr.electrode !== undefined) { next.electrode = sr.electrode; ch = true }
-    if ((!next.notes || next.notes === '') && sr.notes) { next.notes = sr.notes; ch = true }
-    if ((!next.material || next.material === '') && sr.material) { next.material = sr.material; ch = true }
+    const isLib = r.id.startsWith('lit-lib-')
+    // 系統文獻庫（lit-lib-*）：electrode/notes 以最新種子為準（重新分類）；其餘只補空值
+    if (isLib) {
+      if (sr.electrode !== undefined && next.electrode !== sr.electrode) { next.electrode = sr.electrode; ch = true }
+      if (sr.notes && next.notes !== sr.notes) { next.notes = sr.notes; ch = true }
+      if (sr.material && next.material !== sr.material) { next.material = sr.material; ch = true }
+    } else {
+      if (next.electrode === undefined && sr.electrode !== undefined) { next.electrode = sr.electrode; ch = true }
+      if ((!next.notes || next.notes === '') && sr.notes) { next.notes = sr.notes; ch = true }
+      if ((!next.material || next.material === '') && sr.material) { next.material = sr.material; ch = true }
+    }
     return ch ? next : r
   })
   // 4) 補上缺少的種子文獻
