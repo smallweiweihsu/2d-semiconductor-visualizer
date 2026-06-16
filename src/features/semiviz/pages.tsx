@@ -45,6 +45,9 @@ import { LayerPropertyEditor } from './LayerPropertyEditor'
 import { LayerStackPanel } from './LayerStackPanel'
 import { findMaterial } from './materialUtils'
 import { CollapsibleSection } from '../../components/common/CollapsibleSection'
+import { aiPaperOutline, aiMeasurementAnalysis, aiMaterialBackfill, aiAsk } from '../../ai/tasks'
+import type { BackfillSuggestion } from '../../ai/tasks'
+import { useAsync } from '../../ai/useAsync'
 import { estimateSchottkyBarrier, pinningFactorFromDit } from '../../physics/bandAlignment'
 import { StackBandDiagram } from '../../components/semiviz/StackBandDiagram'
 import { LogChart, type LogSeries } from '../../components/semiviz/LogChart'
@@ -1070,6 +1073,7 @@ export function MaterialsPage() {
                 <h3>注意事項 / Raman</h3>
                 <textarea className="mat-notes-edit" rows={3} placeholder="每行一則註記（層數、缺陷、Raman 峰位等）" value={selected.notes.join('\n')} onChange={(event) => updateMaterial(selected.id, (material) => ({ ...material, notes: event.target.value.split('\n') }))} />
               </section>
+              <MaterialAIPanel material={selected} onApply={(key, param) => updateMaterial(selected.id, (material) => ({ ...material, [key]: param } as Material))} />
               <details className="secondary-editor">
                 <summary>基本資料（名稱 / 分類 / 顏色）</summary>
                 <div className="material-detail-editor">
@@ -1172,6 +1176,7 @@ export function ReferencesPage() {
               <label className="full">提取參數<input value={selected.parameterExtracted ?? ''} onChange={(e) => updateReference(selected.id, (r) => ({ ...r, parameterExtracted: e.target.value }))} /></label>
               <label className="full">大綱 / Review notes<textarea rows={5} value={selected.notes ?? ''} onChange={(e) => updateReference(selected.id, (r) => ({ ...r, notes: e.target.value }))} /></label>
             </div>
+            <ReferenceAIPanel reference={selected} onApply={(patch) => updateReference(selected.id, (r) => ({ ...r, ...patch }))} />
             <div className="linked-source-list">
               <strong>Used by</strong>
               {getReferenceUsage(project, selected.id).length ? getReferenceUsage(project, selected.id).map((usage) => <span key={`${usage.materialId}-${usage.parameterKey}`}>{usage.materialName} · {usage.parameterLabel}</span>) : <span>尚未連結材料參數</span>}
@@ -1446,6 +1451,7 @@ export function MeasurementsPage() {
                     <Meta label="gm_max" value={metrics.gmMax_S !== undefined ? formatScientific(metrics.gmMax_S, 'S') : 'n/a'} />
                   </div>
                   <p className="extract-note">參數為自動萃取（Vth 定電流法 Id=1nA、SS 取次臨界最小值、gm 取最大微分），半定量、需依量測條件解讀。</p>
+                {selected.electrical ? <MeasurementAIPanel name={selected.sampleName} kind={measurementKindLabel(selected)} metrics={{ 'max |Id|': formatScientific(metrics.maxAbsId_A, 'A'), 'on/off': metrics.onOffRatio ? metrics.onOffRatio.toExponential(2) : 'n/a', 'Vth': metrics.vth_V !== undefined ? `${metrics.vth_V.toFixed(2)} V` : 'n/a', 'SS_min': metrics.ssMin_mVdec !== undefined ? `${metrics.ssMin_mVdec.toFixed(0)} mV/dec` : 'n/a', 'gm_max': metrics.gmMax_S !== undefined ? formatScientific(metrics.gmMax_S, 'S') : 'n/a' }} /> : null}
                 </aside>
                 </div>
                 {selected.electrical ? <details className="secondary-editor" open={!simple}><summary>原始數據（前 12 筆）</summary><RawMeasurementTable rows={selected.electrical.points.slice(0, 12)} /></details> : null}
@@ -1629,6 +1635,7 @@ export function ResearchNotesPage() {
             <div className="research-empty-note">
               <p>把材料參數、製程 step、量測 dataset 與文獻來源連結到此假說後，可作為下一步 review queue。</p>
             </div>
+            <ResearchQAPanel />
             <div className="scroll-spacer" aria-hidden="true" />
           </section>
         )}
@@ -2007,4 +2014,108 @@ function formatConditions(conditions: object) {
     .map(([key, value]) => `${key}: ${value}`)
     .join(' · ')
   return summary
+}
+
+// ---------------------------------------------------------------------------
+// AI 助手元件（透過 /api/ai 代理呼叫 Anthropic Claude）
+// ---------------------------------------------------------------------------
+
+const PARAM_LABEL_TO_KEY: Record<string, keyof Material> = {
+  'work function': 'workFunction_eV',
+  'band gap': 'bandGap_eV',
+  'bandgap': 'bandGap_eV',
+  'electron affinity': 'electronAffinity_eV',
+  'dielectric constant': 'dielectricConstant',
+  'dielectric const.': 'dielectricConstant',
+  'mobility': 'mobility_cm2Vs',
+  'resistivity': 'resistivity_ohm_m',
+  'lattice constant': 'latticeConstant_A',
+}
+
+function ReferenceAIPanel({ reference, onApply }: { reference: LiteratureSource; onApply: (patch: Partial<LiteratureSource>) => void }) {
+  const [fullText, setFullText] = useState('')
+  const [result, setResult] = useState<{ outline: string; parameters: string; relevance?: string } | null>(null)
+  const { loading, error, run } = useAsync<{ outline: string; parameters: string; relevance?: string }>()
+  return (
+    <details className="secondary-editor ai-panel">
+      <summary>✨ AI 助手：產生大綱 / 提取參數</summary>
+      <textarea className="ai-input" rows={3} placeholder="（選填）貼上摘要或全文片段，AI 會據此撰寫；留空則依標題與既有知識。" value={fullText} onChange={(e) => setFullText(e.target.value)} />
+      <div className="ai-actions">
+        <button className="manus-button primary" type="button" disabled={loading} onClick={async () => { const r = await run(aiPaperOutline(reference, fullText)); if (r) setResult(r) }}>{loading ? '產生中…' : '產生大綱'}</button>
+      </div>
+      {error ? <p className="ai-error">{error}</p> : null}
+      {result ? (
+        <div className="ai-result">
+          <strong>大綱</strong><p>{result.outline}</p>
+          {result.parameters ? <p className="ai-sub">提取參數：{result.parameters}</p> : null}
+          {result.relevance ? <p className="ai-sub">相關性：{result.relevance}</p> : null}
+          <button className="manus-button" type="button" onClick={() => onApply({ notes: result.outline, parameterExtracted: result.parameters || reference.parameterExtracted })}>套用到此文獻</button>
+        </div>
+      ) : null}
+    </details>
+  )
+}
+
+function MeasurementAIPanel({ name, kind, metrics }: { name: string; kind: string; metrics: Record<string, string> }) {
+  const [result, setResult] = useState('')
+  const { loading, error, run } = useAsync<string>()
+  return (
+    <details className="secondary-editor ai-panel">
+      <summary>✨ AI 解讀此資料</summary>
+      <div className="ai-actions">
+        <button className="manus-button primary" type="button" disabled={loading} onClick={async () => { const r = await run(aiMeasurementAnalysis({ name, kind, metrics })); if (r) setResult(r) }}>{loading ? '分析中…' : '產生解讀與建議'}</button>
+      </div>
+      {error ? <p className="ai-error">{error}</p> : null}
+      {result ? <div className="ai-result"><p style={{ whiteSpace: 'pre-wrap' }}>{result}</p></div> : null}
+    </details>
+  )
+}
+
+function MaterialAIPanel({ material, onApply }: { material: Material; onApply: (key: keyof Material, param: MaterialParameter) => void }) {
+  const [rows, setRows] = useState<BackfillSuggestion[]>([])
+  const { loading, error, run } = useAsync<BackfillSuggestion[]>()
+  const missing = computeMissingParams([material])[0]?.missing ?? []
+  return (
+    <details className="secondary-editor ai-panel">
+      <summary>✨ AI 查補缺少參數</summary>
+      <p className="ai-sub">{missing.length ? `偵測到缺少：${missing.join('、')}` : '目前所選參數皆已填寫；仍可請 AI 提供文獻常見值參考。'}</p>
+      <div className="ai-actions">
+        <button className="manus-button primary" type="button" disabled={loading} onClick={async () => { const r = await run(aiMaterialBackfill(material, missing.length ? missing : ['work function', 'band gap', 'mobility'])); if (r) setRows(r) }}>{loading ? '查詢中…' : '查補參數（估計值）'}</button>
+      </div>
+      {error ? <p className="ai-error">{error}</p> : null}
+      {rows.length ? (
+        <div className="ai-result">
+          {rows.map((row, i) => {
+            const key = PARAM_LABEL_TO_KEY[row.param.trim().toLowerCase()]
+            return (
+              <div className="ai-backfill-row" key={i}>
+                <span><strong>{row.param}</strong>：{row.value} {row.unit ?? ''} <i className="ai-sub">（{row.confidence ?? 'estimated'}{row.source ? `，${row.source}` : ''}）</i></span>
+                {key ? <button className="manus-button" type="button" onClick={() => { const cur = material[key] as MaterialParameter; const next = applyParamValue({ ...cur, unit: row.unit ?? cur.unit }, row.value); onApply(key, { ...next, confidence: 'estimated' }) }}>套用</button> : null}
+              </div>
+            )
+          })}
+          <p className="ai-sub">※ 為 AI 估計值，請自行核對文獻後再採用。</p>
+        </div>
+      ) : null}
+    </details>
+  )
+}
+
+export function ResearchQAPanel() {
+  const { project, activeDevice } = useProjectStore()
+  const [q, setQ] = useState('')
+  const [answer, setAnswer] = useState('')
+  const { loading, error, run } = useAsync<string>()
+  const context = `專案脈絡：活躍元件「${activeDevice.name}」，材料 ${project.materials.map((m) => m.displayName).join('、')}；文獻 ${project.references.length} 篇、量測 ${project.measurements.length} 筆。`
+  return (
+    <div className="ai-panel qa-panel">
+      <h3>✨ 研究問答助手</h3>
+      <textarea className="ai-input" rows={3} placeholder="例如：我的 WSe2 p-FET SS 偏高，可能原因與改善方向？" value={q} onChange={(e) => setQ(e.target.value)} />
+      <div className="ai-actions">
+        <button className="manus-button primary" type="button" disabled={loading || !q.trim()} onClick={async () => { const r = await run(aiAsk(q, context)); if (r != null) setAnswer(r) }}>{loading ? '思考中…' : '送出'}</button>
+      </div>
+      {error ? <p className="ai-error">{error}</p> : null}
+      {answer ? <div className="ai-result"><p style={{ whiteSpace: 'pre-wrap' }}>{answer}</p></div> : null}
+    </div>
+  )
 }

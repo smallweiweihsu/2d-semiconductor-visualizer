@@ -3639,3 +3639,17 @@ select option { background-color: #0f1623; color: #e5e7eb; }
 .manus-card.collapsible[open] > summary.manus-card-summary::after { transform: rotate(90deg); }
 .manus-card.collapsible > .manus-card-body { padding-top: 0; }
 .missing-ok { color: #34d399; font-size: 13px; margin: 0; }
+
+/* AI assistant panels */
+.ai-panel { border: 1px solid var(--border); border-radius: 10px; margin-top: 12px; }
+.ai-panel > summary { cursor: pointer; padding: 10px 12px; font-weight: 600; color: var(--primary); }
+.ai-panel.qa-panel { padding: 14px; }
+.ai-panel.qa-panel h3 { margin: 0 0 8px; font-size: 14px; color: var(--primary); }
+.ai-input { width: 100%; background: var(--secondary); border: 1px solid var(--border); border-radius: 8px; color: var(--foreground); padding: 8px 10px; font-size: 13px; resize: vertical; margin: 8px 0; }
+.ai-actions { display: flex; gap: 8px; margin: 8px 0; padding: 0 4px; }
+.ai-error { color: #f87171; font-size: 12px; padding: 0 12px 8px; }
+.ai-result { background: oklch(0.16 0.02 250); border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; margin: 8px; font-size: 13px; line-height: 1.6; }
+.ai-result strong { color: var(--primary); }
+.ai-sub { color: var(--muted); font-size: 12px; }
+.ai-backfill-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 5px 0; border-bottom: 1px solid var(--border); }
+.ai-backfill-row:last-of-type { border-bottom: none; }
