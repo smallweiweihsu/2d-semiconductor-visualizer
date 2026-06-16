@@ -79,3 +79,35 @@ export async function aiFindPapers(topic: string, excludeTitles: string[], count
 
 // (helper kept for callers needing parameter labels)
 export type { MaterialParameter }
+
+// 跨文獻比較表
+export interface CompareTable {
+  headers: string[]
+  rows: string[][]
+}
+export async function aiComparePapers(papers: Array<{ title: string; notes?: string; parameterExtracted?: string; doi?: string; material?: string; electrode?: string; year?: number }>): Promise<CompareTable | null> {
+  const list = papers.map((p, i) => `(${i + 1}) ${p.title}｜材料:${p.material ?? ''}｜接觸:${p.electrode ?? ''}｜年:${p.year ?? ''}｜參數:${p.parameterExtracted ?? ''}｜大綱:${(p.notes ?? '').slice(0, 400)}`).join('\n')
+  const prompt = `比較以下二維半導體論文，整理成對照表方便我快速取捨。\n${list}\n\n欄位建議：論文(用簡短標題)、材料、接觸/介電、Ion 或關鍵電性、SS、Rc、重點/差異。若某格資料未知填「—」，不要捏造數字。只輸出 JSON：{"headers":["論文","材料","接觸","Ion","SS","Rc","重點"],"rows":[["...","...","..."]]}`
+  const text = await callAI({ prompt, maxTokens: 2000 })
+  const json = extractJson<CompareTable>(text)
+  return json && Array.isArray(json.headers) && Array.isArray(json.rows) ? json : null
+}
+
+// 變溫整批解讀
+export async function aiVariableTempAnalysis(deviceName: string, items: Array<{ label: string; tempK?: number; metrics: Record<string, string> }>): Promise<string> {
+  const lines = items.map((it) => `- ${it.label}${it.tempK ? ` (T=${it.tempK}K)` : ''}: ${Object.entries(it.metrics).map(([k, v]) => `${k}=${v}`).join(', ')}`).join('\n')
+  const prompt = `元件「${deviceName}」的變溫電性如下：\n${lines}\n\n請用繁體中文做整批解讀：① 隨溫度的趨勢（on/off、SS、Vth、Ion）② 可能的傳導機制（熱激發/穿隧/陷阱輔助）與 Arrhenius 活化能意義 ③ 對接觸/介面（Sb2O3/WOx）的推論 ④ 建議補哪些量測。條列、精簡、半定量，不要捏造未提供的數值。`
+  return callAI({ prompt, maxTokens: 1200 })
+}
+
+// 能帶/接觸推薦
+export async function aiContactRecommendation(context: string): Promise<string> {
+  const prompt = `${context}\n\n請依上述材料庫與物理，推薦能對此二維半導體形成低位障/歐姆接觸的「上電極或介層」方案（針對 p 型優先），說明理由（功函數、FLP、MIGS、介層），並盡量附代表文獻方向。條列 2–4 個方案，繁體中文，不要捏造精確數字。`
+  return callAI({ prompt, maxTokens: 1100, system: '你熟悉二維半導體接觸工程與能帶對齊（Schottky–Mott、Cowley–Sze、MIGS）。' })
+}
+
+// 論文寫作草稿
+export async function aiDraftDiscussion(context: string, section: string): Promise<string> {
+  const prompt = `${context}\n\n請依以上專案資料，草擬論文的「${section}」段落（繁體中文、學術語氣、可後續編輯）。只根據提供的數據與文獻撰寫，數據不足處以「待補」標註，不要捏造數字或引用。`
+  return callAI({ prompt, maxTokens: 1600, system: '你是協助撰寫半導體元件論文的學術寫作助理，語氣嚴謹、結構清楚。' })
+}

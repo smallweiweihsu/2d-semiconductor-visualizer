@@ -45,8 +45,8 @@ import { LayerPropertyEditor } from './LayerPropertyEditor'
 import { LayerStackPanel } from './LayerStackPanel'
 import { findMaterial } from './materialUtils'
 import { CollapsibleSection } from '../../components/common/CollapsibleSection'
-import { aiPaperOutline, aiMeasurementAnalysis, aiMaterialBackfill, aiFindPapers } from '../../ai/tasks'
-import type { FoundPaper } from '../../ai/tasks'
+import { aiPaperOutline, aiMeasurementAnalysis, aiMaterialBackfill, aiFindPapers, aiComparePapers, aiVariableTempAnalysis, aiContactRecommendation, aiDraftDiscussion } from '../../ai/tasks'
+import type { FoundPaper, CompareTable, BackfillSuggestion as BackfillSuggestionT } from '../../ai/tasks'
 import type { BackfillSuggestion } from '../../ai/tasks'
 import { useAsync } from '../../ai/useAsync'
 import { promptForAiToken } from '../../ai/client'
@@ -999,6 +999,7 @@ export function BandDiagramPage() {
                   ? 'pinning factor S 由 Cowley–Sze 公式 S=1/(1+q²δDit/ε₀εᵢ) 估算；CNL／Dit 為半經驗值，需該材料系統實測校準，不可跨材料直接沿用。'
                   : '目前為理想 Schottky–Mott（未套用 pinning）。實測二維接觸常因介面態使功函數無法決定真實障礙；可勾選上方 FLP／MIGS／Dit 加入修正。'}</p>
               </ManusCallout>
+              <ContactRecAIPanel context={`半導體 ${semiconductor.displayName}: χ=${formatBandValue(affinity)} eV, Eg=${formatBandValue(bandGap)} eV。目前接觸金屬 ${metal.displayName} φ=${formatBandValue(metalPhi)} eV，估算 φBn=${formatBandValue(nBarrier)}、φBp=${formatBandValue(pBarrier)} eV。材料庫可選電極：${metals.map((mm) => `${mm.displayName}(φ=${formatParameterValue(resolveParameterNumber(mm.workFunction_eV) ?? 'unknown')})`).join('、')}。目標：p 型低位障/歐姆接觸。`} />
             </div>
           </ManusAnalysisPanel>
         )}
@@ -1027,6 +1028,7 @@ export function MaterialsPage() {
               <button className="manus-button ghost" type="button" onClick={() => { const name = window.prompt('新材料名稱'); if (name) { const m = addMaterial(name, 'custom'); setSelectedId(m.id) } }}>新增材料</button>
             </div>
           <input className="manus-field" placeholder="搜尋材料" value={query} onChange={(event) => setQuery(event.target.value)} />
+          <MaterialBatchBackfillPanel materials={project.materials} onApply={(id, key, param) => updateMaterial(id, (m) => ({ ...m, [key]: param } as Material))} />
           {(['metal', 'two_d_semiconductor', 'dielectric', 'oxide', 'bulk_conductor', 'substrate', 'custom'] as const).map((cat) => {
             const group = filtered.filter((m) => m.category === cat)
             if (!group.length) return null
@@ -1143,6 +1145,7 @@ export function ReferencesPage() {
             </div>
             <input className="manus-field" placeholder="搜尋標題 / 作者 / 年份" value={refQuery} onChange={(event) => setRefQuery(event.target.value)} />
             <FindPapersPanel existingTitles={project.references.map((r) => r.title)} onImport={(p) => setSelectedId(addReference({ title: p.title, authors: p.authors ?? '', year: p.year ?? new Date().getFullYear(), journal: p.journal, doi: p.doi, url: p.url, material: p.material ?? 'WSe2', electrode: p.electrode, notes: p.outline, status: 'candidate', reliabilityScore: 6 }).id)} />
+            <CompareReferencesPanel references={project.references} />
             {groupReferences(filteredRefs).map(([mat, elecs]) => (
               <details className="meas-folder" open key={mat}>
                 <summary><span className="meas-folder-icon">📁</span>{mat}（{elecs.reduce((n, [, rs]) => n + rs.length, 0)}）<span className="folder-add" role="button" title={`新增 ${mat} 文獻`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedId(addReference({ material: mat }).id) }}><Plus size={13} /></span></summary>
@@ -1510,6 +1513,7 @@ export function MeasurementsPage() {
               <summary>變溫 Arrhenius 分析（活化能 Ea）</summary>
               <ArrheniusPanel measurements={project.measurements.filter((m) => m.electrical && (selected ? m.deviceName === selected.deviceName : true))} />
             </details>
+            {selected ? <VariableTempAIPanel deviceName={selected.deviceName} datasets={project.measurements.filter((m) => m.electrical && m.deviceName === selected.deviceName)} /> : null}
             <details className="secondary-editor" open={!simple}>
               <summary>批量匯入 CSV / TXT</summary>
               <label className="import-device-field">匯入到元件
@@ -1644,6 +1648,7 @@ export function ResearchNotesPage() {
             <div className="research-empty-note">
               <p>把材料參數、製程 step、量測 dataset 與文獻來源連結到此假說後，可作為下一步 review queue。</p>
             </div>
+            <DraftAIPanel />
             <div className="scroll-spacer" aria-hidden="true" />
           </section>
         )}
@@ -2143,6 +2148,178 @@ function FindPapersPanel({ existingTitles, onImport }: { existingTitles: string[
         </div>
       ))}
       {papers.length ? <p className="ai-sub">※ 來自 AI 網路搜尋，匯入後請再核對 DOI。</p> : null}
+    </details>
+  )
+}
+
+// 跨文獻比較表
+function CompareReferencesPanel({ references }: { references: LiteratureSource[] }) {
+  const [ids, setIds] = useState<string[]>([])
+  const [table, setTable] = useState<CompareTable | null>(null)
+  const [showModal, setShowModal] = useState(false)
+  const { loading, error, run } = useAsync<CompareTable | null>()
+  const chosen = references.filter((r) => ids.includes(r.id))
+  return (
+    <details className="secondary-editor ai-panel compare-refs">
+      <summary>📊 跨文獻比較表（AI）</summary>
+      <p className="ai-sub" style={{ padding: '0 12px' }}>勾選 2–6 篇要比較的文獻：</p>
+      <div className="compare-ref-list">
+        {references.map((r) => (
+          <label key={r.id} className="compare-ref-item">
+            <input type="checkbox" checked={ids.includes(r.id)} onChange={(e) => setIds((cur) => e.target.checked ? [...cur, r.id].slice(-6) : cur.filter((x) => x !== r.id))} />
+            <span>{r.title}</span>
+          </label>
+        ))}
+      </div>
+      <div className="ai-actions">
+        <button className="manus-button primary" type="button" disabled={loading || chosen.length < 2} onClick={async () => { const t = await run(aiComparePapers(chosen.map((r) => ({ title: r.title, notes: r.notes, parameterExtracted: r.parameterExtracted, doi: r.doi, material: r.material, electrode: r.electrode, year: r.year })))); if (t) { setTable(t); setShowModal(true) } }}>{loading ? '比較中…' : `比較 ${chosen.length} 篇`}</button>
+      </div>
+      {error ? <p className="ai-error">{error}</p> : null}
+      {showModal && table ? (
+        <div className="ai-modal-backdrop" onClick={() => setShowModal(false)}>
+          <div className="ai-modal" onClick={(e) => e.stopPropagation()}>
+            <header><strong>跨文獻比較</strong><button type="button" onClick={() => setShowModal(false)}>✕</button></header>
+            <div className="ai-modal-body">
+              <table className="comparison-table-ai">
+                <thead><tr>{table.headers.map((h, i) => <th key={i}>{h}</th>)}</tr></thead>
+                <tbody>{table.rows.map((row, ri) => <tr key={ri}>{row.map((c, ci) => <td key={ci}>{c}</td>)}</tr>)}</tbody>
+              </table>
+              <p className="ai-sub">※ AI 整理，數值請對照原文核實。</p>
+            </div>
+          </div>
+        </div>
+      ) : null}
+    </details>
+  )
+}
+
+// 能帶/接觸推薦
+function ContactRecAIPanel({ context }: { context: string }) {
+  const [result, setResult] = useState('')
+  const { loading, error, run } = useAsync<string>()
+  return (
+    <details className="secondary-editor ai-panel">
+      <summary>✨ AI 接觸/電極建議</summary>
+      <div className="ai-actions">
+        <button className="manus-button primary" type="button" disabled={loading} onClick={async () => { const r = await run(aiContactRecommendation(context)); if (r) setResult(r) }}>{loading ? '分析中…' : '推薦電極/介層方案'}</button>
+        <button className="manus-button ghost" type="button" onClick={promptForAiToken} title="設定 AI 密碼">🔑</button>
+      </div>
+      {error ? <p className="ai-error">{error}</p> : null}
+      {result ? <div className="ai-result"><p style={{ whiteSpace: 'pre-wrap' }}>{result}</p></div> : null}
+    </details>
+  )
+}
+
+// 變溫整批解讀
+function VariableTempAIPanel({ deviceName, datasets }: { deviceName: string; datasets: MeasurementData[] }) {
+  const [result, setResult] = useState('')
+  const { loading, error, run } = useAsync<string>()
+  const items = datasets.map((d) => {
+    const m = calculateElectricalMetrics(d)
+    return {
+      label: d.sampleName,
+      tempK: (() => { const mt = d.sampleName.match(/(\d+)\s*[kK]\b/); return mt ? Number(mt[1]) : undefined })(),
+      metrics: {
+        'max|Id|': m.maxAbsId_A !== undefined ? m.maxAbsId_A.toExponential(2) + ' A' : 'n/a',
+        'on/off': m.onOffRatio !== undefined ? m.onOffRatio.toExponential(2) : 'n/a',
+        Vth: m.vth_V !== undefined ? m.vth_V.toFixed(2) + ' V' : 'n/a',
+        SS: m.ssMin_mVdec !== undefined ? m.ssMin_mVdec.toFixed(0) + ' mV/dec' : 'n/a',
+      },
+    }
+  })
+  return (
+    <details className="secondary-editor ai-panel">
+      <summary>✨ 變溫整批解讀（AI）</summary>
+      <p className="ai-sub" style={{ padding: '0 12px' }}>此元件 {items.length} 筆電性資料{items.some((i) => i.tempK) ? '（含溫度）' : ''}。</p>
+      <div className="ai-actions">
+        <button className="manus-button primary" type="button" disabled={loading || items.length < 2} onClick={async () => { const r = await run(aiVariableTempAnalysis(deviceName, items)); if (r) setResult(r) }}>{loading ? '分析中…' : '解讀變溫趨勢與機制'}</button>
+      </div>
+      {items.length < 2 ? <p className="ai-sub" style={{ padding: '0 12px' }}>需要至少 2 筆同元件電性資料。</p> : null}
+      {error ? <p className="ai-error">{error}</p> : null}
+      {result ? <div className="ai-result"><p style={{ whiteSpace: 'pre-wrap' }}>{result}</p></div> : null}
+    </details>
+  )
+}
+
+// 論文寫作草稿
+function DraftAIPanel() {
+  const { project, activeDevice } = useProjectStore()
+  const [section, setSection] = useState('結果與討論')
+  const [result, setResult] = useState('')
+  const { loading, error, run } = useAsync<string>()
+  function buildContext(): string {
+    const meas = project.measurements.filter((m) => m.electrical).slice(0, 8).map((m) => {
+      const mm = calculateElectricalMetrics(m)
+      return `- ${m.sampleName}: on/off=${mm.onOffRatio?.toExponential(2) ?? 'n/a'}, SS=${mm.ssMin_mVdec?.toFixed(0) ?? 'n/a'} mV/dec, Vth=${mm.vth_V?.toFixed(2) ?? 'n/a'} V`
+    }).join('\n')
+    const refs = project.references.filter((r) => r.status === 'accepted' || r.status === 'reviewed').slice(0, 8).map((r) => `- ${r.title} (${r.year})${r.doi ? ` DOI ${r.doi}` : ''}`).join('\n')
+    return `元件：${activeDevice.name}（${activeDevice.description}）。\n量測摘要：\n${meas || '（無）'}\n參考文獻：\n${refs || '（無）'}`
+  }
+  return (
+    <div className="ai-panel qa-panel">
+      <h3>✨ 論文寫作草稿</h3>
+      <label className="ai-sub" style={{ display: 'block', marginBottom: 6 }}>段落
+        <select value={section} onChange={(e) => setSection(e.target.value)} style={{ marginLeft: 8 }}>
+          <option>結果與討論</option>
+          <option>實驗方法</option>
+          <option>摘要</option>
+          <option>引言</option>
+        </select>
+      </label>
+      <div className="ai-actions">
+        <button className="manus-button primary" type="button" disabled={loading} onClick={async () => { const r = await run(aiDraftDiscussion(buildContext(), section)); if (r) setResult(r) }}>{loading ? '撰寫中…' : '產生草稿'}</button>
+        <button className="manus-button ghost" type="button" onClick={promptForAiToken} title="設定 AI 密碼">🔑</button>
+      </div>
+      {error ? <p className="ai-error">{error}</p> : null}
+      {result ? <div className="ai-result"><p style={{ whiteSpace: 'pre-wrap' }}>{result}</p></div> : null}
+    </div>
+  )
+}
+
+// 材料參數批次查補
+function MaterialBatchBackfillPanel({ materials, onApply }: { materials: Material[]; onApply: (id: string, key: keyof Material, param: MaterialParameter) => void }) {
+  const [rows, setRows] = useState<Array<{ materialId: string; materialName: string; items: BackfillSuggestionT[] }>>([])
+  const [applied, setApplied] = useState<string[]>([])
+  const { loading, error, run } = useAsync<Array<{ materialId: string; materialName: string; items: BackfillSuggestionT[] }>>()
+  const targets = computeMissingParams(materials)
+  return (
+    <details className="secondary-editor ai-panel">
+      <summary>✨ AI 批次查補（缺參數材料 {targets.length}）</summary>
+      <div className="ai-actions">
+        <button className="manus-button primary" type="button" disabled={loading || !targets.length} onClick={async () => {
+          const r = await run((async () => {
+            const out: Array<{ materialId: string; materialName: string; items: BackfillSuggestionT[] }> = []
+            for (const t of targets) {
+              const items = await aiMaterialBackfill(t.material, t.missing)
+              out.push({ materialId: t.material.id, materialName: t.material.displayName, items })
+            }
+            return out
+          })())
+          if (r) { setRows(r); setApplied([]) }
+        }}>{loading ? '查補中…（逐一材料）' : '一鍵查補所有缺參數材料'}</button>
+        <button className="manus-button ghost" type="button" onClick={promptForAiToken} title="設定 AI 密碼">🔑</button>
+      </div>
+      {!targets.length ? <p className="ai-sub" style={{ padding: '0 12px' }}>目前沒有缺參數的材料 ✓</p> : null}
+      {error ? <p className="ai-error">{error}</p> : null}
+      {rows.map((grp) => {
+        const mat = materials.find((m) => m.id === grp.materialId)
+        return (
+          <div className="ai-result" key={grp.materialId}>
+            <strong>{grp.materialName}</strong>
+            {grp.items.map((row, i) => {
+              const key = PARAM_LABEL_TO_KEY[row.param.trim().toLowerCase()]
+              const tag = `${grp.materialId}-${i}`
+              return (
+                <div className="ai-backfill-row" key={i}>
+                  <span><strong>{row.param}</strong>：{row.value} {row.unit ?? ''} <i className="ai-sub">（{row.confidence ?? 'estimated'}{row.source ? `，${row.source}` : ''}）</i></span>
+                  {key && mat ? <button className="manus-button" type="button" disabled={applied.includes(tag)} onClick={() => { const cur = mat[key] as MaterialParameter; const next = applyParamValue({ ...cur, unit: row.unit ?? cur.unit }, row.value); onApply(grp.materialId, key, { ...next, confidence: 'estimated' }); setApplied((a) => [...a, tag]) }}>{applied.includes(tag) ? '已套用 ✓' : '套用'}</button> : null}
+                </div>
+              )
+            })}
+          </div>
+        )
+      })}
+      {rows.length ? <p className="ai-sub" style={{ padding: '0 12px' }}>※ AI 估計值，請核對文獻後採用。</p> : null}
     </details>
   )
 }
