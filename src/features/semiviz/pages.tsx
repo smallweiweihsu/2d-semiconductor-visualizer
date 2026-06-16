@@ -4,11 +4,13 @@ import {
   AlertTriangle,
   BarChart3,
   BookOpen,
+  Check,
   Clock,
   Database,
   FlaskConical,
   GitBranch,
   GitCompare,
+  Star,
   Layers,
   Lightbulb,
   Plus,
@@ -1147,12 +1149,12 @@ export function ReferencesPage() {
             {filteredRefs.map((reference) => (
               <ManusListRow
                 active={reference.id === selected?.id}
-                icon={<BookOpen size={16} />}
+                icon={reference.status === 'accepted' ? <Check size={16} color="#34d399" /> : <Clock size={16} color="#8a94a6" />}
                 key={reference.id}
                 title={reference.title}
                 subtitle={`${reference.authors} (${reference.year})`}
-                meta={<>Score: {reference.reliabilityScore}/10</>}
-                badge={<ManusStatusBadge tone={reference.status === 'accepted' ? 'success' : 'primary'}>{literatureStatusLabel(reference.status)}</ManusStatusBadge>}
+                meta={<>{reference.year}</>}
+                badge={reference.reliabilityScore >= 8 ? <Star size={15} color="#fbbf24" fill="#fbbf24" /> : null}
                 onClick={() => setSelectedId(reference.id)}
               />
             ))}
@@ -1573,7 +1575,7 @@ export function ComparisonLabPage() {
                       return (
                         <td key={`${material.id}-${key}`}>
                           <strong>{formatMaterialParameter(parameter)}</strong>
-                          <ConfidenceBadge confidence={parameter.confidence} />
+                          <i className="conf-dot" style={{ backgroundColor: parameter.confidence === 'known' ? '#34d399' : parameter.confidence === 'estimated' ? '#fbbf24' : '#f87171' }} />
                         </td>
                       )
                     })}
