@@ -45,7 +45,8 @@ import { LayerPropertyEditor } from './LayerPropertyEditor'
 import { LayerStackPanel } from './LayerStackPanel'
 import { findMaterial } from './materialUtils'
 import { CollapsibleSection } from '../../components/common/CollapsibleSection'
-import { aiPaperOutline, aiMeasurementAnalysis, aiMaterialBackfill } from '../../ai/tasks'
+import { aiPaperOutline, aiMeasurementAnalysis, aiMaterialBackfill, aiFindPapers } from '../../ai/tasks'
+import type { FoundPaper } from '../../ai/tasks'
 import type { BackfillSuggestion } from '../../ai/tasks'
 import { useAsync } from '../../ai/useAsync'
 import { promptForAiToken } from '../../ai/client'
@@ -1141,6 +1142,7 @@ export function ReferencesPage() {
               <button className="panel-icon-button" type="button" onClick={() => { const mat = window.prompt('歸到哪個材料分類？(例如 WSe2 / MoS2 / InSe / Graphene)', 'WSe2') ?? ''; setSelectedId(addReference({ material: mat.trim() || undefined }).id) }} aria-label="新增 reference"><Plus size={16} /></button>
             </div>
             <input className="manus-field" placeholder="搜尋標題 / 作者 / 年份" value={refQuery} onChange={(event) => setRefQuery(event.target.value)} />
+            <FindPapersPanel existingTitles={project.references.map((r) => r.title)} onImport={(p) => setSelectedId(addReference({ title: p.title, authors: p.authors ?? '', year: p.year ?? new Date().getFullYear(), journal: p.journal, doi: p.doi, url: p.url, material: p.material ?? 'WSe2', electrode: p.electrode, notes: p.outline, status: 'candidate', reliabilityScore: 6 }).id)} />
             {groupReferences(filteredRefs).map(([mat, elecs]) => (
               <details className="meas-folder" open key={mat}>
                 <summary><span className="meas-folder-icon">📁</span>{mat}（{elecs.reduce((n, [, rs]) => n + rs.length, 0)}）<span className="folder-add" role="button" title={`新增 ${mat} 文獻`} onClick={(e) => { e.preventDefault(); e.stopPropagation(); setSelectedId(addReference({ material: mat }).id) }}><Plus size={13} /></span></summary>
@@ -2113,6 +2115,34 @@ function MaterialAIPanel({ material, onApply }: { material: Material; onApply: (
           <p className="ai-sub">※ 為 AI 估計值，請自行核對文獻後再採用。</p>
         </div>
       ) : null}
+    </details>
+  )
+}
+
+function FindPapersPanel({ existingTitles, onImport }: { existingTitles: string[]; onImport: (paper: FoundPaper) => void }) {
+  const [topic, setTopic] = useState('WSe2 p-FET 接觸工程 / Sb2O3 介電')
+  const [papers, setPapers] = useState<FoundPaper[]>([])
+  const [importedTitles, setImportedTitles] = useState<string[]>([])
+  const { loading, error, run } = useAsync<FoundPaper[]>()
+  return (
+    <details className="secondary-editor ai-panel find-papers">
+      <summary>🔎 找新論文（AI＋網路）</summary>
+      <input className="ai-input" value={topic} onChange={(e) => setTopic(e.target.value)} placeholder="主題 / 關鍵字" />
+      <div className="ai-actions">
+        <button className="manus-button primary" type="button" disabled={loading} onClick={async () => { const r = await run(aiFindPapers(topic, existingTitles, 3)); if (r) { setPapers(r); setImportedTitles([]) } }}>{loading ? '搜尋中…（會上網查證）' : '找 3 篇我沒看過的'}</button>
+        <button className="manus-button ghost" type="button" onClick={promptForAiToken} title="設定 AI 密碼">🔑</button>
+      </div>
+      {error ? <p className="ai-error">{error}</p> : null}
+      {papers.map((p, i) => (
+        <div className="found-paper" key={i}>
+          <strong>{p.title}</strong>
+          <span className="ai-sub">{[p.authors, p.year, p.journal].filter(Boolean).join(' · ')}{p.doi ? ` · DOI ${p.doi}` : ''}</span>
+          <p>{p.outline}</p>
+          {p.relevance ? <p className="ai-sub">相關性：{p.relevance}</p> : null}
+          <button className="manus-button" type="button" disabled={importedTitles.includes(p.title)} onClick={() => { onImport(p); setImportedTitles((t) => [...t, p.title]) }}>{importedTitles.includes(p.title) ? '已匯入 ✓' : '匯入此篇'}</button>
+        </div>
+      ))}
+      {papers.length ? <p className="ai-sub">※ 來自 AI 網路搜尋，匯入後請再核對 DOI。</p> : null}
     </details>
   )
 }

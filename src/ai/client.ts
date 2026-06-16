@@ -3,6 +3,7 @@ export interface AiCallOptions {
   prompt: string
   system?: string
   maxTokens?: number
+  webSearch?: boolean
 }
 
 const TOKEN_KEY = 'ai_access_token'
@@ -56,13 +57,13 @@ export function promptForAiToken(): void {
   if (next != null) setAiToken(next.trim())
 }
 
-export async function callAI({ prompt, system, maxTokens }: AiCallOptions): Promise<string> {
+export async function callAI({ prompt, system, maxTokens, webSearch }: AiCallOptions): Promise<string> {
   let res: Response
   try {
     res = await fetch('/api/ai', {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-ai-token': getAiToken() },
-      body: JSON.stringify({ prompt, system, maxTokens, model: getAiModel() || undefined }),
+      body: JSON.stringify({ prompt, system, maxTokens, webSearch, model: getAiModel() || undefined }),
     })
   } catch {
     throw new Error('無法連線 AI 服務（請確認已部署 /api 並設定金鑰）')

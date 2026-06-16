@@ -34,7 +34,7 @@ export default async function handler(req: ProxyReq, res: ProxyRes): Promise<voi
       return
     }
   }
-  let payload: { system?: string; prompt?: string; maxTokens?: number; model?: string }
+  let payload: { system?: string; prompt?: string; maxTokens?: number; model?: string; webSearch?: boolean }
   try {
     payload = (typeof req.body === 'string' ? JSON.parse(req.body) : req.body) as typeof payload
   } catch {
@@ -62,6 +62,9 @@ export default async function handler(req: ProxyReq, res: ProxyRes): Promise<voi
         max_tokens: maxTokens,
         system: payload?.system ?? '你是二維半導體元件研究的助理，請用繁體中文、精簡且準確地回答，不要捏造數據。',
         messages: [{ role: 'user', content: prompt }],
+        ...(payload?.webSearch === true
+          ? { tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 6 }] }
+          : {}),
       }),
     })
     const data = (await upstream.json()) as { content?: Array<{ text?: string }>; error?: { message?: string } }

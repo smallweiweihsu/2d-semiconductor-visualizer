@@ -45,13 +45,36 @@ export async function aiMaterialBackfill(material: Material, missing: string[]):
   return Array.isArray(json) ? json : []
 }
 
-export async function aiAsk(question: string, context: string): Promise<string> {
+export async function aiAsk(question: string, context: string, webSearch = false): Promise<string> {
   const prompt = `${context}\n\n問題：${question}`
   return callAI({
     prompt,
-    system: '你是二維半導體元件研究助理，熟悉 WSe2 p-FET、Sb2O3/WOx 介面工程、接觸/能帶、變溫傳輸。請用繁體中文精簡作答，必要時條列；不確定就說不確定，不要捏造數據。',
-    maxTokens: 1000,
+    webSearch,
+    system: '你是二維半導體元件研究助理，熟悉 WSe2 p-FET、Sb2O3/WOx 介面工程、接觸/能帶、變溫傳輸。請用繁體中文精簡作答，必要時條列；不確定就說不確定，不要捏造數據。若有開啟網路搜尋，請查證後附上來源/DOI。',
+    maxTokens: 1200,
   })
+}
+
+export interface FoundPaper {
+  title: string
+  authors?: string
+  year?: number
+  journal?: string
+  doi?: string
+  url?: string
+  material?: string
+  electrode?: string
+  outline: string
+  relevance?: string
+}
+
+// 用網路搜尋找出使用者尚未收錄的論文，回傳含大綱的結構化清單。
+export async function aiFindPapers(topic: string, excludeTitles: string[], count = 3): Promise<FoundPaper[]> {
+  const exclude = excludeTitles.slice(0, 60).map((t) => `- ${t}`).join('\n')
+  const prompt = `請用網路搜尋找出 ${count} 篇「${topic}」相關、且**不在下列清單中**的真實論文（請盡量找近年、可查證 DOI 的）。\n\n使用者已收錄（請避開重複）：\n${exclude || '（無）'}\n\n請務必查證每篇真的存在、DOI 正確，不要捏造。只輸出 JSON 陣列：[{"title":"","authors":"第一作者 et al.","year":2024,"journal":"","doi":"","url":"","material":"WSe2","electrode":"如 Pd / vdW 金屬 / 介電 等","outline":"約150字繁體中文大綱","relevance":"與 WSe2 p-FET、Sb2O3/WOx 的相關性一句話"}]`
+  const text = await callAI({ prompt, webSearch: true, maxTokens: 3000, system: '你是嚴謹的文獻搜尋助理。只回報你用網路查證過、確實存在的論文與正確 DOI，絕不捏造。輸出務必是合法 JSON。' })
+  const json = extractJson<FoundPaper[]>(text)
+  return Array.isArray(json) ? json.filter((p) => p && p.title) : []
 }
 
 // (helper kept for callers needing parameter labels)

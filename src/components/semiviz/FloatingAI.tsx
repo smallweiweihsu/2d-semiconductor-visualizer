@@ -33,6 +33,7 @@ export function FloatingAI() {
   const [open, setOpen] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [model, setModel] = useState(getAiModel())
+  const [webSearch, setWebSearch] = useState(false)
   const [q, setQ] = useState('')
   const [turns, setTurns] = useState<ChatTurn[]>([])
   const [done, setDone] = useState<string>('')
@@ -55,7 +56,7 @@ export function FloatingAI() {
     setDone('')
     setTurns((t) => [...t, { role: 'user', text: question }])
     setQ('')
-    const answer = await run(aiAsk(question, buildContext()))
+    const answer = await run(aiAsk(question, buildContext(), webSearch))
     if (answer != null) setTurns((t) => [...t, { role: 'ai', text: answer, question }])
   }
 
@@ -123,6 +124,7 @@ export function FloatingAI() {
         {error ? <p className="floating-ai-error">{error}</p> : null}
         {done ? <p className="floating-ai-done">{done}</p> : null}
       </div>
+      <label className="floating-ai-websearch"><input type="checkbox" checked={webSearch} onChange={(e) => setWebSearch(e.target.checked)} /> 🔎 上網搜尋（找論文/最新資訊，較慢）</label>
       <div className="floating-ai-input">
         <textarea
           rows={2}
