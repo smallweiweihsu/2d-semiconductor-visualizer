@@ -3620,3 +3620,22 @@ select option { background-color: #0f1623; color: #e5e7eb; }
 /* per-folder quick-add button in references tree */
 .folder-add { display: inline-flex; align-items: center; justify-content: center; width: 18px; height: 18px; margin-left: 6px; border-radius: 5px; color: var(--muted); cursor: pointer; opacity: 0.6; }
 .folder-add:hover { opacity: 1; color: var(--primary); background: var(--secondary); }
+
+/* Materials: inline-editable parameter cards */
+.material-parameter-card.editable { display: flex; flex-direction: column; gap: 6px; align-items: stretch; cursor: default; }
+.material-parameter-card.editable > span { color: var(--muted); font-size: 12px; }
+.material-parameter-card.editable .mp-edit-row { display: flex; gap: 6px; }
+.material-parameter-card.editable .mp-val { flex: 1 1 auto; min-width: 0; }
+.material-parameter-card.editable .mp-unit { flex: 0 0 64px; width: 64px; }
+.material-parameter-card.editable input,
+.material-parameter-card.editable select { background: var(--secondary); border: 1px solid var(--border); border-radius: 6px; color: var(--foreground); font-size: 13px; padding: 6px 8px; font-family: "JetBrains Mono", monospace; }
+.material-parameter-card.editable .mp-conf { color: var(--muted); }
+.mat-notes-edit { width: 100%; background: var(--secondary); border: 1px solid var(--border); border-radius: 8px; color: var(--foreground); padding: 8px 10px; font-size: 13px; resize: vertical; }
+
+/* Collapsible dashboard cards */
+.manus-card.collapsible > summary.manus-card-summary { display: flex; align-items: center; gap: 8px; cursor: pointer; list-style: none; padding: var(--manus-card-padding); font-weight: 600; color: var(--foreground); }
+.manus-card.collapsible > summary.manus-card-summary::-webkit-details-marker { display: none; }
+.manus-card.collapsible > summary.manus-card-summary::after { content: '▸'; margin-left: auto; color: var(--muted); transition: transform .15s ease; }
+.manus-card.collapsible[open] > summary.manus-card-summary::after { transform: rotate(90deg); }
+.manus-card.collapsible > .manus-card-body { padding-top: 0; }
+.missing-ok { color: #34d399; font-size: 13px; margin: 0; }
