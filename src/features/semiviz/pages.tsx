@@ -1115,6 +1115,15 @@ export function MaterialsPage() {
 export function ReferencesPage() {
   const { project, addReference, updateReference, deleteReference } = useProjectStore()
   const [selectedId, setSelectedId] = useState(project.references[0]?.id ?? '')
+  const [refQuery, setRefQuery] = useState('')
+  const [refMat, setRefMat] = useState('all')
+  const refMaterials = [...new Set(project.references.flatMap((r) => (r.material ?? '').split(/[,，]/).map((x) => x.trim()).filter(Boolean)))].sort()
+  const filteredRefs = project.references.filter((r) => {
+    const q = refQuery.toLowerCase()
+    const okQ = !q || r.title.toLowerCase().includes(q) || (r.authors ?? '').toLowerCase().includes(q) || String(r.year).includes(q)
+    const okM = refMat === 'all' || (r.material ?? '').toLowerCase().includes(refMat.toLowerCase())
+    return okQ && okM
+  })
   const selected = project.references.find((reference) => reference.id === selectedId) ?? project.references[0]
 
   return (
@@ -1130,7 +1139,12 @@ export function ReferencesPage() {
               </div>
               <button className="panel-icon-button" type="button" onClick={() => setSelectedId(addReference().id)} aria-label="新增 reference"><Plus size={16} /></button>
             </div>
-            {project.references.map((reference) => (
+            <input className="manus-field" placeholder="搜尋標題 / 作者 / 年份" value={refQuery} onChange={(event) => setRefQuery(event.target.value)} />
+            <select className="ref-filter" value={refMat} onChange={(event) => setRefMat(event.target.value)}>
+              <option value="all">所有材料</option>
+              {refMaterials.map((m) => <option value={m} key={m}>{m}</option>)}
+            </select>
+            {filteredRefs.map((reference) => (
               <ManusListRow
                 active={reference.id === selected?.id}
                 icon={<BookOpen size={16} />}

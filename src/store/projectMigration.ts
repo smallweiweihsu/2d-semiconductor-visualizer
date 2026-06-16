@@ -12,10 +12,12 @@ export const projectStorageKeys = [currentStorageKey, ...legacyStorageKeys]
 type StorageLike = Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
 
 export function ensureSeedMaterials(project: SemivizProject): SemivizProject {
-  const have = new Set(project.materials.map((m) => m.id))
-  const missing = seedProject.materials.filter((m) => !have.has(m.id))
-  if (!missing.length) return project
-  return { ...project, materials: [...project.materials, ...missing] }
+  const haveM = new Set(project.materials.map((m) => m.id))
+  const missingM = seedProject.materials.filter((m) => !haveM.has(m.id))
+  const withMaterials = missingM.length ? { ...project, materials: [...project.materials, ...missingM] } : project
+  const haveR = new Set((withMaterials.references ?? []).map((r) => r.id))
+  const missingR = seedProject.references.filter((r) => !haveR.has(r.id))
+  return missingR.length ? { ...withMaterials, references: [...withMaterials.references, ...missingR] } : withMaterials
 }
 
 export function readProjectFromStorage(storage: StorageLike): SemivizProject {

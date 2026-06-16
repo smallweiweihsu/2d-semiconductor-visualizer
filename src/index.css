@@ -3579,3 +3579,5 @@ button.manus-list-row {
 .comparison-table table { font-size: 13px; }
 .comparison-table th, .comparison-table td { padding: 7px 10px; }
 .reference-detail-panel .linked-source-list { max-width: none; }
+
+.ref-filter { width: 100%; margin: 6px 0 10px; background: rgba(255,255,255,0.04); border: 1px solid var(--border); border-radius: 8px; color: var(--foreground); padding: 6px 8px; font-size: 13px; }
