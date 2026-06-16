@@ -46,7 +46,7 @@ export default async function handler(req: ProxyReq, res: ProxyRes): Promise<voi
     res.status(400).json({ error: '缺少 prompt' })
     return
   }
-  const model = process.env.AI_MODEL || 'claude-sonnet-4-6'
+  const model = process.env.AI_MODEL || 'claude-sonnet-4-5'
   const maxTokens = Math.min(Math.max(Number(payload?.maxTokens) || 1200, 64), 4096)
   try {
     const upstream = await fetch('https://api.anthropic.com/v1/messages', {
