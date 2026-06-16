@@ -1,0 +1,23 @@
+import type { LiteratureSource } from '../types/semiviz'
+
+export const libraryPapers: LiteratureSource[] = [
+  { id: 'lit-lib-001', title: 'Gate length scaling beyond Si Mono-layer 2D Channel FETs Robust to Short Channel Effects', authors: '', year: 2023, material: 'MoS2', reliabilityScore: 6, status: 'candidate', notes: '主題：接觸工程、氧化、次臨界擺幅、微縮/短通道、介電、層數/厚度' },
+  { id: 'lit-lib-002', title: 'effects-of-mos2-layer-thickness-on-its-photochemically-driven-oxidative-dissolution', authors: '', year: 2021, material: 'MoS2', reliabilityScore: 6, status: 'candidate', notes: '主題：氧化、層數/厚度' },
+  { id: 'lit-lib-003', title: 'mos2-transistors-with-4-nm-hbn-gate-dielectric-and-0-46-v-threshold-voltage', authors: '', year: 2025, material: 'MoS2', reliabilityScore: 6, status: 'candidate', notes: '主題：氧化、介電、臨界電壓' },
+  { id: 'lit-lib-004', title: 'schottky-barrier-height-engineering-for-electrical-contacts-of-multilayered-mos2-transisto', authors: '', year: 2023, material: 'MoS2', reliabilityScore: 6, status: 'candidate', notes: '主題：接觸工程、Fermi-level pinning、Schottky barrier、層數/厚度' },
+  { id: 'lit-lib-005', title: 'tunability-of-short-channel-effects-in-mos2-field-effect-devices', authors: '', year: 2023, material: 'MoS2', reliabilityScore: 6, status: 'candidate', notes: '主題：摻雜、微縮/短通道、層數/厚度' },
+  { id: 'lit-lib-006', title: 'Adv Elect Materials - 2024 - Ali - Achieving Near-Ideal Subthreshold Swing in P-Type WSe2 ', authors: '', year: 2024, material: 'WSe2', reliabilityScore: 6, status: 'candidate', notes: '主題：接觸工程、次臨界擺幅、層數/厚度' },
+  { id: 'lit-lib-007', title: 'Adv Funct Materials - 2026 - Kim - Contact Engineering with Selenium Interlayers for High-', authors: '', year: 2026, material: 'WSe2', reliabilityScore: 6, status: 'candidate', notes: '主題：接觸工程、Fermi-level pinning、Schottky barrier、層數/厚度' },
+  { id: 'lit-lib-008', title: 'Effects of lower symmetry and dimensionality on Raman spectra in two-dimensional WSe2', authors: '', year: 1953, material: 'WSe2', reliabilityScore: 6, status: 'candidate', notes: '主題：Raman/光譜、層數/厚度' },
+  { id: 'lit-lib-009', title: 'Fermi-Level Pinning-Free WSe2 Transistors via 2D Van der Waals Metal Contacts and Their', authors: '', year: 2022, material: 'WSe2', reliabilityScore: 6, status: 'candidate', notes: '主題：接觸工程、Fermi-level pinning、Schottky barrier' },
+  { id: 'lit-lib-010', title: 'High-performance p-type bilayer WSe2 field effect transistors by nitric oxide doping', authors: '', year: 2023, material: 'WSe2', reliabilityScore: 6, status: 'candidate', notes: '主題：接觸工程、摻雜、氧化、次臨界擺幅、層數/厚度' },
+  { id: 'lit-lib-011', title: 'WSe 2 -contact metal interface chemistry and band', authors: '', year: 2017, material: 'WSe2', reliabilityScore: 6, status: 'candidate', notes: '主題：接觸工程、氧化、微縮/短通道、層數/厚度' },
+  { id: 'lit-lib-012', title: 'Wafer-scale CVD Monolayer WSe2 p-FETs with Record-high 727 A m Ion and 490 S m gmax via Hy', authors: '', year: 2023, material: 'WSe2', reliabilityScore: 6, status: 'candidate', notes: '主題：摻雜、層數/厚度' },
+  { id: 'lit-lib-013', title: 'high-performance-wse2-field-effect-transistors-via-controlled-formation-of-in-plane-hetero', authors: '', year: 2023, material: 'WSe2', reliabilityScore: 6, status: 'candidate', notes: '主題：異質接面、層數/厚度' },
+  { id: 'lit-lib-014', title: 'layer-control-of-wse2-via-selective-surface-layer-oxidation', authors: '', year: 2023, material: 'WSe2', reliabilityScore: 6, status: 'candidate', notes: '主題：氧化、Raman/光譜、層數/厚度' },
+  { id: 'lit-lib-015', title: 'locally-doped-transferred-contacts-for-wse2-transistors', authors: '', year: 2024, material: 'WSe2', reliabilityScore: 6, status: 'candidate', notes: '主題：接觸工程、摻雜、Fermi-level pinning、氧化、微縮/短通道、Schottky barrier' },
+  { id: 'lit-lib-016', title: 'p-type-vertical-fets-realized-by-using-fermi-level-pinning-free-2d-metallic-electrodes', authors: '', year: 2025, material: 'WSe2', reliabilityScore: 6, status: 'candidate', notes: '主題：接觸工程、Fermi-level pinning、微縮/短通道' },
+  { id: 'lit-lib-017', title: 'quasi-zero-dimensional-source-drain-contact-for-fermi-level-unpinning-in-a-tungsten-disele', authors: '', year: 2024, material: 'WSe2', reliabilityScore: 6, status: 'candidate', notes: '主題：接觸工程、Fermi-level pinning、Schottky barrier' },
+  { id: 'lit-lib-018', title: 'toward-high-performance-p-type-two-dimensional-field-effect-transistors-contact-engineerin', authors: '', year: 2023, material: 'WSe2', reliabilityScore: 6, status: 'candidate', notes: '主題：接觸工程、摻雜、微縮/短通道、層數/厚度' },
+  { id: 'lit-lib-019', title: 'transport-properties-of-a-mos2-wse2-heterojunction-transistor-and-its-potential-for-applic', authors: '', year: 2023, material: 'WSe2', reliabilityScore: 6, status: 'candidate', notes: '主題：異質接面、層數/厚度' },
+]

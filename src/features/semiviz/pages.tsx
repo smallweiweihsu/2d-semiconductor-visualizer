@@ -1149,12 +1149,12 @@ export function ReferencesPage() {
             {filteredRefs.map((reference) => (
               <ManusListRow
                 active={reference.id === selected?.id}
-                icon={reference.status === 'accepted' ? <Check size={16} color="#34d399" /> : <Clock size={16} color="#8a94a6" />}
+                icon={reference.status === 'accepted' ? <Check size={16} color="#34d399" /> : reference.status === 'reviewed' ? <Clock size={16} color="#22d3ee" /> : <Star size={16} color="#fbbf24" />}
                 key={reference.id}
                 title={reference.title}
                 subtitle={`${reference.authors} (${reference.year})`}
-                meta={<>{reference.year}</>}
-                badge={reference.reliabilityScore >= 8 ? <Star size={15} color="#fbbf24" fill="#fbbf24" /> : null}
+                meta={<>Score: {reference.reliabilityScore}/10</>}
+                badge={<ManusStatusBadge tone={reference.status === 'accepted' ? 'success' : 'primary'}>{literatureStatusLabel(reference.status)}</ManusStatusBadge>}
                 onClick={() => setSelectedId(reference.id)}
               />
             ))}
